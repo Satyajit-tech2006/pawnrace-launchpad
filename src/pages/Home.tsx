@@ -5,7 +5,7 @@ import Features from '@/components/Features';
 import Coaches from '@/components/Coaches';
 import Testimonials from '@/components/Testimonials';
 import Pricing from '@/components/Pricing';
-import Contact from '@/components/Contact';
+
 import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
 
@@ -32,7 +32,6 @@ const Home: React.FC = () => {
         <Coaches />
         <Testimonials />
         <Pricing onLoginClick={handleLoginClick} />
-        <Contact />
       </main>
       
       {/* Footer */}

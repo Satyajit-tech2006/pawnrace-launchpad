@@ -8,9 +8,6 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ onLoginClick }) => {
-  const scrollToContact = () => {
-    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   return (
     <section id="home" className="relative min-h-screen flex items-center bg-subtle-gradient overflow-hidden">
@@ -36,14 +33,20 @@ const Hero: React.FC<HeroProps> = ({ onLoginClick }) => {
           <div className="text-center lg:text-left">
             <div className="fade-in-up">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight mb-6">
-                Unlock Your Inner{' '}
-                <span className="text-gradient">Grandmaster</span>
+                Master Chess with{' '}
+                <span className="text-gradient">World-Class</span> Mentors
               </h1>
               
-              <p className="text-xl lg:text-2xl text-muted-foreground mb-8 max-w-2xl">
-                Train with FIDE-rated mentors. Master strategic thinking. 
-                <span className="text-accent font-semibold"> Learn. Play. Win.</span>
-              </p>
+              <div className="space-y-4 mb-8">
+                <p className="text-xl lg:text-2xl text-muted-foreground max-w-2xl">
+                  Join the elite. Train with FIDE-rated masters and unlock your true potential.
+                </p>
+                <div className="flex flex-wrap gap-6 justify-center lg:justify-start text-sm text-accent font-medium">
+                  <span className="flex items-center gap-2">✓ 1-on-1 Live Training</span>
+                  <span className="flex items-center gap-2">✓ Personalized Learning Path</span>
+                  <span className="flex items-center gap-2">✓ Real-time Game Analysis</span>
+                </div>
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button
@@ -58,7 +61,7 @@ const Hero: React.FC<HeroProps> = ({ onLoginClick }) => {
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={scrollToContact}
+                  onClick={onLoginClick}
                   className="btn-outline px-8 py-6 text-lg font-semibold group"
                 >
                   <Play className="mr-2 h-5 w-5" />
