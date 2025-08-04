@@ -20,9 +20,11 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
 
   const navLinks = [
     { href: '#home', label: 'Home' },
-    { href: '#features', label: 'Features' },
+    { href: '#about', label: 'About' },
+    { href: '#how-it-works', label: 'How It Works' },
+    { href: '#why-choose-us', label: 'Why Us' },
     { href: '#mentors', label: 'Mentors' },
-    { href: '#testimonials', label: 'Testimonials' },
+    { href: '#faq', label: 'FAQ' },
     { href: '#pricing', label: 'Pricing' },
   ];
 

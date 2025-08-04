@@ -1,16 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
+import AboutUs from '@/components/AboutUs';
+import HowItWorks from '@/components/HowItWorks';
+import WhyChooseUs from '@/components/WhyChooseUs';
 import Features from '@/components/Features';
 import Coaches from '@/components/Coaches';
 import Testimonials from '@/components/Testimonials';
+import FAQ from '@/components/FAQ';
 import Pricing from '@/components/Pricing';
-
 import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
+import AutoPopup from '@/components/AutoPopup';
 
 const Home: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showAutoPopup, setShowAutoPopup] = useState(false);
+
+  // Auto popup after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowAutoPopup(true);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLoginClick = () => {
     setIsAuthModalOpen(true);
@@ -18,6 +32,10 @@ const Home: React.FC = () => {
 
   const handleCloseAuthModal = () => {
     setIsAuthModalOpen(false);
+  };
+
+  const handleCloseAutoPopup = () => {
+    setShowAutoPopup(false);
   };
 
   return (
@@ -28,9 +46,13 @@ const Home: React.FC = () => {
       {/* Main Content */}
       <main>
         <Hero onLoginClick={handleLoginClick} />
+        <AboutUs />
+        <HowItWorks />
+        <WhyChooseUs />
         <Features />
         <Coaches />
         <Testimonials />
+        <FAQ />
         <Pricing onLoginClick={handleLoginClick} />
       </main>
       
@@ -42,6 +64,11 @@ const Home: React.FC = () => {
         isOpen={isAuthModalOpen} 
         onClose={handleCloseAuthModal} 
       />
+
+      {/* Auto Popup */}
+      {showAutoPopup && (
+        <AutoPopup onClose={handleCloseAutoPopup} />
+      )}
     </div>
   );
 };
