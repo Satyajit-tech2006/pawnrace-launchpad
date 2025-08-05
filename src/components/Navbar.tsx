@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link, useLocation } from 'react-router-dom';
 
 interface NavbarProps {
   onLoginClick: () => void;
@@ -18,14 +19,16 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const location = useLocation();
+  
   const navLinks = [
-    { href: '#home', label: 'Home' },
-    { href: '#about', label: 'About' },
-    { href: '#how-it-works', label: 'How It Works' },
-    { href: '#why-choose-us', label: 'Why Us' },
-    { href: '#mentors', label: 'Mentors' },
-    { href: '#faq', label: 'FAQ' },
-    { href: '#pricing', label: 'Pricing' },
+    { href: '/', label: 'Home' },
+    { href: '/about', label: 'About' },
+    { href: '/how-it-works', label: 'How It Works' },
+    { href: '/why-us', label: 'Why Us' },
+    { href: '/mentors', label: 'Mentors' },
+    { href: '/faq', label: 'FAQ' },
+    { href: '/pricing', label: 'Pricing' },
   ];
 
   return (
@@ -35,21 +38,23 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <Crown className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold text-gradient">PawnRace</span>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
-                href={link.href}
-                className="text-foreground hover:text-primary transition-colors duration-200 font-medium"
+                to={link.href}
+                className={`text-foreground hover:text-primary transition-colors duration-200 font-medium ${
+                  location.pathname === link.href ? 'text-primary' : ''
+                }`}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -87,14 +92,16 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
           <div className="lg:hidden bg-white border-t border-border">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navLinks.map((link) => (
-                <a
+                <Link
                   key={link.href}
-                  href={link.href}
-                  className="block px-3 py-2 text-foreground hover:text-primary transition-colors duration-200"
+                  to={link.href}
+                  className={`block px-3 py-2 text-foreground hover:text-primary transition-colors duration-200 ${
+                    location.pathname === link.href ? 'text-primary' : ''
+                  }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.label}
-                </a>
+                </Link>
               ))}
               <div className="px-3 py-2 space-y-2">
                 <Button

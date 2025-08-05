@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
-import AboutUs from '@/components/AboutUs';
-import HowItWorks from '@/components/HowItWorks';
-import WhyChooseUs from '@/components/WhyChooseUs';
 import Features from '@/components/Features';
-import Coaches from '@/components/Coaches';
 import Testimonials from '@/components/Testimonials';
-import FAQ from '@/components/FAQ';
-import Pricing from '@/components/Pricing';
 import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
 import AutoPopup from '@/components/AutoPopup';
@@ -46,14 +40,8 @@ const Home: React.FC = () => {
       {/* Main Content */}
       <main>
         <Hero onLoginClick={handleLoginClick} />
-        <AboutUs />
-        <HowItWorks />
-        <WhyChooseUs />
         <Features />
-        <Coaches />
         <Testimonials />
-        <FAQ />
-        <Pricing onLoginClick={handleLoginClick} />
       </main>
       
       {/* Footer */}
