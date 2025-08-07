@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,7 +51,7 @@ const DashboardLayout: React.FC = () => {
   const navItems = user?.role === 'student' ? studentNavItems : coachNavItems;
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background flex">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
@@ -82,10 +83,10 @@ const DashboardLayout: React.FC = () => {
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={`
-                    flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
+                    flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
                     ${isActive 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'bg-primary text-primary-foreground shadow-lg' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted hover:shadow-sm'
                     }
                   `}
                 >
@@ -101,7 +102,9 @@ const DashboardLayout: React.FC = () => {
             <div className="flex items-center gap-3 mb-4">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={user?.avatar} alt={user?.name} />
-                <AvatarFallback>{user?.name?.[0]?.toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {user?.name?.[0]?.toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
@@ -112,7 +115,7 @@ const DashboardLayout: React.FC = () => {
               onClick={handleLogout}
               variant="outline" 
               size="sm" 
-              className="w-full justify-start gap-2"
+              className="w-full justify-start gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
             >
               <LogOut className="h-4 w-4" />
               Logout
@@ -122,10 +125,10 @@ const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* Main content */}
-      <div className="lg:ml-64">
+      <div className="flex-1 flex flex-col lg:ml-0">
         {/* Top header */}
-        <header className="bg-background border-b border-border sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 py-4">
+        <header className="bg-card border-b border-border sticky top-0 z-30 shadow-sm">
+          <div className="flex items-center justify-between px-4 lg:px-6 py-4">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -136,33 +139,37 @@ const DashboardLayout: React.FC = () => {
                 <Menu className="h-5 w-5" />
               </Button>
               
-              <div className="hidden md:flex items-center gap-2 bg-muted rounded-lg px-3 py-2 max-w-md">
+              <div className="hidden md:flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2 max-w-md border">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input 
                   type="text" 
                   placeholder="Search..." 
-                  className="bg-transparent border-0 outline-0 text-sm w-full"
+                  className="bg-transparent border-0 outline-0 text-sm w-full placeholder:text-muted-foreground"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" className="relative">
+              <Button variant="ghost" size="sm" className="relative hover:bg-muted">
                 <Bell className="h-5 w-5" />
-                <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></div>
+                <div className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-pulse"></div>
               </Button>
               
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.avatar} alt={user?.name} />
-                <AvatarFallback>{user?.name?.[0]?.toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {user?.name?.[0]?.toUpperCase()}
+                </AvatarFallback>
               </Avatar>
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-6">
-          <Outlet />
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
