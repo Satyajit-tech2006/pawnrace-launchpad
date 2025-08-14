@@ -1,27 +1,34 @@
+// 404 Not Found Page Component for PawnRace Chess Academy
+// Handles invalid routes and provides navigation back to home
+
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
-const NotFound = () => {
-  const location = useLocation();
+function NotFound() {
+  const currentLocation = useLocation();
 
+  // Log 404 errors for debugging purposes
   useEffect(() => {
     console.error(
       "404 Error: User attempted to access non-existent route:",
-      location.pathname
+      currentLocation.pathname
     );
-  }, [location.pathname]);
+  }, [currentLocation.pathname]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4 text-gradient">404</h1>
         <p className="text-xl text-muted-foreground mb-4">Oops! Page not found</p>
-        <a href="/" className="text-primary hover:text-primary-dark underline transition-colors">
+        <a 
+          href="/" 
+          className="text-primary hover:text-primary-dark underline transition-colors"
+        >
           Return to Home
         </a>
       </div>
     </div>
   );
-};
+}
 
 export default NotFound;

@@ -1,3 +1,5 @@
+// Main Application Component for PawnRace Chess Academy
+// This component sets up routing, authentication, and global providers
 
 import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
@@ -8,6 +10,8 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
+// Import all page components
 import Index from "./pages/Index";
 import About from "./pages/About";
 import HowItWorksPage from "./pages/HowItWorksPage";
@@ -23,21 +27,24 @@ import CoachSchedule from "./pages/dashboard/CoachSchedule";
 import CoachStudents from "./pages/dashboard/CoachStudents";
 import NotFound from "./pages/NotFound";
 
+// Set up React Query with reasonable defaults
+// This handles data fetching, caching, and synchronization
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Cache cleanup after 10 minutes
     },
   },
 });
 
-// SEO Component for page titles and meta
-const SEOWrapper = ({ children }: { children: React.ReactNode }) => {
+// SEO Component - automatically updates page titles and meta descriptions
+function SEOWrapper({ children }) {
   const location = useLocation();
 
   useEffect(() => {
-    const titles: Record<string, string> = {
+    // Define page titles for better SEO
+    const pageTitles = {
       '/': 'PawnRace - Professional Chess Academy | Learn Chess Online',
       '/about': 'About Us - PawnRace Chess Academy',
       '/how-it-works': 'How It Works - PawnRace Chess Academy',
@@ -49,12 +56,13 @@ const SEOWrapper = ({ children }: { children: React.ReactNode }) => {
       '/coach-dashboard': 'Coach Dashboard - PawnRace',
     };
 
-    const currentTitle = titles[location.pathname] || 'PawnRace - Chess Academy';
+    // Update the page title based on current route
+    const currentTitle = pageTitles[location.pathname] || 'PawnRace - Chess Academy';
     document.title = currentTitle;
 
-    // Update meta description based on route
+    // Update meta description for better SEO
     const metaDescription = document.querySelector('meta[name="description"]');
-    const descriptions: Record<string, string> = {
+    const pageDescriptions = {
       '/': 'Join PawnRace, the premier online chess academy. Learn from expert coaches, improve your game, and master chess strategy with personalized lessons.',
       '/about': 'Learn about PawnRace Chess Academy - our mission, vision, and commitment to chess education excellence.',
       '/how-it-works': 'Discover how PawnRace works - from booking lessons to tracking progress with our expert chess coaches.',
@@ -63,7 +71,7 @@ const SEOWrapper = ({ children }: { children: React.ReactNode }) => {
       '/pricing': 'Affordable chess lessons with flexible pricing plans. Find the perfect package for your chess learning journey.',
     };
 
-    const currentDescription = descriptions[location.pathname] || 'Professional chess academy with expert coaches and personalized learning.';
+    const currentDescription = pageDescriptions[location.pathname] || 'Professional chess academy with expert coaches and personalized learning.';
     
     if (metaDescription) {
       metaDescription.setAttribute('content', currentDescription);
@@ -71,11 +79,12 @@ const SEOWrapper = ({ children }: { children: React.ReactNode }) => {
   }, [location.pathname]);
 
   return <>{children}</>;
-};
+}
 
-const App = () => {
+// Main App Component
+function App() {
   useEffect(() => {
-    // Add structured data for SEO
+    // Add structured data for better SEO and search engine understanding
     const structuredData = {
       "@context": "https://schema.org",
       "@type": "EducationalOrganization",
@@ -95,13 +104,17 @@ const App = () => {
       }
     };
 
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.text = JSON.stringify(structuredData);
-    document.head.appendChild(script);
+    // Create and inject the structured data script
+    const structuredDataScript = document.createElement('script');
+    structuredDataScript.type = 'application/ld+json';
+    structuredDataScript.text = JSON.stringify(structuredData);
+    document.head.appendChild(structuredDataScript);
 
+    // Cleanup function to remove the script when component unmounts
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(structuredDataScript)) {
+        document.head.removeChild(structuredDataScript);
+      }
     };
   }, []);
 
@@ -114,6 +127,7 @@ const App = () => {
           <BrowserRouter>
             <SEOWrapper>
               <Routes>
+                {/* Public Routes - accessible to everyone */}
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -122,7 +136,7 @@ const App = () => {
                 <Route path="/faq" element={<FAQPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 
-                {/* Student Dashboard Routes */}
+                {/* Student Dashboard Routes - only accessible to students */}
                 <Route path="/student-dashboard" element={
                   <ProtectedRoute requiredRole="student">
                     <DashboardLayout />
@@ -130,13 +144,28 @@ const App = () => {
                 }>
                   <Route index element={<StudentDashboard />} />
                   <Route path="schedule" element={<StudentSchedule />} />
-                  <Route path="coach" element={<div className="p-6"><h1 className="text-2xl font-bold">My Coach</h1><p className="text-muted-foreground">Connect with your assigned chess coach.</p></div>} />
+                  <Route path="coach" element={
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">My Coach</h1>
+                      <p className="text-muted-foreground">Connect with your assigned chess coach.</p>
+                    </div>
+                  } />
                   <Route path="assignments" element={<StudentAssignments />} />
-                  <Route path="progress" element={<div className="p-6"><h1 className="text-2xl font-bold">My Progress</h1><p className="text-muted-foreground">Track your chess improvement and statistics.</p></div>} />
-                  <Route path="settings" element={<div className="p-6"><h1 className="text-2xl font-bold">Settings</h1><p className="text-muted-foreground">Manage your account preferences.</p></div>} />
+                  <Route path="progress" element={
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">My Progress</h1>
+                      <p className="text-muted-foreground">Track your chess improvement and statistics.</p>
+                    </div>
+                  } />
+                  <Route path="settings" element={
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">Settings</h1>
+                      <p className="text-muted-foreground">Manage your account preferences.</p>
+                    </div>
+                  } />
                 </Route>
                 
-                {/* Coach Dashboard Routes */}
+                {/* Coach Dashboard Routes - only accessible to coaches */}
                 <Route path="/coach-dashboard" element={
                   <ProtectedRoute requiredRole="coach">
                     <DashboardLayout />
@@ -145,12 +174,27 @@ const App = () => {
                   <Route index element={<CoachDashboard />} />
                   <Route path="schedule" element={<CoachSchedule />} />
                   <Route path="students" element={<CoachStudents />} />
-                  <Route path="assignments" element={<div className="p-6"><h1 className="text-2xl font-bold">Assignment Management</h1><p className="text-muted-foreground">Create and manage student assignments.</p></div>} />
-                  <Route path="analytics" element={<div className="p-6"><h1 className="text-2xl font-bold">Analytics</h1><p className="text-muted-foreground">View detailed performance analytics.</p></div>} />
-                  <Route path="profile" element={<div className="p-6"><h1 className="text-2xl font-bold">Profile</h1><p className="text-muted-foreground">Manage your coaching profile.</p></div>} />
+                  <Route path="assignments" element={
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">Assignment Management</h1>
+                      <p className="text-muted-foreground">Create and manage student assignments.</p>
+                    </div>
+                  } />
+                  <Route path="analytics" element={
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">Analytics</h1>
+                      <p className="text-muted-foreground">View detailed performance analytics.</p>
+                    </div>
+                  } />
+                  <Route path="profile" element={
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">Profile</h1>
+                      <p className="text-muted-foreground">Manage your coaching profile.</p>
+                    </div>
+                  } />
                 </Route>
                 
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                {/* Catch-all route for 404 pages - MUST be last */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </SEOWrapper>
@@ -159,6 +203,6 @@ const App = () => {
       </AuthProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

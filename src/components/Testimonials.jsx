@@ -1,8 +1,12 @@
+// Testimonials Section Component for PawnRace Chess Academy
+// Displays customer feedback and success stories
+
 import React from 'react';
 import { Star, Quote } from 'lucide-react';
 
-const Testimonials: React.FC = () => {
-  const testimonials = [
+function Testimonials() {
+  // Student testimonials data
+  const studentTestimonials = [
     {
       id: 1,
       name: 'Alex Thompson',
@@ -37,22 +41,25 @@ const Testimonials: React.FC = () => {
     }
   ];
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
+  // Render star rating display
+  function renderStarRating(rating) {
+    return Array.from({ length: 5 }, (_, index) => (
       <Star
-        key={i}
+        key={index}
         className={`h-4 w-4 ${
-          i < rating 
+          index < rating 
             ? 'fill-accent text-accent' 
             : 'text-muted-foreground'
         }`}
       />
     ));
-  };
+  }
 
   return (
     <section id="testimonials" className="py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold mb-6">
             What Our Students <span className="text-gradient">Say</span>
@@ -62,8 +69,9 @@ const Testimonials: React.FC = () => {
           </p>
         </div>
 
+        {/* Testimonials Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {testimonials.map((testimonial, index) => (
+          {studentTestimonials.map((testimonial, index) => (
             <div
               key={testimonial.id}
               className="card-elegant group hover-lift"
@@ -74,18 +82,18 @@ const Testimonials: React.FC = () => {
                 <Quote className="h-8 w-8 text-primary/20 group-hover:text-primary/40 transition-colors duration-300" />
               </div>
 
-              {/* Content */}
+              {/* Testimonial Content */}
               <div className="space-y-4">
                 <p className="text-muted-foreground italic leading-relaxed">
                   "{testimonial.content}"
                 </p>
 
-                {/* Rating */}
+                {/* Star Rating */}
                 <div className="flex space-x-1">
-                  {renderStars(testimonial.rating)}
+                  {renderStarRating(testimonial.rating)}
                 </div>
 
-                {/* Author Info */}
+                {/* Author Information */}
                 <div className="flex items-center space-x-4 pt-4 border-t border-border">
                   <div className="w-12 h-12 rounded-full overflow-hidden">
                     <img
@@ -108,7 +116,7 @@ const Testimonials: React.FC = () => {
           ))}
         </div>
 
-        {/* Stats Section */}
+        {/* Statistics Section */}
         <div className="mt-16 pt-16 border-t border-border">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
@@ -132,6 +140,6 @@ const Testimonials: React.FC = () => {
       </div>
     </section>
   );
-};
+}
 
 export default Testimonials;

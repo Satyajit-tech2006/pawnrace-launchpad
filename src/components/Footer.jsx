@@ -1,8 +1,12 @@
+// Footer Component for PawnRace Chess Academy
+// Contains site links, social media, newsletter signup, and company information
+
 import React from 'react';
 import { Crown, Facebook, Twitter, Instagram, Youtube, Linkedin } from 'lucide-react';
 
-const Footer: React.FC = () => {
-  const footerLinks = {
+function Footer() {
+  // Organized footer navigation links
+  const footerNavigationLinks = {
     'Company': [
       { name: 'About Us', href: '#about' },
       { name: 'Our Team', href: '#' },
@@ -29,7 +33,8 @@ const Footer: React.FC = () => {
     ]
   };
 
-  const socialLinks = [
+  // Social media links with icons
+  const socialMediaLinks = [
     { icon: Facebook, href: '#', label: 'Facebook' },
     { icon: Twitter, href: '#', label: 'Twitter' },
     { icon: Instagram, href: '#', label: 'Instagram' },
@@ -40,10 +45,12 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-primary text-primary-foreground">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        
         {/* Main Footer Content */}
         <div className="py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
-            {/* Brand Section */}
+            
+            {/* Brand and Social Media Section */}
             <div className="lg:col-span-2">
               <div className="flex items-center space-x-2 mb-6">
                 <Crown className="h-8 w-8 text-accent" />
@@ -55,23 +62,23 @@ const Footer: React.FC = () => {
                 with FIDE-rated coaches for personalized chess education.
               </p>
 
-              {/* Social Media Links */}
+              {/* Social Media Icons */}
               <div className="flex space-x-4">
-                {socialLinks.map((social) => (
+                {socialMediaLinks.map((socialLink) => (
                   <a
-                    key={social.label}
-                    href={social.href}
+                    key={socialLink.label}
+                    href={socialLink.href}
                     className="bg-primary-foreground/10 hover:bg-primary-foreground/20 p-2 rounded-lg transition-colors duration-200"
-                    aria-label={social.label}
+                    aria-label={socialLink.label}
                   >
-                    <social.icon className="h-5 w-5" />
+                    <socialLink.icon className="h-5 w-5" />
                   </a>
                 ))}
               </div>
             </div>
 
-            {/* Footer Links */}
-            {Object.entries(footerLinks).map(([category, links]) => (
+            {/* Footer Navigation Links */}
+            {Object.entries(footerNavigationLinks).map(([category, links]) => (
               <div key={category}>
                 <h3 className="font-semibold text-primary-foreground mb-4">
                   {category}
@@ -93,7 +100,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Newsletter Signup */}
+        {/* Newsletter Signup Section */}
         <div className="border-t border-primary-foreground/20 py-8">
           <div className="text-center">
             <h3 className="text-xl font-semibold mb-2">Stay Updated</h3>
@@ -145,6 +152,6 @@ const Footer: React.FC = () => {
       </div>
     </footer>
   );
-};
+}
 
 export default Footer;

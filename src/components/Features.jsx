@@ -1,3 +1,6 @@
+// Features Section Component for PawnRace Chess Academy
+// Showcases the key features and benefits of the platform
+
 import React from 'react';
 import { 
   Video, 
@@ -10,8 +13,9 @@ import {
   Zap 
 } from 'lucide-react';
 
-const Features: React.FC = () => {
-  const features = [
+function Features() {
+  // Define all platform features with icons and descriptions
+  const platformFeatures = [
     {
       icon: Video,
       title: '1-on-1 Live Chess Classes',
@@ -57,6 +61,8 @@ const Features: React.FC = () => {
   return (
     <section id="features" className="py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold mb-6">
             Why Choose <span className="text-gradient">PawnRace?</span>
@@ -67,23 +73,27 @@ const Features: React.FC = () => {
           </p>
         </div>
 
+        {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
+          {platformFeatures.map((feature, index) => (
             <div
               key={index}
               className="card-feature hover-lift group"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
+              {/* Feature Icon */}
               <div className="mb-4">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                   <feature.icon className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors duration-300" />
                 </div>
               </div>
               
+              {/* Feature Title */}
               <h3 className="text-lg font-semibold mb-3 text-foreground">
                 {feature.title}
               </h3>
               
+              {/* Feature Description */}
               <p className="text-muted-foreground text-sm leading-relaxed">
                 {feature.description}
               </p>
@@ -101,6 +111,6 @@ const Features: React.FC = () => {
       </div>
     </section>
   );
-};
+}
 
 export default Features;

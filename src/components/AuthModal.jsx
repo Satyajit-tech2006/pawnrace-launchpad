@@ -1,6 +1,9 @@
+// Authentication Modal Component for PawnRace Chess Academy
+// Handles user login and registration with role selection
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,23 +13,21 @@ import { User, Mail, Lock, Crown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+// Authentication modal with login and registration tabs
+function AuthModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { login, register, loading } = useAuth();
   const { toast } = useToast();
 
-  const [loginData, setLoginData] = useState({
+  // Login form state
+  const [loginFormData, setLoginFormData] = useState({
     email: '',
     password: '',
     role: 'student',
   });
 
-  const [registerData, setRegisterData] = useState({
+  // Registration form state
+  const [registrationFormData, setRegistrationFormData] = useState({
     name: '',
     email: '',
     password: '',
@@ -34,16 +35,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     role: '',
   });
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handle login form submission
+  async function handleLoginSubmit(event) {
+    event.preventDefault();
     try {
-      await login(loginData.email, loginData.password, loginData.role);
+      await login(loginFormData.email, loginFormData.password, loginFormData.role);
       toast({
         title: "Login successful!",
         description: "Welcome back to PawnRace.",
       });
       onClose();
-      navigate(loginData.role === 'student' ? '/student-dashboard' : '/coach-dashboard');
+      navigate(loginFormData.role === 'student' ? '/student-dashboard' : '/coach-dashboard');
     } catch (error) {
       toast({
         title: "Login failed",
@@ -51,12 +53,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         variant: "destructive",
       });
     }
-  };
+  }
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handle registration form submission
+  async function handleRegistrationSubmit(event) {
+    event.preventDefault();
     
-    if (registerData.password !== registerData.confirmPassword) {
+    // Check if passwords match
+    if (registrationFormData.password !== registrationFormData.confirmPassword) {
       toast({
         title: "Password mismatch",
         description: "Passwords do not match. Please try again.",
@@ -66,13 +70,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
     
     try {
-      await register(registerData.name, registerData.email, registerData.password, registerData.role);
+      await register(
+        registrationFormData.name, 
+        registrationFormData.email, 
+        registrationFormData.password, 
+        registrationFormData.role
+      );
       toast({
         title: "Registration successful!",
         description: "Welcome to PawnRace! Let's start your chess journey.",
       });
       onClose();
-      navigate(registerData.role === 'student' ? '/student-dashboard' : '/coach-dashboard');
+      navigate(registrationFormData.role === 'student' ? '/student-dashboard' : '/coach-dashboard');
     } catch (error) {
       toast({
         title: "Registration failed",
@@ -80,7 +89,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         variant: "destructive",
       });
     }
-  };
+  }
+
+  // Update login form data
+  function updateLoginData(field, value) {
+    setLoginFormData(prev => ({ ...prev, [field]: value }));
+  }
+
+  // Update registration form data
+  function updateRegistrationData(field, value) {
+    setRegistrationFormData(prev => ({ ...prev, [field]: value }));
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -98,8 +117,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <TabsTrigger value="register">Register</TabsTrigger>
           </TabsList>
 
+          {/* Login Tab */}
           <TabsContent value="login">
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="login-email">Email</Label>
                 <div className="relative">
@@ -109,14 +130,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="email"
                     placeholder="your@email.com"
                     className="pl-10"
-                    value={loginData.email}
-                    onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                    value={loginFormData.email}
+                    onChange={(e) => updateLoginData('email', e.target.value)}
                     required
                     disabled={loading}
                   />
                 </div>
               </div>
 
+              {/* Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="login-password">Password</Label>
                 <div className="relative">
@@ -126,19 +148,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="password"
                     placeholder="••••••••"
                     className="pl-10"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                    value={loginFormData.password}
+                    onChange={(e) => updateLoginData('password', e.target.value)}
                     required
                     disabled={loading}
                   />
                 </div>
               </div>
 
+              {/* Role Selection */}
               <div className="space-y-2">
                 <Label htmlFor="login-role">Login as</Label>
                 <Select 
-                  value={loginData.role} 
-                  onValueChange={(value) => setLoginData({ ...loginData, role: value })}
+                  value={loginFormData.role} 
+                  onValueChange={(value) => updateLoginData('role', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your role" />
@@ -156,8 +179,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </form>
           </TabsContent>
 
+          {/* Registration Tab */}
           <TabsContent value="register">
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleRegistrationSubmit} className="space-y-4">
+              {/* Full Name Field */}
               <div className="space-y-2">
                 <Label htmlFor="register-name">Full Name</Label>
                 <div className="relative">
@@ -167,14 +192,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="text"
                     placeholder="John Doe"
                     className="pl-10"
-                    value={registerData.name}
-                    onChange={(e) => setRegisterData(prev => ({ ...prev, name: e.target.value }))}
+                    value={registrationFormData.name}
+                    onChange={(e) => updateRegistrationData('name', e.target.value)}
                     required
                     disabled={loading}
                   />
                 </div>
               </div>
 
+              {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="register-email">Email</Label>
                 <div className="relative">
@@ -184,19 +210,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="email"
                     placeholder="your@email.com"
                     className="pl-10"
-                    value={registerData.email}
-                    onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
+                    value={registrationFormData.email}
+                    onChange={(e) => updateRegistrationData('email', e.target.value)}
                     required
                     disabled={loading}
                   />
                 </div>
               </div>
 
+              {/* Role Selection */}
               <div className="space-y-2">
                 <Label htmlFor="register-role">I want to join as</Label>
                 <Select
-                  value={registerData.role}
-                  onValueChange={(value) => setRegisterData(prev => ({ ...prev, role: value }))}
+                  value={registrationFormData.role}
+                  onValueChange={(value) => updateRegistrationData('role', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Choose your role" />
@@ -208,6 +235,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </Select>
               </div>
 
+              {/* Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="register-password">Password</Label>
                 <div className="relative">
@@ -217,14 +245,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="password"
                     placeholder="••••••••"
                     className="pl-10"
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
+                    value={registrationFormData.password}
+                    onChange={(e) => updateRegistrationData('password', e.target.value)}
                     required
                     disabled={loading}
                   />
                 </div>
               </div>
 
+              {/* Confirm Password Field */}
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
                 <div className="relative">
@@ -234,8 +263,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     type="password"
                     placeholder="••••••••"
                     className="pl-10"
-                    value={registerData.confirmPassword}
-                    onChange={(e) => setRegisterData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    value={registrationFormData.confirmPassword}
+                    onChange={(e) => updateRegistrationData('confirmPassword', e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -251,6 +280,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default AuthModal;
