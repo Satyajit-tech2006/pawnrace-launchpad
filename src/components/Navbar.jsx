@@ -2,7 +2,7 @@
 // Responsive navigation bar with mobile menu support
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Crown } from 'lucide-react';
+import { Menu, X, ChessPawn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -31,7 +31,8 @@ function Navbar({ onLoginClick }) {
     { href: '/why-us', label: 'Why Us' },
     { href: '/mentors', label: 'Mentors' },
     { href: '/faq', label: 'FAQ' },
-    { href: '/pricing', label: 'Pricing' },
+    { href: '/courses', label: 'Courses' },
+    { href: '/tournaments', label: 'Tournaments' },
   ];
 
   // Handle mobile menu link clicks
@@ -53,9 +54,9 @@ function Navbar({ onLoginClick }) {
         <div className="flex items-center justify-between h-16 lg:h-20">
           
           {/* Logo Section */}
-          <Link to="/" className="flex items-center space-x-2">
-            <Crown className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-gradient">PawnRace</span>
+          <Link to="/" className="flex items-center space-x-3 hover:scale-105 transition-transform duration-200">
+            <ChessPawn className="h-10 w-10 text-primary animate-pulse" />
+            <span className="text-2xl font-bold text-gradient bg-gradient-to-r from-primary to-primary/70 bg-clip-text">PawnRace</span>
           </Link>
 
           {/* Desktop Navigation Links */}

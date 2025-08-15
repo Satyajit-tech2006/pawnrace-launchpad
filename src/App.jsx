@@ -18,7 +18,8 @@ import HowItWorksPage from "./pages/HowItWorksPage";
 import WhyUsPage from "./pages/WhyUsPage";
 import MentorsPage from "./pages/MentorsPage";
 import FAQPage from "./pages/FAQPage";
-import PricingPage from "./pages/PricingPage";
+import CoursesPage from "./pages/CoursesPage";
+import TournamentsPage from "./pages/TournamentsPage";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
 import StudentSchedule from "./pages/dashboard/StudentSchedule";
 import StudentAssignments from "./pages/dashboard/StudentAssignments";
@@ -134,7 +135,8 @@ function App() {
                 <Route path="/why-us" element={<WhyUsPage />} />
                 <Route path="/mentors" element={<MentorsPage />} />
                 <Route path="/faq" element={<FAQPage />} />
-                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/courses" element={<CoursesPage />} />
+                <Route path="/tournaments" element={<TournamentsPage />} />
                 
                 {/* Student Dashboard Routes - only accessible to students */}
                 <Route path="/student-dashboard" element={
