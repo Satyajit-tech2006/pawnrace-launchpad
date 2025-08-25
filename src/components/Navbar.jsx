@@ -1,79 +1,164 @@
-import React, { useState } from "react";
-import { Menu, X } from "lucide-react";
-import { FaChessPawn } from "react-icons/fa";
+import React from 'react';
+import { Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
+// --- SVG Icon for the Chess Pawn ---
+// To resolve the dependency issue, we'll use an inline SVG instead of an external library.
+const ChessPawnIcon = ({ className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 448 512" 
+    className={className} 
+    fill="currentColor"
+  >
+    <path d="M320 96c0-53-43-96-96-96S128 43 128 96s43 96 96 96 96-43 96-96zM224 224c-79.5 0-144 64.5-144 144v32h288v-32c0-79.5-64.5-144-144-144zm-96 96c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16v32H128v-32zm192 64H128v64h192v-64z"/>
+  </svg>
+);
+
+// --- Enhanced Navbar Component ---
+// We define Navbar before App to ensure it's available when App is declared.
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [hasScrolled, setHasScrolled] = React.useState(false);
+
+  // Effect to handle navbar background change on scroll
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    // Cleanup function to remove the event listener
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Navigation links data
+  const navLinks = [
+    { title: 'Features', href: '#features' },
+    { title: 'Coaches', href: '#coaches' },
+    { title: 'Pricing', href: '#pricing' },
+    { title: 'Contact', href: '#contact' },
+  ];
+
+  // Animation variants for the mobile menu
+  const menuVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.07, duration: 0.3 } },
+    exit: { opacity: 0, y: -20, transition: { duration: 0.2 } },
+  };
+
+  const linkVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: { opacity: 1, y: 0 },
+  };
 
   return (
-    <nav className="bg-white shadow-md fixed w-full top-0 left-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        {/* Logo */}
-        <div className="flex items-center space-x-2">
-          <FaChessPawn className="h-10 w-10 text-primary animate-pulse" />
-          <span className="text-2xl font-bold text-gray-800">PawnRace</span>
-        </div>
+    <motion.nav 
+      className={`fixed w-full top-0 left-0 z-50 transition-all duration-300 ${hasScrolled ? 'bg-gray-900/80 backdrop-blur-sm shadow-xl' : 'bg-transparent'}`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+    >
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 bg-black">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo */}
+          <a href="#" className="flex items-center space-x-3 cursor-pointer">
+            {/* Glow animation is now handled by framer-motion to avoid issues with build tools */}
+            <motion.div
+              animate={{
+                filter: [
+                  "drop-shadow(0 0 2px #fbbd23) drop-shadow(0 0 5px #fbbd23)",
+                  "drop-shadow(0 0 5px #fbbd23) drop-shadow(0 0 15px #fbbd23)",
+                  "drop-shadow(0 0 2px #fbbd23) drop-shadow(0 0 5px #fbbd23)",
+                ]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <ChessPawnIcon className="h-10 w-10 text-amber-400" />
+            </motion.div>
+            <div>
+              <span className="text-2xl font-bold text-amber-400">PawnRace</span>
+              <p className="text-xs font-medium text-amber-500 -mt-1">Moves That Make Champions</p>
+            </div>
+          </a>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex space-x-8">
-          <a href="#features" className="text-gray-600 hover:text-primary transition">
-            Features
-          </a>
-          <a href="#coaches" className="text-gray-600 hover:text-primary transition">
-            Coaches
-          </a>
-          <a href="#pricing" className="text-gray-600 hover:text-primary transition">
-            Pricing
-          </a>
-          <a href="#contact" className="text-gray-600 hover:text-primary transition">
-            Contact
-          </a>
-        </div>
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center space-x-8">
+            {navLinks.map((link) => (
+              <motion.a
+                key={link.href}
+                href={link.href}
+                className="text-amber-400 hover:text-white transition-colors duration-300 font-medium relative group"
+              >
+                {link.title}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
+              </motion.a>
+            ))}
+          </div>
 
-        {/* Buttons */}
-        <div className="hidden md:flex space-x-4">
-          <button className="px-4 py-2 text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition">
-            Login
-          </button>
-          <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
-            Sign Up
-          </button>
-        </div>
+          {/* Desktop Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+            <button className="px-5 py-2 text-amber-400 border border-amber-400 rounded-lg hover:bg-amber-400 hover:text-gray-900 transition-all duration-300 font-semibold">
+              Login
+            </button>
+            <button className="px-5 py-2 bg-amber-400 text-gray-900 rounded-lg hover:bg-amber-300 transition-all duration-300 font-semibold shadow-lg shadow-amber-500/10">
+              Sign Up
+            </button>
+          </div>
 
-        {/* Mobile Menu Button */}
-        <div className="md:hidden">
-          <button onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X className="h-8 w-8 text-gray-800" /> : <Menu className="h-8 w-8 text-gray-800" />}
-          </button>
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button onClick={() => setIsOpen(!isOpen)} aria-label="Toggle Menu">
+              {isOpen ? (
+                <X className="h-8 w-8 text-amber-400" />
+              ) : (
+                <Menu className="h-8 w-8 text-amber-400" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden bg-white shadow-lg">
-          <div className="px-4 py-3 space-y-3">
-            <a href="#features" className="block text-gray-600 hover:text-primary transition">
-              Features
-            </a>
-            <a href="#coaches" className="block text-gray-600 hover:text-primary transition">
-              Coaches
-            </a>
-            <a href="#pricing" className="block text-gray-600 hover:text-primary transition">
-              Pricing
-            </a>
-            <a href="#contact" className="block text-gray-600 hover:text-primary transition">
-              Contact
-            </a>
-            <button className="w-full px-4 py-2 text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition">
-              Login
-            </button>
-            <button className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
-              Sign Up
-            </button>
-          </div>
-        </div>
-      )}
-    </nav>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="md:hidden bg-gray-900/95 backdrop-blur-lg absolute w-full"
+            variants={menuVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <div className="px-6 pt-2 pb-6 space-y-3">
+              {navLinks.map((link) => (
+                <motion.a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className="block text-amber-400 hover:text-white transition-colors duration-300 py-2 text-lg"
+                  variants={linkVariants}
+                >
+                  {link.title}
+                </motion.a>
+              ))}
+              <motion.div variants={linkVariants} className="border-t border-gray-700 pt-4 space-y-3">
+                <button className="w-full px-4 py-3 text-amber-400 border border-amber-400 rounded-lg hover:bg-amber-400 hover:text-gray-900 transition-all duration-300 font-semibold">
+                  Login
+                </button>
+                <button className="w-full px-4 py-3 bg-amber-400 text-gray-900 rounded-lg hover:bg-amber-300 transition-all duration-300 font-semibold">
+                  Sign Up
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.nav>
   );
 };
 
