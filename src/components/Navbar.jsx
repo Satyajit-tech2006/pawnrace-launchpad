@@ -1,7 +1,8 @@
 import React from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
+import { Link } from 'react-router-dom';
+import Features from './Features';
 // --- SVG Icon for the Chess Pawn ---
 // To resolve the dependency issue, we'll use an inline SVG instead of an external library.
 const ChessPawnIcon = ({ className }) => (
@@ -35,10 +36,10 @@ const Navbar = () => {
 
   // Navigation links data
   const navLinks = [
-    { title: 'Features', href: '#features' },
-    { title: 'Coaches', href: '#coaches' },
-    { title: 'Pricing', href: '#pricing' },
-    { title: 'Contact', href: '#contact' },
+    { title: 'Home', href: '/' },
+    { title: 'Coaches', href: '/Coaches' },
+    { title: 'Pricing', href: '/pricing' },
+    { title: 'Contact', href: '/contact' },
   ];
 
   // Animation variants for the mobile menu
@@ -88,16 +89,16 @@ const Navbar = () => {
           </a>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex items-center space-x-8">
+         <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
-              <motion.a
+              <Link
                 key={link.href}
-                href={link.href}
+                to={link.href} // Use 'to' instead of 'href'
                 className="text-amber-400 hover:text-white transition-colors duration-300 font-medium relative group"
               >
                 {link.title}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
-              </motion.a>
+              </Link>
             ))}
           </div>
 
@@ -136,15 +137,14 @@ const Navbar = () => {
           >
             <div className="px-6 pt-2 pb-6 space-y-3">
               {navLinks.map((link) => (
-                <motion.a
+               <Link
                   key={link.href}
-                  href={link.href}
+                  to={link.href}
                   onClick={() => setIsOpen(false)}
                   className="block text-amber-400 hover:text-white transition-colors duration-300 py-2 text-lg"
-                  variants={linkVariants}
                 >
                   {link.title}
-                </motion.a>
+                </Link>
               ))}
               <motion.div variants={linkVariants} className="border-t border-gray-700 pt-4 space-y-3">
                 <button className="w-full px-4 py-3 text-amber-400 border border-amber-400 rounded-lg hover:bg-amber-400 hover:text-gray-900 transition-all duration-300 font-semibold">

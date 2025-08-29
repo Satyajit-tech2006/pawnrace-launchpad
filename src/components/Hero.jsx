@@ -115,14 +115,14 @@ function Hero({ onLoginClick }) {
                     Join as Student
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </button>
-
+{/* 
                   <button
                     onClick={onLoginClick}
                     className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold group border border-amber-400 text-amber-400 rounded-lg hover:bg-amber-400 hover:text-gray-900 transition-all duration-300 transform hover:scale-105"
                   >
                     <Play className="mr-2 h-5 w-5" />
                     Become a Coach
-                  </button>
+                  </button> */}
                 </div>
 
                 {/* Success Statistics */}

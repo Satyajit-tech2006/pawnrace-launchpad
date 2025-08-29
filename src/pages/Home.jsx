@@ -1,14 +1,16 @@
 // Home Page Component for PawnRace Chess Academy
 // Main landing page with hero, features, testimonials, and auto-popup
 
-import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
-import Hero from '@/components/Hero';
-import Features from '@/components/Features';
-import Testimonials from '@/components/Testimonials';
-import Footer from '@/components/Footer';
-import AuthModal from '@/components/AuthModal';
-import AutoPopup from '@/components/AutoPopup';
+import React, { useState, useEffect } from "react";
+import Navbar from "@/components/Navbar";
+import Hero from "@/components/Hero";
+import Features from "@/components/Features";
+import Testimonials from "@/components/Testimonials";
+import Footer from "@/components/Footer";
+import AuthModal from "@/components/AuthModal";
+import AutoPopup from "@/components/AutoPopup";
+import Coaches from "@/components/Coaches";
+import FAQ from '@/components/FAQ';
 
 function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -42,27 +44,26 @@ function Home() {
     <div className="min-h-screen">
       {/* Navigation Bar */}
       <Navbar onLoginClick={handleLoginButtonClick} />
-      
+
       {/* Main Page Content */}
       <main>
-        <Hero onLoginClick={handleLoginButtonClick} />
+        <div className="mt-12">
+          <Hero onLoginClick={handleLoginButtonClick} />
+        </div>
         <Features />
         <Testimonials />
+        <Coaches />
+        <FAQ/>
       </main>
-      
+
       {/* Footer */}
       <Footer />
-      
+
       {/* Authentication Modal */}
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={handleAuthModalClose} 
-      />
+      <AuthModal isOpen={showAuthModal} onClose={handleAuthModalClose} />
 
       {/* Welcome Popup - shows after 5 seconds */}
-      {showWelcomePopup && (
-        <AutoPopup onClose={handleWelcomePopupClose} />
-      )}
+      {showWelcomePopup && <AutoPopup onClose={handleWelcomePopupClose} />}
     </div>
   );
 }
