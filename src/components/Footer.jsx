@@ -11,28 +11,28 @@ function Footer() {
   const footerNavigationLinks = {
     'Company': [
       { name: 'About Us', to: '/about' },
-      { name: 'Our Team', to: '/team' },
-      { name: 'Careers', to: '/careers' },
-      { name: 'Press', to: '/press' }
+      // { name: 'Our Team', to: '/team' },
+      // { name: 'Careers', to: '/careers' },
+      // { name: 'Press', to: '/press' }
     ],
-    'For Students': [
-      { name: 'Find a Coach', to: '/mentors' },
-      { name: 'Pricing', to: '/pricing' },
-      { name: 'Success Stories', to: '/testimonials' },
-      { name: 'Support', to: '/contact' }
-    ],
-    'For Coaches': [
-      { name: 'Become a Coach', to: '/become-a-coach' },
-      { name: 'Coach Resources', to: '/coach-resources' },
-      { name: 'Coach Community', to: '/coach-community' },
-      { name: 'Earnings', to: '/earnings' }
-    ],
-    'Resources': [
-      { name: 'Chess Blog', to: '/blog' },
-      { name: 'Learning Center', to: '/learn' },
-      { name: 'Tournament Calendar', to: '/tournaments' },
-      { name: 'Chess Rules', to: '/rules' }
-    ]
+    // 'For Students': [
+    //   { name: 'Find a Coach', to: '/mentors' },
+    //   { name: 'Pricing', to: '/pricing' },
+    //   { name: 'Success Stories', to: '/testimonials' },
+    //   { name: 'Support', to: '/contact' }
+    // ],
+    // 'For Coaches': [
+    //   { name: 'Become a Coach', to: '/become-a-coach' },
+    //   { name: 'Coach Resources', to: '/coach-resources' },
+    //   { name: 'Coach Community', to: '/coach-community' },
+    //   { name: 'Earnings', to: '/earnings' }
+    // ],
+    // 'Resources': [
+    //   { name: 'Chess Blog', to: '/blog' },
+    //   { name: 'Learning Center', to: '/learn' },
+    //   { name: 'Tournament Calendar', to: '/tournaments' },
+    //   { name: 'Chess Rules', to: '/rules' }
+    // ]
   };
 
   // Social media links remain as anchor tags for external sites
@@ -43,6 +43,19 @@ function Footer() {
     { icon: Youtube, href: 'https://youtube.com', label: 'YouTube' },
     { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' }
   ];
+
+
+const ChessPawnIcon = ({ className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 448 512" 
+    className={className} 
+    fill="currentColor"
+  >
+    <path d="M320 96c0-53-43-96-96-96S128 43 128 96s43 96 96 96 96-43 96-96zM224 224c-79.5 0-144 64.5-144 144v32h288v-32c0-79.5-64.5-144-144-144zm-96 96c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16v32H128v-32zm192 64H128v64h192v-64z"/>
+  </svg>
+);
+
 
   return (
     <footer className="bg-gray-900 text-gray-200">
@@ -55,7 +68,7 @@ function Footer() {
             {/* Brand and Social Media Section */}
             <div className="lg:col-span-2">
               <div className="flex items-center space-x-2 mb-6">
-                <Crown className="h-8 w-8 text-yellow-400" />
+                <ChessPawnIcon className="h-8 w-8 text-yellow-400" />
                 <span className="text-2xl font-bold text-white">PawnRace</span>
               </div>
               

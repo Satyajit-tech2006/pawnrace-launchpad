@@ -51,7 +51,7 @@ function Home() {
           <Hero onLoginClick={handleLoginButtonClick} />
         </div>
         <Features />
-        <Testimonials />
+        {/* <Testimonials /> */}
         <Coaches />
         <FAQ/>
       </main>

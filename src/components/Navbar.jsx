@@ -1,48 +1,40 @@
 import React from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import Features from './Features';
-// --- SVG Icon for the Chess Pawn ---
-// To resolve the dependency issue, we'll use an inline SVG instead of an external library.
+import { NavLink } from 'react-router-dom';
+
 const ChessPawnIcon = ({ className }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 448 512" 
-    className={className} 
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 448 512"
+    className={className}
     fill="currentColor"
   >
-    <path d="M320 96c0-53-43-96-96-96S128 43 128 96s43 96 96 96 96-43 96-96zM224 224c-79.5 0-144 64.5-144 144v32h288v-32c0-79.5-64.5-144-144-144zm-96 96c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16v32H128v-32zm192 64H128v64h192v-64z"/>
+    <path d="M320 96c0-53-43-96-96-96S128 43 128 96s43 96 96 96 96-43 96-96zM224 224c-79.5 0-144 64.5-144 144v32h288v-32c0-79.5-64.5-144-144-144zm-96 96c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16v32H128v-32zm192 64H128v64h192v-64z" />
   </svg>
 );
 
-// --- Enhanced Navbar Component ---
-// We define Navbar before App to ensure it's available when App is declared.
 const Navbar = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [hasScrolled, setHasScrolled] = React.useState(false);
 
-  // Effect to handle navbar background change on scroll
   React.useEffect(() => {
     const handleScroll = () => {
       setHasScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
-    // Cleanup function to remove the event listener
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
-  // Navigation links data
   const navLinks = [
     { title: 'Home', href: '/' },
     { title: 'Coaches', href: '/Coaches' },
-    { title: 'Pricing', href: '/pricing' },
-    { title: 'Contact', href: '/contact' },
+    // { title: 'Pricing', href: '/pricing' },
+    { title: 'Contact', href: '/contacts' },
   ];
 
-  // Animation variants for the mobile menu
   const menuVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.07, duration: 0.3 } },
@@ -55,8 +47,10 @@ const Navbar = () => {
   };
 
   return (
-    <motion.nav 
-      className={`fixed w-full top-0 left-0 z-50 transition-all duration-300 ${hasScrolled ? 'bg-gray-900/80 backdrop-blur-sm shadow-xl' : 'bg-transparent'}`}
+    <motion.nav
+      className={`fixed w-full top-0 left-0 z-50 transition-all duration-300 ${
+        hasScrolled ? 'bg-gray-900/80 backdrop-blur-sm shadow-xl' : 'bg-transparent'
+      }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -65,19 +59,18 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <a href="#" className="flex items-center space-x-3 cursor-pointer">
-            {/* Glow animation is now handled by framer-motion to avoid issues with build tools */}
             <motion.div
               animate={{
                 filter: [
-                  "drop-shadow(0 0 2px #fbbd23) drop-shadow(0 0 5px #fbbd23)",
-                  "drop-shadow(0 0 5px #fbbd23) drop-shadow(0 0 15px #fbbd23)",
-                  "drop-shadow(0 0 2px #fbbd23) drop-shadow(0 0 5px #fbbd23)",
-                ]
+                  'drop-shadow(0 0 2px #fbbd23) drop-shadow(0 0 5px #fbbd23)',
+                  'drop-shadow(0 0 5px #fbbd23) drop-shadow(0 0 15px #fbbd23)',
+                  'drop-shadow(0 0 2px #fbbd23) drop-shadow(0 0 5px #fbbd23)',
+                ],
               }}
               transition={{
                 duration: 2,
                 repeat: Infinity,
-                ease: "easeInOut"
+                ease: 'easeInOut',
               }}
             >
               <ChessPawnIcon className="h-10 w-10 text-amber-400" />
@@ -89,16 +82,21 @@ const Navbar = () => {
           </a>
 
           {/* Desktop Links */}
-         <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded-xl shadow-lg">
             {navLinks.map((link) => (
-              <Link
+              <NavLink
                 key={link.href}
-                to={link.href} // Use 'to' instead of 'href'
-                className="text-amber-400 hover:text-white transition-colors duration-300 font-medium relative group"
+                to={link.href}
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                    isActive
+                      ? 'bg-amber-400 text-gray-900 shadow-md'
+                      : 'text-amber-400 hover:bg-amber-400/20 hover:text-white'
+                  }`
+                }
               >
                 {link.title}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
-              </Link>
+              </NavLink>
             ))}
           </div>
 
@@ -137,16 +135,25 @@ const Navbar = () => {
           >
             <div className="px-6 pt-2 pb-6 space-y-3">
               {navLinks.map((link) => (
-               <Link
+                <NavLink
                   key={link.href}
                   to={link.href}
                   onClick={() => setIsOpen(false)}
-                  className="block text-amber-400 hover:text-white transition-colors duration-300 py-2 text-lg"
+                  className={({ isActive }) =>
+                    `block px-4 py-3 rounded-lg text-lg transition-colors duration-300 ${
+                      isActive
+                        ? 'bg-amber-400 text-gray-900'
+                        : 'text-amber-400 hover:bg-amber-400/20 hover:text-white'
+                    }`
+                  }
                 >
                   {link.title}
-                </Link>
+                </NavLink>
               ))}
-              <motion.div variants={linkVariants} className="border-t border-gray-700 pt-4 space-y-3">
+              <motion.div
+                variants={linkVariants}
+                className="border-t border-gray-700 pt-4 space-y-3"
+              >
                 <button className="w-full px-4 py-3 text-amber-400 border border-amber-400 rounded-lg hover:bg-amber-400 hover:text-gray-900 transition-all duration-300 font-semibold">
                   Login
                 </button>
