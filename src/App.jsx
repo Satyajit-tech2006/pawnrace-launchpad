@@ -1,7 +1,7 @@
 // Main Application Component for PawnRace Chess Academy
 // This component sets up routing, authentication, and global providers
 
-import { useEffect } from 'react';
+import React, { useState, useEffect } from "react"; // Make sure useState is imported
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,9 +27,12 @@ import CoachDashboard from "./pages/dashboard/CoachDashboard";
 import CoachSchedule from "./pages/dashboard/CoachSchedule";
 import CoachStudents from "./pages/dashboard/CoachStudents";
 import NotFound from "./pages/NotFound";
+import AutoPopup from "./components/AutoPopup"; // Your pro popup component
+import Features from "./components/Features";
+import Pricing from "./pages/PricingPage"
+import CoachesPage from "./components/Coaches";
 
 // Set up React Query with reasonable defaults
-// This handles data fetching, caching, and synchronization
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -46,36 +49,44 @@ function SEOWrapper({ children }) {
   useEffect(() => {
     // Define page titles for better SEO
     const pageTitles = {
-      '/': 'PawnRace - Professional Chess Academy | Learn Chess Online',
-      '/about': 'About Us - PawnRace Chess Academy',
-      '/how-it-works': 'How It Works - PawnRace Chess Academy',
-      '/why-us': 'Why Choose Us - PawnRace Chess Academy',
-      '/mentors': 'Our Chess Mentors - PawnRace Academy',
-      '/faq': 'Frequently Asked Questions - PawnRace',
-      '/pricing': 'Pricing Plans - PawnRace Chess Academy',
-      '/student-dashboard': 'Student Dashboard - PawnRace',
-      '/coach-dashboard': 'Coach Dashboard - PawnRace',
+      "/": "PawnRace - Professional Chess Academy | Learn Chess Online",
+      "/about": "About Us - PawnRace Chess Academy",
+      "/how-it-works": "How It Works - PawnRace Chess Academy",
+      "/why-us": "Why Choose Us - PawnRace Chess Academy",
+      "/mentors": "Our Chess Mentors - PawnRace Academy",
+      "/faq": "Frequently Asked Questions - PawnRace",
+      "/pricing": "Pricing Plans - PawnRace Chess Academy",
+      "/student-dashboard": "Student Dashboard - PawnRace",
+      "/coach-dashboard": "Coach Dashboard - PawnRace",
     };
 
     // Update the page title based on current route
-    const currentTitle = pageTitles[location.pathname] || 'PawnRace - Chess Academy';
+    const currentTitle =
+      pageTitles[location.pathname] || "PawnRace - Chess Academy";
     document.title = currentTitle;
 
     // Update meta description for better SEO
     const metaDescription = document.querySelector('meta[name="description"]');
     const pageDescriptions = {
-      '/': 'Join PawnRace, the premier online chess academy. Learn from expert coaches, improve your game, and master chess strategy with personalized lessons.',
-      '/about': 'Learn about PawnRace Chess Academy - our mission, vision, and commitment to chess education excellence.',
-      '/how-it-works': 'Discover how PawnRace works - from booking lessons to tracking progress with our expert chess coaches.',
-      '/why-us': 'Why choose PawnRace? Expert coaches, personalized learning, flexible scheduling, and proven results.',
-      '/mentors': 'Meet our world-class chess mentors and coaches at PawnRace - grandmasters and international masters ready to help you improve.',
-      '/pricing': 'Affordable chess lessons with flexible pricing plans. Find the perfect package for your chess learning journey.',
+      "/": "Join PawnRace, the premier online chess academy. Learn from expert coaches, improve your game, and master chess strategy with personalized lessons.",
+      "/about":
+        "Learn about PawnRace Chess Academy - our mission, vision, and commitment to chess education excellence.",
+      "/how-it-works":
+        "Discover how PawnRace works - from booking lessons to tracking progress with our expert chess coaches.",
+      "/why-us":
+        "Why choose PawnRace? Expert coaches, personalized learning, flexible scheduling, and proven results.",
+      "/mentors":
+        "Meet our world-class chess mentors and coaches at PawnRace - grandmasters and international masters ready to help you improve.",
+      "/pricing":
+        "Affordable chess lessons with flexible pricing plans. Find the perfect package for your chess learning journey.",
     };
 
-    const currentDescription = pageDescriptions[location.pathname] || 'Professional chess academy with expert coaches and personalized learning.';
-    
+    const currentDescription =
+      pageDescriptions[location.pathname] ||
+      "Professional chess academy with expert coaches and personalized learning.";
+
     if (metaDescription) {
-      metaDescription.setAttribute('content', currentDescription);
+      metaDescription.setAttribute("content", currentDescription);
     }
   }, [location.pathname]);
 
@@ -84,40 +95,54 @@ function SEOWrapper({ children }) {
 
 // Main App Component
 function App() {
+  // ✅ FIX: Moved useState hook inside the App component
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  // This effect will run once when the App component mounts
   useEffect(() => {
-    // Add structured data for better SEO and search engine understanding
+    // Add structured data for better SEO
     const structuredData = {
       "@context": "https://schema.org",
       "@type": "EducationalOrganization",
-      "name": "PawnRace Chess Academy",
-      "description": "Professional online chess academy offering personalized lessons from expert coaches",
-      "url": "https://pawnrace.com",
-      "logo": "https://pawnrace.com/logo.png",
-      "contactPoint": {
+      name: "PawnRace Chess Academy",
+      description:
+        "Professional online chess academy offering personalized lessons from expert coaches",
+      url: "https://pawnrace.com",
+      logo: "https://pawnrace.com/logo.png",
+      contactPoint: {
         "@type": "ContactPoint",
-        "contactType": "customer service",
-        "availableLanguage": "English"
+        contactType: "customer service",
+        availableLanguage: "English",
       },
-      "offers": {
+      offers: {
         "@type": "Offer",
-        "name": "Chess Lessons",
-        "category": "Education"
-      }
+        name: "Chess Lessons",
+        category: "Education",
+      },
     };
 
-    // Create and inject the structured data script
-    const structuredDataScript = document.createElement('script');
-    structuredDataScript.type = 'application/ld+json';
+    const structuredDataScript = document.createElement("script");
+    structuredDataScript.type = "application/ld+json";
     structuredDataScript.text = JSON.stringify(structuredData);
     document.head.appendChild(structuredDataScript);
 
-    // Cleanup function to remove the script when component unmounts
+    // ✨ Automatically open the popup after 5 seconds for new users
+    const popupTimer = setTimeout(() => {
+      // You can add logic here to only show it once using localStorage
+      if (!sessionStorage.getItem("popupShown")) {
+        setIsPopupOpen(true);
+        sessionStorage.setItem("popupShown", "true");
+      }
+    }, 5000);
+
+    // Cleanup function
     return () => {
       if (document.head.contains(structuredDataScript)) {
         document.head.removeChild(structuredDataScript);
       }
+      clearTimeout(popupTimer); // Clear the timer if the component unmounts
     };
-  }, []);
+  }, []); // Empty dependency array means this runs only once
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -128,7 +153,7 @@ function App() {
           <BrowserRouter>
             <SEOWrapper>
               <Routes>
-                {/* Public Routes - accessible to everyone */}
+                {/* Public Routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
@@ -137,70 +162,116 @@ function App() {
                 <Route path="/faq" element={<FAQPage />} />
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/tournaments" element={<TournamentsPage />} />
-                
-                {/* Student Dashboard Routes - only accessible to students */}
-                <Route path="/student-dashboard" element={
-                  <ProtectedRoute requiredRole="student">
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }>
+                <Route path="/features" element={<Features />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/Coaches" element={<CoachesPage/>}/>
+                {/* Student Dashboard Routes */}
+                <Route
+                  path="/student-dashboard"
+                  element={
+                    <ProtectedRoute requiredRole="student">
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
                   <Route index element={<StudentDashboard />} />
                   <Route path="schedule" element={<StudentSchedule />} />
-                  <Route path="coach" element={
-                    <div className="p-6">
-                      <h1 className="text-2xl font-bold">My Coach</h1>
-                      <p className="text-muted-foreground">Connect with your assigned chess coach.</p>
-                    </div>
-                  } />
+                  <Route
+                    path="coach"
+                    element={
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold">My Coach</h1>
+                        <p className="text-muted-foreground">
+                          Connect with your assigned chess coach.
+                        </p>
+                      </div>
+                    }
+                  />
                   <Route path="assignments" element={<StudentAssignments />} />
-                  <Route path="progress" element={
-                    <div className="p-6">
-                      <h1 className="text-2xl font-bold">My Progress</h1>
-                      <p className="text-muted-foreground">Track your chess improvement and statistics.</p>
-                    </div>
-                  } />
-                  <Route path="settings" element={
-                    <div className="p-6">
-                      <h1 className="text-2xl font-bold">Settings</h1>
-                      <p className="text-muted-foreground">Manage your account preferences.</p>
-                    </div>
-                  } />
+                  <Route
+                    path="progress"
+                    element={
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold">My Progress</h1>
+                        <p className="text-muted-foreground">
+                          Track your chess improvement and statistics.
+                        </p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="settings"
+                    element={
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold">Settings</h1>
+                        <p className="text-muted-foreground">
+                          Manage your account preferences.
+                        </p>
+                      </div>
+                    }
+                  />
                 </Route>
-                
-                {/* Coach Dashboard Routes - only accessible to coaches */}
-                <Route path="/coach-dashboard" element={
-                  <ProtectedRoute requiredRole="coach">
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }>
+
+                {/* Coach Dashboard Routes */}
+                <Route
+                  path="/coach-dashboard"
+                  element={
+                    <ProtectedRoute requiredRole="coach">
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
                   <Route index element={<CoachDashboard />} />
                   <Route path="schedule" element={<CoachSchedule />} />
                   <Route path="students" element={<CoachStudents />} />
-                  <Route path="assignments" element={
-                    <div className="p-6">
-                      <h1 className="text-2xl font-bold">Assignment Management</h1>
-                      <p className="text-muted-foreground">Create and manage student assignments.</p>
-                    </div>
-                  } />
-                  <Route path="analytics" element={
-                    <div className="p-6">
-                      <h1 className="text-2xl font-bold">Analytics</h1>
-                      <p className="text-muted-foreground">View detailed performance analytics.</p>
-                    </div>
-                  } />
-                  <Route path="profile" element={
-                    <div className="p-6">
-                      <h1 className="text-2xl font-bold">Profile</h1>
-                      <p className="text-muted-foreground">Manage your coaching profile.</p>
-                    </div>
-                  } />
+                  <Route
+                    path="assignments"
+                    element={
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold">
+                          Assignment Management
+                        </h1>
+                        <p className="text-muted-foreground">
+                          Create and manage student assignments.
+                        </p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold">Analytics</h1>
+                        <p className="text-muted-foreground">
+                          View detailed performance analytics.
+                        </p>
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="profile"
+                    element={
+                      <div className="p-6">
+                        <h1 className="text-2xl font-bold">Profile</h1>
+                        <p className="text-muted-foreground">
+                          Manage your coaching profile.
+                        </p>
+                      </div>
+                    }
+                  />
                 </Route>
-                
-                {/* Catch-all route for 404 pages - MUST be last */}
+
+                {/* Catch-all 404 Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </SEOWrapper>
           </BrowserRouter>
+
+          {/* ✨ Render the AutoPopup component here, outside the router */}
+          <AutoPopup
+            isOpen={isPopupOpen}
+            onClose={() => setIsPopupOpen(false)}
+          />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

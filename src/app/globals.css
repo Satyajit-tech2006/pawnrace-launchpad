@@ -1,0 +1,9 @@
+/* In your global CSS file (e.g., globals.css) */
+@keyframes aurora {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}

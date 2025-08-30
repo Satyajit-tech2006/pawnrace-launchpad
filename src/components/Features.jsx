@@ -13,6 +13,7 @@ import {
   Zap 
 } from 'lucide-react';
 
+import Navbar from './Navbar';
 function Features() {
   // Define all platform features with icons and descriptions
   const platformFeatures = [
@@ -59,6 +60,8 @@ function Features() {
   ];
 
   return (
+    <>
+    <Navbar/>
     <section id="features" className="py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         
@@ -110,6 +113,7 @@ function Features() {
         </div>
       </div>
     </section>
+    </>
   );
 }
 
