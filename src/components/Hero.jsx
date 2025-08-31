@@ -78,13 +78,13 @@ function Hero({ onLoginClick }) {
             {/* Hero Content */}
             <div className="text-center lg:text-left mt-12">
               <div className="fade-in-up mt-8 lg:mt-0">
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight mb-6">
-                  Master Chess with{" "}
+                <h4 className="text-xl sm:text-5xl lg:text-6xl xl:text-4xl font-bold leading-tight mb-6">
+                  Train with FIDE-rated Masters & World-Class Mentors –  {" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500">
-                    World-Class
+                    AI-analyzed, GM-structured
                   </span>{" "}
-                  Mentors
-                </h1>
+                  syllabus to take you from beginner to chess mastery!
+                </h4>
 
                 <div className="space-y-4 mb-8">
                   <p className="text-xl lg:text-2xl text-amber-100/80 max-w-2xl mx-auto lg:mx-0">

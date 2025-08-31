@@ -8,10 +8,7 @@ import {
 
 const FAQ: React.FC = () => {
   const faqs = [
-    {
-      question: "How do I get started with PawnRace?",
-      answer: "Getting started is simple! Create your account, complete a quick chess assessment to determine your skill level, browse our FIDE-rated coaches, and book your first lesson. You can start with a free trial session to ensure the perfect coach match."
-    },
+    
     {
       question: "Are all coaches really FIDE-rated?",
       answer: "Yes, absolutely! Every coach on our platform is verified FIDE-rated with official tournament experience. We conduct thorough background checks and require proof of ratings and teaching credentials before approving any instructor."
@@ -26,7 +23,7 @@ const FAQ: React.FC = () => {
     },
     {
       question: "How much do lessons cost?",
-      answer: "Our pricing varies based on the coach's rating and experience level. Plans start from $29/session for beginner-focused coaches and go up to $99/session for International Masters and Grandmasters. We also offer package deals and monthly subscriptions for better value."
+      answer: "Our pricing varies based on the coach's rating and experience level. Plans start from $5/session for beginner-focused coaches and go up to $50/session for International Masters and Grandmasters. We also offer package deals and monthly subscriptions for better value."
     },
     {
       question: "Can I switch coaches if needed?",
@@ -44,17 +41,14 @@ const FAQ: React.FC = () => {
       question: "Is there a mobile app available?",
       answer: "We're currently web-based and fully mobile-responsive, so you can access everything from your phone or tablet browser. A dedicated mobile app is coming soon with additional features like offline puzzle solving and push notifications."
     },
-    {
-      question: "What's your refund policy?",
-      answer: "We offer a satisfaction guarantee! If you're not happy with your first lesson, we'll provide a full refund or help you find a better coach match. For ongoing lessons, we have a flexible cancellation policy with 24-hour notice required."
-    },
+    
     {
       question: "Can coaches help with tournament preparation?",
       answer: "Absolutely! Many of our coaches are active tournament players themselves. They can help with opening preparation, psychological aspects of competitive play, time management, and specific tournament strategies based on your playing style."
     },
     {
-      question: "Do you offer group lessons or just 1-on-1?",
-      answer: "While we specialize in personalized 1-on-1 instruction for maximum learning efficiency, some coaches do offer small group sessions (2-4 students) at discounted rates. Group sessions are great for friends or family members learning together."
+      question: "Do you offer group lessons or just 1-on-2 or 3?",
+      answer: "While we specialize in personalized 1-on-1 instruction for maximum learning efficiency, some coaches do offer small group sessions (2-5 students) at discounted rates. Group sessions are great for friends or family members learning together."
     }
   ];
 

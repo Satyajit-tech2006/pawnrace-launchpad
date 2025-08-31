@@ -29,8 +29,9 @@ import CoachStudents from "./pages/dashboard/CoachStudents";
 import NotFound from "./pages/NotFound";
 import AutoPopup from "./components/AutoPopup"; // Your pro popup component
 import Features from "./components/Features";
-import Pricing from "./pages/PricingPage"
-import CoachesPage from "./components/Coaches";
+import Pricing from "./pages/PricingPage";
+import Coaches from "./components/Coaches";
+import Contacts from "./components/Contacts";
 
 // Set up React Query with reasonable defaults
 const queryClient = new QueryClient({
@@ -61,7 +62,7 @@ function SEOWrapper({ children }) {
     };
 
     // Update the page title based on current route
-    const currentTitle =
+    const currentTitle =          
       pageTitles[location.pathname] || "PawnRace - Chess Academy";
     document.title = currentTitle;
 
@@ -133,7 +134,13 @@ function App() {
         setIsPopupOpen(true);
         sessionStorage.setItem("popupShown", "true");
       }
-    }, 5000);
+    }, 3000);
+
+
+
+
+  
+
 
     // Cleanup function
     return () => {
@@ -163,16 +170,27 @@ function App() {
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/tournaments" element={<TournamentsPage />} />
                 <Route path="/features" element={<Features />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/Coaches" element={<CoachesPage/>}/>
+                {/* <Route path="/pricing" element={<Pricing />} /> */}
+                <Route path="/coaches" element={<Coaches />} />
+                <Route path="/contacts" element={<Contacts />} />
+
+
+
+
+// --- Main App Component ---
+// This component now controls which page is visible.
+);
+ 
+
+
                 {/* Student Dashboard Routes */}
                 <Route
                   path="/student-dashboard"
-                  element={
-                    <ProtectedRoute requiredRole="student">
-                      <DashboardLayout />
-                    </ProtectedRoute>
-                  }
+                  // element={
+                  // //  <ProtectedRoute requiredRole="student">
+                  //     <DashboardLayout />
+                  //   // </ProtectedRoute> 
+                  // }
                 >
                   <Route index element={<StudentDashboard />} />
                   <Route path="schedule" element={<StudentSchedule />} />
@@ -215,11 +233,11 @@ function App() {
                 {/* Coach Dashboard Routes */}
                 <Route
                   path="/coach-dashboard"
-                  element={
-                    <ProtectedRoute requiredRole="coach">
-                      <DashboardLayout />
-                    </ProtectedRoute>
-                  }
+                  // element={
+                  //   <ProtectedRoute requiredRole="coach">
+                  //     <DashboardLayout />
+                  //   </ProtectedRoute>
+                  // }
                 >
                   <Route index element={<CoachDashboard />} />
                   <Route path="schedule" element={<CoachSchedule />} />

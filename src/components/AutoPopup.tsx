@@ -296,7 +296,7 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                           id="popup-phone"
-                          type="tel"
+                          type="number"
                           placeholder="98765 43210"
                           className="pl-10 bg-white"
                           value={formData.phone}
@@ -383,3 +383,5 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
 };
 
 export default AutoPopup;
+
+ 
