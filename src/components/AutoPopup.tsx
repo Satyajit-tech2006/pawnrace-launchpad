@@ -259,38 +259,90 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                           <SelectValue placeholder="Code" />
                         </SelectTrigger>
                         {/* ✅ FIX: Added z-[100] to ensure the dropdown appears on top of the popup */}
-                        <SelectContent className="bg-slate-900  text-slate-50 border-slate-700">
-                          <SelectItem value="+91">
-                            <div className="flex items-center gap-2">
-                              <span>🇮🇳</span>
-                              <span>IN +91</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="+1">
-                            <div className="flex items-center gap-2">
-                              <span>🇺🇸</span>
-                              <span>US +1</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="+1-ca">
-                            <div className="flex items-center gap-2">
-                              <span>🇨🇦</span>
-                              <span>CA +1</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="+44">
-                            <div className="flex items-center gap-2">
-                              <span>🇬🇧</span>
-                              <span>UK +44</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="+61">
-                            <div className="flex items-center gap-2">
-                              <span>🇦🇺</span>
-                              <span>AU +61</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
+                        <div className="bg-black ">
+                          {" "}
+                          <SelectContent className="bg-slate-900  text-slate-50 border-slate-700">
+                            <SelectItem
+                              value="+91"
+                              className=" bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇮🇳</span>
+                                <span>IN +91</span>
+                              </div>
+                            </SelectItem>
+
+                            <SelectItem
+                              value="+44"
+                              className="bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇬🇧</span>
+                                <span>UK +44</span>
+                              </div>
+                            </SelectItem>
+
+                            <SelectItem
+                              value="+1"
+                              className="bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇺🇸</span>
+                                <span>US +1</span>
+                              </div>
+                            </SelectItem>
+
+                            <SelectItem
+                              value="+1"
+                              className="bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇨🇦</span>
+                                <span>Canada +1</span>
+                              </div>
+                            </SelectItem>
+
+                            <SelectItem
+                              value="+86"
+                              className="bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇨🇳</span>
+                                <span>China +86</span>
+                              </div>
+                            </SelectItem>
+
+                            <SelectItem
+                              value="+977"
+                              className="bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇳🇵</span>
+                                <span>Nepal +977</span>
+                              </div>
+                            </SelectItem>
+
+                            <SelectItem
+                              value="+880"
+                              className="bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇧🇩</span>
+                                <span>Bangladesh +880</span>
+                              </div>
+                            </SelectItem>
+
+                            <SelectItem
+                              value="+852"
+                              className="bg-black text-white"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span>🇭🇰</span>
+                                <span>Hong Kong +852</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </div>
                       </Select>
                       <div className="relative flex-grow">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -349,7 +401,6 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                         {/* ✅ FIX: Added z-[100] here as well for consistency */}
                         <SelectContent className="">
                           <SelectItem value="student">🎯 Student</SelectItem>
-                        
                         </SelectContent>
                       </Select>
                     </motion.div>
@@ -383,5 +434,3 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
 };
 
 export default AutoPopup;
-
- 
