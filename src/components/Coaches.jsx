@@ -196,7 +196,7 @@ export default function Coaches() {
                 image={coach.image}
                 alt={coach.name}
                 sx={{
-                  height: { xs: 180, sm: 220, md: 300, lg: 360 }, // more height in desktop
+                  height: { xs: 280, sm: 220, md: 300, lg: 360 }, // more height in desktop
                   objectFit: "cover",
                   borderRadius: "15px",
                   border: "3px solid #3b82f6",
