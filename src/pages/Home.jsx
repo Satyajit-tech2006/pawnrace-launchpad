@@ -1,71 +1,43 @@
-// Home Page Component for PawnRace Chess Academy
-// Main landing page with hero, features, testimonials, and auto-popup
-
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import Testimonials from "@/components/Testimonials";
+import Coaches from "@/components/Coaches";
+import Contacts from "@/components/Contacts";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
-import AutoPopup from "@/components/AutoPopup";
-import Coaches from "@/components/Coaches";
-import FAQ from '@/components/FAQ';
 
-function Home() {
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+export default function Home() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Show welcome popup after 5 seconds for user engagement
-  useEffect(() => {
-    const popupTimer = setTimeout(() => {
-      setShowWelcomePopup(true);
-    }, 5000);
+  // Yeh function modal ko open karega
+  const handleLoginClick = () => {
+    setIsAuthModalOpen(true);
+  };
 
-    return () => clearTimeout(popupTimer);
-  }, []);
-
-  // Handle login/signup button clicks
-  function handleLoginButtonClick() {
-    setShowAuthModal(true);
-  }
-
-  // Handle auth modal close
-  function handleAuthModalClose() {
-    setShowAuthModal(false);
-  }
-
-  // Handle welcome popup close
-  function handleWelcomePopupClose() {
-    setShowWelcomePopup(false);
-  }
+  // Yeh function modal ko close karega
+  const handleCloseModal = () => {
+    setIsAuthModalOpen(false);
+  };
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation Bar */}
-      <Navbar onLoginClick={handleLoginButtonClick} />
+    <div className="flex flex-col min-h-screen bg-gray-900 text-white">
+      {/* Hum yahan se handleLoginClick function ko Navbar mein bhej rahe hain */}
+      <Navbar onLoginClick={handleLoginClick} />
 
-      {/* Main Page Content */}
-      <main>
-        <div className="mt-12">
-          <Hero onLoginClick={handleLoginButtonClick} />
-        </div>
+      <main className="flex-grow">
+        <Hero onLoginClick={handleLoginClick} />
         <Features />
         {/* <Testimonials /> */}
         <Coaches />
-        <FAQ/>
+        {/* <Contacts /> */}
       </main>
 
-      {/* Footer */}
       <Footer />
 
-      {/* Authentication Modal */}
-      <AuthModal isOpen={showAuthModal} onClose={handleAuthModalClose} />
-
-      {/* Welcome Popup - shows after 5 seconds */}
-      {showWelcomePopup && <AutoPopup onClose={handleWelcomePopupClose} />}
+      {/* AuthModal ko yahan se control kar rahe hain */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={handleCloseModal} />
     </div>
   );
 }
-
-export default Home;
