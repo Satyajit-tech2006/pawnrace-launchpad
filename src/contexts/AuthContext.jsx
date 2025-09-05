@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import apiClient, { setAccessToken } from "../lib/api.js";
+import { ENDPOINTS } from "../lib/endpoints.js";
 
 const AuthContext = createContext(undefined);
 
@@ -11,80 +13,97 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      try {
-        setCurrentUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("user");
-      }
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const response = await apiClient.post(ENDPOINTS.USERS.REFRESH_TOKEN);
+      const { user: refreshedUser, accessToken } = response.data.data;
+      setUser(refreshedUser);
+      setAccessToken(accessToken);
+      console.log("Session restored successfully.");
+    } catch (error) {
+      console.log("No active session found.");
+      setUser(null);
+      setAccessToken('');
+    } finally {
+      setLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
-  // ✅ Login with backend
-  async function loginUser(email, password) {
-    setIsLoading(true);
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  const login = async (email, password) => {
+    setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!res.ok) throw new Error("Invalid email or password");
-      const data = await res.json();
-
-      setCurrentUser(data);
-      localStorage.setItem("user", JSON.stringify(data));
-      localStorage.setItem("token", data.token);
+      // Your backend returns the user and accessToken inside a 'data' object
+      const response = await apiClient.post(ENDPOINTS.USERS.LOGIN, { email, password });
+      const { user: loggedInUser, accessToken } = response.data.data;
+      
+      setUser(loggedInUser);
+      setAccessToken(accessToken); // This stores the token in memory for our apiClient
+      
+      return loggedInUser; // Return the user object so the UI can redirect based on role
+    } catch (error) {
+      console.error("Login failed:", error.response?.data?.message || error.message);
+      throw new Error(error.response?.data?.message || "Invalid credentials");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }
+  };
 
-  // ✅ Register with backend
-  async function registerUser(name, email, password, role) {
-    setIsLoading(true);
+  // Updated register function to match all fields from your backend controller
+  const register = async (username, fullname, email, password, role, countryCode, number) => {
+    setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+      // Your backend expects all these fields for registration
+      const response = await apiClient.post(ENDPOINTS.USERS.REGISTER, { 
+        username, 
+        fullname, 
+        email, 
+        password, 
+        role,
+        countryCode,
+        number
       });
-
-      if (!res.ok) throw new Error("Registration failed");
-      const data = await res.json();
-
-      setCurrentUser(data);
-      localStorage.setItem("user", JSON.stringify(data));
-      localStorage.setItem("token", data.token);
+      // Per your backend code, registration returns a success message but does not log the user in.
+      // We return the response so the UI can show "Registration successful, please log in."
+      return response.data;
+    } catch (error) {
+      console.error("Registration failed:", error.response?.data?.message || error.message);
+      throw new Error(error.response?.data?.message || "Registration failed");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }
+  };
 
-  function logoutUser() {
-    setCurrentUser(null);
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-  }
+  const logout = async () => {
+    try {
+      await apiClient.post(ENDPOINTS.USERS.LOGOUT);
+    } catch (error) {
+      console.error("Server logout failed, clearing client session anyway:", error);
+    } finally {
+      setUser(null);
+      setAccessToken('');
+    }
+  };
+
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    loading,
+    login,
+    register,
+    logout,
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user: currentUser,
-        login: loginUser,
-        register: registerUser,
-        logout: logoutUser,
-        loading: isLoading,
-      }}
-    >
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
+
