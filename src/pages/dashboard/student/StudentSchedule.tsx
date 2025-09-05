@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import DashboardNavbar from "../../components/Dashbordnavbar";
+import DashboardNavbar from "../../../components/Dashbordnavbar";
+
 
 const StudentSchedule: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(
