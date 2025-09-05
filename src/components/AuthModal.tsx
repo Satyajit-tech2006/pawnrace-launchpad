@@ -1,59 +1,34 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Eye,
-  EyeOff,
-  User,
-  Mail,
-  Lock,
-  Crown,
-  GraduationCap,
-} from "lucide-react";
-import { useAuth, UserRole } from "@/contexts/AuthContext";
+import { X, Eye, EyeOff, User, Mail, Lock, Crown, GraduationCap } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-
-
-
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  mode: "login" | "signup";
-  onSwitchMode: (mode: "login" | "signup") => void;
-}
 
 const ChessPawnIcon = ({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className={className} fill="currentColor">
     <path d="M320 96c0-53-43-96-96-96S128 43 128 96s43 96 96 96 96-43 96-96zM224 224c-79.5 0-144 64.5-144 144v32h288v-32c0-79.5-64.5-144-144-144zm-96 96c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16v32H128v-32zm192 64H128v64h192v-64z" />
   </svg>
 );
-const AuthModal: React.FC<AuthModalProps> = ({
-  isOpen,
-  onClose,
-  mode,
-  onSwitchMode,
-}) => {
+
+const AuthModal = ({ isOpen, onClose, mode, onSwitchMode }) => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     name: "",
-    role: "student" as UserRole,
+    role: "student",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, signup } = useAuth();
+  const { login, register } = useAuth();
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: string
-  ) => {
+  const handleInputChange = (e, field) => {
     setFormData({ ...formData, [field]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -62,21 +37,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
         await login(formData.email, formData.password);
         toast.success("Welcome back! Login successful.");
       } else {
-        await signup(
-          formData.email,
-          formData.password,
-          formData.name,
-          formData.role
-        );
+        await register(formData.name, formData.email, formData.password, formData.role);
         toast.success("Account created successfully! Welcome to PawnRace.");
       }
 
       onClose();
       setFormData({ email: "", password: "", name: "", role: "student" });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Authentication failed"
-      );
+      toast.error(error instanceof Error ? error.message : "Authentication failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -223,9 +191,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, role: "student" })
-                        }
+                        onClick={() => setFormData({ ...formData, role: "student" })}
                         className={`p-4 rounded-xl border transition-all flex flex-col items-center ${
                           formData.role === "student"
                             ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 shadow-[0_0_10px_rgba(255,215,0,0.5)]"
@@ -237,9 +203,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, role: "coach" })
-                        }
+                        onClick={() => setFormData({ ...formData, role: "coach" })}
                         className={`p-4 rounded-xl border transition-all flex flex-col items-center ${
                           formData.role === "coach"
                             ? "border-yellow-400 bg-yellow-400/10 text-yellow-400 shadow-[0_0_10px_rgba(255,215,0,0.5)]"
@@ -272,13 +236,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
               {/* Switch Mode */}
               <div className="text-center pt-4 border-t border-gray-800">
                 <p className="text-gray-400">
-                  {mode === "login"
-                    ? "Don't have an account?"
-                    : "Already have an account?"}
+                  {mode === "login" ? "Don't have an account?" : "Already have an account?"}
                   <button
-                    onClick={() =>
-                      onSwitchMode(mode === "login" ? "signup" : "login")
-                    }
+                    onClick={() => onSwitchMode(mode === "login" ? "signup" : "login")}
                     className="ml-2 text-yellow-400 hover:underline font-medium"
                   >
                     {mode === "login" ? "Sign up" : "Sign in"}

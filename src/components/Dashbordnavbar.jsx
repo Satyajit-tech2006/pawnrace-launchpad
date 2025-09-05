@@ -1,6 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
+// Assuming useAuth and session are correctly imported/managed
+// import { useAuth } from "@/contexts/AuthContext";
 
 const ChessPawnIcon = ({ className }) => (
   <svg
@@ -14,31 +16,27 @@ const ChessPawnIcon = ({ className }) => (
 );
 
 const DashboardNavbar = () => {
-  const [hasScrolled, setHasScrolled] = React.useState(false);
+  // ❌ REMOVED: 'hasScrolled' state is no longer needed
+  // const [hasScrolled, setHasScrolled] = React.useState(false);
+  
+  // Dummy user for example
+  const user = { name: "Alex" };
+  // Dummy session for example
+  const session = { destroy: () => console.log("Logout") };
 
-  React.useEffect(() => {
-    const handleScroll = () => {
-      setHasScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
+  // ❌ REMOVED: useEffect for scroll handling is no longer needed
+  // React.useEffect(() => { ... });
 
   return (
     <motion.nav
-      className={`fixed w-full top-0 left-0 z-50 transition-all duration-300 ${
-        hasScrolled
-          ? "bg-gray-900/80 backdrop-blur-sm shadow-xl"
-          : "bg-transparent"
-      }`}
+      // ✅ CHANGED: Replaced dynamic classes with a static 'bg-black' and a shadow
+      className="fixed w-full top-0 left-0 z-50 bg-black shadow-lg"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 bg-black">
-        <div className="flex justify-between items-center h-20">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 md:h-20">
           {/* Logo */}
           <a href="#" className="flex items-center space-x-3 cursor-pointer">
             <motion.div
@@ -55,54 +53,57 @@ const DashboardNavbar = () => {
                 ease: "easeInOut",
               }}
             >
-              <ChessPawnIcon className="h-10 w-10 text-amber-400" />
+              <ChessPawnIcon className="h-8 w-8 md:h-10 md:w-10 text-amber-400" />
             </motion.div>
             <div>
-              <span className="text-2xl font-bold text-amber-400">
-                PawnRace
-              </span>
-              <p className="text-xs font-medium text-amber-500 -mt-1">
+              <span className="text-xl md:text-2xl font-bold text-amber-400">PawnRace</span>
+              <p className="hidden sm:block text-xs font-medium text-amber-500 -mt-1">
                 Moves That Make Champions
               </p>
             </div>
           </a>
 
-          {/* Logout Button */}
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <div className="bg-red-600">
-            <NavLink
-              to="/"
-              className="flex items-center gap-2 px-6 py-2.5 
-                         bg-gradient-to-r from-red-600 to-red-700 
-                         text-white rounded-xl shadow-md 
-                         hover:from-red-700 hover:to-red-800 
-                         hover:shadow-red-500/40 hover:shadow-lg 
-                         transition-all duration-300 ease-in-out 
-                         font-bold"
+          {/* Right Section */}
+          <div className="flex items-center gap-4 md:gap-6">
+            <span className="text-white font-semibold text-base md:text-lg text-center md:text-left">
+              {user?.name ? `Hi, ${user.name}` : "Hi, Student"}
+            </span>
+
+            {/* Logout Button */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              {/* Logout Icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+              <NavLink
+                to="/"
+                className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5
+                           bg-gradient-to-r from-red-600 to-red-700
+                           text-white rounded-xl shadow-md
+                           hover:from-red-700 hover:to-red-800
+                           hover:shadow-red-500/40 hover:shadow-lg
+                           transition-all duration-300 ease-in-out
+                           font-bold text-sm md:text-base"
+                onClick={() => session.destroy()}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5m0 14h1a2 2 0 002-2v-3m0-4V7a2 2 0 00-2-2h-1"
-                />
-              </svg>
-              Logout
-            </NavLink>
-            </div>
-          </motion.div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1m0-10V5m0 14h1a2 2 0 002-2v-3m0-4V7a2 2 0 00-2-2h-1"
+                  />
+                </svg>
+                <span className="hidden sm:inline">Logout</span>
+              </NavLink>
+            </motion.div>
+          </div>
         </div>
       </div>
     </motion.nav>
