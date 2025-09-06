@@ -13,6 +13,7 @@ import {
   Database,
   MessageSquare,
   LucideIcon,
+  Brain,
 } from "lucide-react";
 
 // --- BACKGROUND ANIMATION COMPONENTS ---
@@ -94,15 +95,56 @@ const BackgroundAnimation = () => {
 
 // Menu Items
 const menuItems = [
-  { name: "Classes", icon: GraduationCap, color: "from-blue-500 to-indigo-600" },
-  { name: "Tournaments", icon: Trophy, color: "from-yellow-400 to-orange-500" },
-  { name: "Assignments", icon: ClipboardList, color: "from-pink-500 to-rose-500" },
-  { name: "Achievements", icon: Award, color: "from-purple-500 to-indigo-500" },
-  { name: "Test Results", icon: FileBarChart, color: "from-green-400 to-emerald-600" },
-  { name: "Contact Coach", icon: Phone, color: "from-cyan-400 to-blue-500" },
-  { name: "Settings", icon: Settings, color: "from-gray-400 to-gray-600" },
-  { name: "Database", icon: Database, color: "from-orange-400 to-red-500" },
-  { name: "Chats", icon: MessageSquare, color: "from-teal-400 to-green-500" },
+  {
+    name: "Classes",
+    icon: GraduationCap,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Tournaments",
+    icon: Trophy,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Assignments",
+    icon: ClipboardList,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Achievements",
+    icon: Award,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Test Results",
+    icon: FileBarChart,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Contact Coach",
+    icon: Phone,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Settings",
+    icon: Settings,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Database",
+    icon: Database,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Chats",
+    icon: MessageSquare,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "iqpuzzles",
+    icon: Brain,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
 ].map((item) => ({ ...item, path: item.name.toLowerCase().replace(" ", "-") }));
 
 // MenuCard Component

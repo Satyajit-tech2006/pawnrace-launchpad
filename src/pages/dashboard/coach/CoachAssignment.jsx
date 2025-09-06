@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 const CoachAssignment = () => {
   const [assignments, setAssignments] = useState([]);
   const [newAssignment, setNewAssignment] = useState("");
+  const [assignmentLink, setAssignmentLink] = useState("");
   const [remark, setRemark] = useState("");
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -40,8 +41,10 @@ const CoachAssignment = () => {
       await axios.post("http://localhost:5000/api/assignments", {
         topic: newAssignment,
         studentId: selectedStudent,
+        link: assignmentLink,
       });
       setNewAssignment("");
+      setAssignmentLink("");
       setSelectedStudent("");
       fetchAssignments();
     } catch (err) {
@@ -101,11 +104,20 @@ const CoachAssignment = () => {
         {/* Assignment Topic */}
         <input
           type="text"
-          className="w-full p-3 rounded-lg bg-black/40 border border-gray-500 text-white focus:ring-2 focus:ring-violet-500"
+          className="w-full p-3 rounded-lg bg-black/40 border border-gray-500 text-white mb-3 focus:ring-2 focus:ring-violet-500"
           placeholder="Enter assignment topic..."
           value={newAssignment}
           onChange={(e) => setNewAssignment(e.target.value)}
           required
+        />
+
+        {/* Assignment Link */}
+        <input
+          type="url"
+          className="w-full p-3 rounded-lg bg-black/40 border border-gray-500 text-white mb-3 focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter assignment link"
+          value={assignmentLink}
+          onChange={(e) => setAssignmentLink(e.target.value)}
         />
 
         <button
@@ -132,6 +144,18 @@ const CoachAssignment = () => {
             <p className="text-gray-300">
               🎓 Assigned to: {assignment.student?.name || "Unknown Student"}
             </p>
+
+            {/* ✅ Show Assignment Link */}
+            {assignment.link && (
+              <a
+                href={assignment.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 underline mt-2 inline-block"
+              >
+                🔗 Open Assignment
+              </a>
+            )}
 
             {/* Student Submission */}
             {assignment.submission ? (

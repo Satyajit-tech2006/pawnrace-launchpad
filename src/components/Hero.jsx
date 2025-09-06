@@ -129,7 +129,7 @@ function Hero({ onLoginClick }) {
                 <div className="grid grid-cols-3 gap-8 mt-12 pt-8 border-t border-amber-400/20">
                   <div className="text-center lg:text-left">
                     <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500">
-                      500+
+                      50+
                     </div>
                     <div className="text-sm text-amber-200/70">
                       FIDE Coaches
@@ -137,7 +137,7 @@ function Hero({ onLoginClick }) {
                   </div>
                   <div className="text-center lg:text-left">
                     <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500">
-                      10K+
+                      100+
                     </div>
                     <div className="text-sm text-amber-200/70">
                       Students Trained

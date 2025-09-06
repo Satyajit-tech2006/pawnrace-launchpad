@@ -10,7 +10,7 @@ function Footer() {
   // Organized footer navigation links using 'to' for react-router-dom
   const footerNavigationLinks = {
     'Company': [
-      { name: 'About Us', to: '/about' },
+      { name: 'About Us', to: '/aboutus' },
       // { name: 'Our Team', to: '/team' },
       // { name: 'Careers', to: '/careers' },
       // { name: 'Press', to: '/press' }
@@ -37,10 +37,8 @@ function Footer() {
 
   // Social media links remain as anchor tags for external sites
   const socialMediaLinks = [
-    { icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
-    { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
-    { icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
-    { icon: Youtube, href: 'https://youtube.com', label: 'YouTube' },
+    { icon: Facebook, href: 'https://www.facebook.com/share/1FqjqyDeNH/', label: 'Facebook' },
+    { icon: Instagram, href: 'https://www.instagram.com/pawnrace/', label: 'Instagram' },
     { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' }
   ];
 
