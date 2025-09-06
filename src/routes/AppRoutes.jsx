@@ -18,7 +18,7 @@ import Coaches from '../components/Coaches.jsx';
 // Import Dashboard & Route Guards
 import ProtectedRoute from './ProtectedRoute.jsx';
 // Corrected the file extension from .jsx to .tsx
-import DashboardLayout from '../components/dashboard/DashboardLayout.tsx';
+// import DashboardLayout from '../components/dashboard/DashboardLayout.tsx';
 
 // Coach Dashboard Pages
 import CoachDashboard from '../pages/dashboard/coach/CoachDashboard.tsx';
@@ -29,6 +29,7 @@ import CoachAssignment from '../pages/dashboard/coach/CoachAssignment.jsx';
 import CoachTournament from '../pages/dashboard/coach/CoachTournament.jsx';
 import CoachTestResults from '../pages/dashboard/coach/CoachTestResults.jsx';
 import CoachChat from '../pages/dashboard/coach/CoachChat.jsx';
+import MyStudents from '../pages/dashboard/coach/MyStudents.jsx';
 
 // Student Dashboard Pages
 import StudentDashboard from '../pages/dashboard/student/StudentDashboard.tsx';
@@ -58,11 +59,11 @@ const AppRoutes = () => {
       {/* Student Dashboard - Protected Routes */}
       <Route
         path="/student-dashboard"
-        element={
-          <ProtectedRoute requiredRole="student">
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
+        // element={
+        //   <ProtectedRoute requiredRole="student">
+        //     {/* <DashboardLayout /> */}
+        //               </ProtectedRoute>
+        // }
       >
         <Route index element={<StudentDashboard />} />
         <Route path="schedule" element={<StudentSchedule />} />
@@ -76,11 +77,11 @@ const AppRoutes = () => {
       {/* Coach Dashboard - Protected Routes */}
       <Route
         path="/coach-dashboard"
-        element={
-          <ProtectedRoute requiredRole="coach">
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
+        // element={
+        //   <ProtectedRoute requiredRole="coach">
+        //     {/* <DashboardLayout /> */}
+        //   </ProtectedRoute>
+        // }
       >
         <Route index element={<CoachDashboard />} />
         <Route path="schedule" element={<CoachSchedule />} />
@@ -90,6 +91,7 @@ const AppRoutes = () => {
         <Route path="tournaments" element={<CoachTournament />} />
         <Route path="test-results" element={<CoachTestResults />} />
         <Route path="chats" element={<CoachChat />} />
+        <Route path="my-students" element={<MyStudents />} />
       </Route>
 
       {/* Not Found Route */}
