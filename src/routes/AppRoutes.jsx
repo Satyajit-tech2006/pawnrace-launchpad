@@ -29,6 +29,7 @@ import CoachAssignment from '../pages/dashboard/coach/CoachAssignment.jsx';
 import CoachTournament from '../pages/dashboard/coach/CoachTournament.jsx';
 import CoachTestResults from '../pages/dashboard/coach/CoachTestResults.jsx';
 import CoachChat from '../pages/dashboard/coach/CoachChat.jsx';
+import MyStudents from '../pages/dashboard/coach/MyStudents.jsx';
 
 // Student Dashboard Pages
 import StudentDashboard from '../pages/dashboard/student/StudentDashboard.tsx';
@@ -90,6 +91,7 @@ const AppRoutes = () => {
         <Route path="tournaments" element={<CoachTournament />} />
         <Route path="test-results" element={<CoachTestResults />} />
         <Route path="chats" element={<CoachChat />} />
+        <Route path="my-students" element={<MyStudents />} />
       </Route>
 
       {/* Not Found Route */}
