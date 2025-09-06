@@ -18,7 +18,7 @@ import Coaches from '../components/Coaches.jsx';
 // Import Dashboard & Route Guards
 import ProtectedRoute from './ProtectedRoute.jsx';
 // Corrected the file extension from .jsx to .tsx
-import DashboardLayout from '../components/dashboard/DashboardLayout.tsx';
+// import DashboardLayout from '../components/dashboard/DashboardLayout.tsx';
 
 // Coach Dashboard Pages
 import CoachDashboard from '../pages/dashboard/coach/CoachDashboard.tsx';
@@ -58,11 +58,11 @@ const AppRoutes = () => {
       {/* Student Dashboard - Protected Routes */}
       <Route
         path="/student-dashboard"
-        element={
-          <ProtectedRoute requiredRole="student">
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
+        // element={
+        //   <ProtectedRoute requiredRole="student">
+        //     {/* <DashboardLayout /> */}
+        //               </ProtectedRoute>
+        // }
       >
         <Route index element={<StudentDashboard />} />
         <Route path="schedule" element={<StudentSchedule />} />
@@ -76,11 +76,11 @@ const AppRoutes = () => {
       {/* Coach Dashboard - Protected Routes */}
       <Route
         path="/coach-dashboard"
-        element={
-          <ProtectedRoute requiredRole="coach">
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
+        // element={
+        //   <ProtectedRoute requiredRole="coach">
+        //     {/* <DashboardLayout /> */}
+        //   </ProtectedRoute>
+        // }
       >
         <Route index element={<CoachDashboard />} />
         <Route path="schedule" element={<CoachSchedule />} />
