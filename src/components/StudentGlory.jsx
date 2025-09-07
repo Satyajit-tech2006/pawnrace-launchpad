@@ -104,7 +104,7 @@ const StudentGlory = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 1.3, duration: 0.7 }}
       >
-        <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-full text-lg font-semibold shadow-lg flex items-center gap-2 mx-auto">
+        <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-full text-lg font-semibold shadow-lg flex items-center gap-2 mx-auto" onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSd368-GnfJjgbQdIeAiU6ro68983N8OPo6upy5n0kDI9YClkA/viewform?usp=dialog", "_blank")}>
           <Users size={20} /> Join Pawn Race
         </button>
         <p className="text-yellow-200 mt-4">

@@ -191,7 +191,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-gray-300">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    {/* <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" /> */}
                     <Input
                       id="email"
                       type="email"
@@ -208,7 +208,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-gray-300">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    {/* <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" /> */}
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -223,7 +223,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400"
                     >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {/* {showPassword ? <EyeOff size={18} /> : <Eye size={18} />} */}
                     </button>
                   </div>
                 </div>

@@ -62,7 +62,7 @@ const OurVission = () => {
 
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="mt-8 inline-flex items-center gap-3 rounded-2xl px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 shadow-lg cursor-pointer transition duration-300"
+              className="mt-8 inline-flex items-center gap-3 rounded-2xl px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 shadow-lg cursor-pointer transition duration-300" onClick={() => window.open("https://chat.whatsapp.com/COooj4ewuA3BGsqTtyznYp?mode=ems_copy_t", "_blank") }
             >
               <LinkIcon className="w-5 h-5 text-black" />
               <span className="text-base font-bold text-black">Join the Movement</span>
@@ -183,6 +183,7 @@ const OurVission = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               className="mt-8 px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold rounded-xl shadow-lg"
+             onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSfteebL_sxkXyYVc-MjRQPWUttZG61DSbCUPi5YazHjxj2msg/viewform?usp=dialog", "_blank") }
             >
               Apply for Scholarship
             </motion.button>

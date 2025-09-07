@@ -23,12 +23,7 @@ const teamMembers = [
     img: "https://i.ibb.co/jPs8Wscs/IMG-20250907-223807893-AE-2.png",
     desc: "Strategic thinker driving product development and backend excellence with precision and vision.",
   },
-  {
-    name: "Dinesh Kumar Barik",
-    role: "Chief Marketing Officer (CMO)",
-    img: "https://i.ibb.co/8LkFwGV3/Whats-App-Image-2025-09-07-at-02-42-28-e2d64586.jpg",
-    desc: "The voice of PawnRace, crafting compelling outreach strategies connecting our mission with families globally.",
-  },
+  
   {
     name: "Dibyajyoti Biswal",
     role: "Chief Product Officer (CPO)",
@@ -46,6 +41,12 @@ const teamMembers = [
     role: "Video & Media Specialist",
     img: "https://i.ibb.co/PvcHjCyz/Whats-App-Image-2025-09-07-at-02-15-12-a2fc56ec.jpg",
     desc: "The creative lens behind our visual storytelling, bringing our academy to life through engaging video content.",
+  },
+  {
+    name: "Dinesh",
+    role: "Chief Marketing Officer (CMO)",
+    img: null,
+    desc: "The voice of PawnRace, crafting compelling outreach strategies connecting our mission with families globally.",
   },
 ];
 
@@ -73,10 +74,10 @@ const AboutUs = () => {
             {...fadeInUp(0.2)}
             className="mt-6 text-lg md:text-xl text-gray-300 text-center max-w-3xl mx-auto leading-relaxed"
           >
-            At PawnRace, innovation meets dedication. Our team is a powerhouse of
-            technical brilliance, creative strategy, and educational passion—united by
-            one mission: to nurture young minds through chess, study, and cognitive
-            growth.
+            At PawnRace, innovation meets dedication. Our team is a powerhouse
+            of technical brilliance, creative strategy, and educational
+            passion—united by one mission: to nurture young minds through chess,
+            study, and cognitive growth.
           </motion.p>
         </section>
 
@@ -121,10 +122,10 @@ const AboutUs = () => {
               ♟ FIDE-Rated Trainers & Mentors
             </h2>
             <p className="mt-4 text-gray-300">
-              Our team is strengthened by internationally recognized chess masters
-              who guide students from foundation to finesse. With a strong helping
-              mindset, they mentor each learner to think critically, act strategically,
-              and grow confidently.
+              Our team is strengthened by internationally recognized chess
+              masters who guide students from foundation to finesse. With a
+              strong helping mindset, they mentor each learner to think
+              critically, act strategically, and grow confidently.
             </p>
           </motion.div>
 
@@ -137,9 +138,9 @@ const AboutUs = () => {
               🌟 Together, We Build Minds
             </h2>
             <p className="mt-4 text-gray-300 max-w-3xl mx-auto">
-              At PawnRace, we don’t just teach—we transform. From tech to training,
-              marketing to mentorship, we are building India’s most innovative academy—
-              one move at a time.
+              At PawnRace, we don’t just teach—we transform. From tech to
+              training, marketing to mentorship, we are building India’s most
+              innovative academy— one move at a time.
             </p>
           </motion.div>
         </section>
