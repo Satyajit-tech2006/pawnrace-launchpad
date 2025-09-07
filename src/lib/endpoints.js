@@ -1,3 +1,5 @@
+// This file serves as a single source of truth for all backend API endpoint paths.
+
 export const ENDPOINTS = {
   USERS: {
     REGISTER: '/users/register',
@@ -13,10 +15,14 @@ export const ENDPOINTS = {
     CREATE: '/courses',
     GET_ALL: '/courses/all',
     GET_SYLLABI: '/courses/syllabi',
-    GET_STUDENT_COURSES: '/courses/student', // Added this for student chat
+    GET_MY_COURSES_AS_COACH: '/courses/coach/my-courses',
+    GET_STUDENT_COURSES: '/courses/student/my-courses',
     GET_BY_ID: (courseId) => `/courses/${courseId}`,
     UPDATE: (courseId) => `/courses/${courseId}`,
+    DELETE: (courseId) => `/courses/${courseId}`, // DELETE uses the same path as UPDATE/GET_BY_ID
     ADD_STUDENT: (courseId) => `/courses/${courseId}/students`,
+    // ADDED: The specific endpoint for removing a student from a course
+    REMOVE_STUDENT: (courseId, studentId) => `/courses/${courseId}/students/${studentId}`,
   },
   ASSIGNMENTS: {
     CREATE: (courseId) => `/assignments/course/${courseId}`,
@@ -35,11 +41,8 @@ export const ENDPOINTS = {
     UPDATE: (classId) => `/classes/${classId}`,
     DELETE: (classId) => `/classes/${classId}`,
   },
-  // ADDED: The required endpoints for the chat functionality
   CHATS: {
-    // Gets all students enrolled in any of the logged-in coach's courses
     GET_STUDENTS_FOR_COACH: '/chats/students',
-    // Base path for chat history. The receiverId will be appended.
     GET_CHAT_HISTORY: '/chats/history', 
   },
 };
