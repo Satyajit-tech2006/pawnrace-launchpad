@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from "react";
-import DashboardNavbar from "../../../components/Dashbordnavbar";
+import DashboardNavbar from "../../../components/Dashbordnavbar.jsx";
+import apiClient from "../../../lib/api.js";
+import { ENDPOINTS } from "../../../lib/endpoints.js";
 
 const MyStudents = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Replace this with your backend API URL
-  const API_URL = "http://localhost:5000/api/students";
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        setStudents(data);
+        setLoading(true);
+        const response = await apiClient.get(ENDPOINTS.CHATS.GET_STUDENTS_FOR_COACH);
+        setStudents(response.data.data);
       } catch (error) {
         console.error("Error fetching students:", error);
+        setError("Failed to fetch students. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -31,6 +32,8 @@ const MyStudents = () => {
 
         {loading ? (
           <p className="text-gray-400">Loading students...</p>
+        ) : error ? (
+          <p className="text-red-400">{error}</p>
         ) : students.length === 0 ? (
           <p className="text-gray-400">No students found.</p>
         ) : (
@@ -38,22 +41,18 @@ const MyStudents = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-700 text-gray-200">
-                  <th className="py-3 px-4">Name</th>
-                  <th className="py-3 px-4">Email</th>
-                  <th className="py-3 px-4">Class</th>
-                  <th className="py-3 px-4">Progress</th>
+                  {/* 1. Removed extra table headers */}
+                  <th className="py-3 px-4">Full Name</th>
                 </tr>
               </thead>
               <tbody>
                 {students.map((student) => (
                   <tr
-                    key={student.id}
+                    key={student._id}
                     className="border-b border-gray-700 hover:bg-gray-700/50"
                   >
-                    <td className="py-3 px-4">{student.name}</td>
-                    <td className="py-3 px-4">{student.email}</td>
-                    <td className="py-3 px-4">{student.className}</td>
-                    <td className="py-3 px-4">{student.progress}%</td>
+                    {/* 2. Removed extra table cells to only show the name */}
+                    <td className="py-3 px-4">{student.fullname}</td>
                   </tr>
                 ))}
               </tbody>
@@ -66,3 +65,4 @@ const MyStudents = () => {
 };
 
 export default MyStudents;
+
