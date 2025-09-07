@@ -8,7 +8,6 @@ import {
   Dialog,
   DialogContent,
 } from "@mui/material";
-import Navbar from "./Navbar";
 const coaches = [
   {
     name: "Dipti Ranjan Nayak",
@@ -196,7 +195,6 @@ export default function Coaches() {
 
   return (
     <>
-      <Navbar />
 
       <div className="flex flex-col items-center p-4 sm:p-6 bg-gradient-to-b from-zinc-50">
         <Typography

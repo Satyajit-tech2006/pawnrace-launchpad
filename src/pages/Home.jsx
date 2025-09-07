@@ -8,6 +8,7 @@ import Contacts from "@/components/Contacts";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
 import StudentGlory from "../components/StudentGlory";
+import FAQPage from "./FAQPage";
 export default function Home() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -34,6 +35,7 @@ export default function Home() {
         {/* <Contacts /> */}
       </main>
 <StudentGlory/>
+      <FAQPage/>
       <Footer />
 
       {/* AuthModal ko yahan se control kar rahe hain */}

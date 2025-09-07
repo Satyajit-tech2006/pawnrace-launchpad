@@ -10,7 +10,6 @@ import {
   Link as LinkIcon,
   Award,
 } from "lucide-react";
-import Navbar from "./Navbar";
 
 const fadeInUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
@@ -25,8 +24,7 @@ const glass =
 const OurVission = () => {
   return (
     <>
-      {/* Navbar */}
-      <Navbar />
+      
 
       {/* Main Container */}
       <div className="min-h-screen w-full relative bg-[#0E1A3C] text-white overflow-hidden">
