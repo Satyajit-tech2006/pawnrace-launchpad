@@ -16,6 +16,7 @@ import Contacts from "../components/Contacts.jsx";
 import Coaches from "../components/Coaches.jsx";
 import ComingSoon from "../pages/ComingSoon.jsx";
 import Curriculum from "../components/Curriculum.jsx";
+import { Layout } from "../components/Layout";
 // Import Dashboard & Route Guards
 import ProtectedRoute from "./ProtectedRoute.jsx";
 // Corrected the file extension from .jsx to .tsx
@@ -45,19 +46,110 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<Home />} />
-      <Route path="/courses" element={<CoursesPage />} />
-      <Route path="/mentors" element={<MentorsPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/tournaments" element={<TournamentsPage />} />
-      <Route path="/ourvission" element={<OurVission />} />
-      <Route path="/how-it-works" element={<HowItWorksPage />} />
-      <Route path="/why-us" element={<WhyUsPage />} />
-      <Route path="/faq" element={<FAQPage />} />
-      <Route path="/contact" element={<Contacts />} />
-      <Route path="/coaches" element={<Coaches />} />
-      <Route path="/aboutus" element={<AboutUs />} />
-      <Route path="/curriculum" element={<Curriculum />} />
+      <Route
+        path="/"
+        element={
+          <Layout>
+            <Home />
+          </Layout>
+        }
+      />
+      <Route
+        path="/courses"
+        element={
+          <Layout>
+            <CoursesPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/mentors"
+        element={
+          <Layout>
+            <MentorsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/pricing"
+        element={
+          <Layout>
+            <PricingPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/tournaments"
+        element={
+          <Layout>
+            <TournamentsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/ourvission"
+        element={
+          <Layout>
+            <OurVission />
+          </Layout>
+        }
+      />
+      <Route
+        path="/how-it-works"
+        element={
+          <Layout>
+            <HowItWorksPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/why-us"
+        element={
+          <Layout>
+            <WhyUsPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/faq"
+        element={
+          <Layout>
+            <FAQPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/contact"
+        element={
+          <Layout>
+            <Contacts />
+          </Layout>
+        }
+      />
+      <Route
+        path="/coaches"
+        element={
+          <Layout>
+            <Coaches />
+          </Layout>
+        }
+      />
+      <Route
+        path="/aboutus"
+        element={
+          <Layout>
+            <AboutUs />
+          </Layout>
+        }
+      />
+      <Route
+        path="/curriculum"
+        element={
+          <Layout>
+            <Curriculum />
+          </Layout>
+        }
+      />
 
       {/* Student Dashboard - Protected Routes */}
       <Route path="/student-dashboard">

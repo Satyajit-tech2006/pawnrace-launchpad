@@ -1,11 +1,10 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Users, Target } from "lucide-react";
-import Navbar from "./Navbar";
 const levels = [
   {
     title: "Beginner Level",
-    rating: "Below 1100",
+    rating: "Below 1000",
     classes: "25 classes to complete",
     image: "/demo-photo.jpg", // Replace with your uploaded demo photo
     points: [
@@ -16,7 +15,7 @@ const levels = [
   },
   {
     title: "Intermediate Level",
-    rating: "1100 – 1500",
+    rating: "1000 – 1500",
     classes: "35 classes to complete",
     image: "/demo-photo.jpg",
     points: [
@@ -41,8 +40,6 @@ const levels = [
 const Curriculum = () => {
   return (
     <>
-    <div className="fixed top-0 left-0 w-full z-50 pb-72 mb-44">
-      <Navbar/></div>
       
     <div className="min-h-screen bg-gradient-to-br from-[#0f1e47] to-[#0a1331] flex flex-col items-center px-6 py-16 pt-24">
       {/* Page Title */}

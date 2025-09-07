@@ -22,7 +22,7 @@ const FAQPage: React.FC = () => {
       <div className="pt-20">
         <FAQ />
       </div>
-      <Footer />
+      {/* <Footer /> */}
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={handleCloseAuthModal} 

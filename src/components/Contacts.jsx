@@ -1,7 +1,5 @@
 import React from "react";
 import { motion } from "framer-motion";
-import Navbar from "./Navbar";
-
 const fadeInUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
   whileInView: { opacity: 1, y: 0 },
@@ -15,7 +13,6 @@ const glass =
 const Contacts = () => {
   return (
     <>
-      <Navbar />
       <div className="min-h-screen w-full relative bg-[#0E1A3C] text-white overflow-hidden">
         {/* Background Glow */}
         <div className="pointer-events-none absolute inset-0">
