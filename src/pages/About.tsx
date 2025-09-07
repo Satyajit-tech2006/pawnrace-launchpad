@@ -1,9 +1,9 @@
-import React from 'react';
-import Navbar from '@/components/Navbar';
-import AboutUs from '@/components/AboutUs';
-import Footer from '@/components/Footer';
-import { useState } from 'react';
-import AuthModal from '@/components/AuthModal';
+import React from "react";
+import Navbar from "@/components/Navbar";
+import OurVission from "@/components/OurVission";
+import Footer from "@/components/Footer";
+import { useState } from "react";
+import AuthModal from "@/components/AuthModal";
 
 const About: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -20,13 +20,10 @@ const About: React.FC = () => {
     <div className="min-h-screen">
       <Navbar onLoginClick={handleLoginClick} />
       <div className="pt-20">
-        <AboutUs />
+        <OurVission />
       </div>
       <Footer />
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={handleCloseAuthModal} 
-      />
+      <AuthModal isOpen={isAuthModalOpen} onClose={handleCloseAuthModal} />
     </div>
   );
 };

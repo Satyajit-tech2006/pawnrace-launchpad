@@ -51,7 +51,7 @@ const coaches = [
   {
     name: "Dikshant Dash",
     image:
-      "https://i.ibb.co/5NmvSsm/Whats-App-Image-2025-08-31-at-00-30-25-b81d64b6.jpg",
+      "https://i.ibb.co/gZ4yN794/Whats-App-Image-2025-09-07-at-03-32-14-f3e0bc98.jpg",
     title: "International Chess Sensation",
     description:
       "With over 14 years of playing experience and a remarkable rating of 1800+, Dikshant Dash is a force to be reckoned with in the chess world.",
@@ -102,7 +102,7 @@ const coaches = [
   {
     name: "Majhi Fakir",
     image:
-      "https://i.ibb.co/bMTxrk9d/Whats-App-Image-2025-08-31-at-00-48-29-b62b0359.jpg",
+      "https://i.ibb.co/DX7xbkf/Whats-App-Image-2025-09-07-at-03-33-15-a8445611.jpg",
     title: "FIDE-Rated Chess Coach & Player",
     description:
       "With over 10 years of playing experience and a FIDE rating of 1900, Majhi Fakir is a highly accomplished chess player and coach.",
@@ -146,6 +146,38 @@ const coaches = [
     students: [],
     fideId: "46690077",
   },
+  {
+  name: "Anshuman Barik",
+  image:
+    "https://i.ibb.co/Cp9Fst6H/Whats-App-Image-2025-09-07-at-03-25-57-01220eea.jpg", // <-- Replace with actual image link if available
+  title:
+    "International Rated Chess Player | FIDE Arena International Master & Certified Instructor",
+  description:
+    "With over 5 years of playing experience and proven coaching expertise, Anshuman Barik is a passionate and certified chess instructor recognized by AICF & FIDE.",
+  achievements: [
+    "🏆 Represented Nationals SGFI (School Games Federation of India) 3 times",
+    "🏆 Awarded Champion’s Trophy in U-17 Open UT Chess Championship",
+    "🥈 Secured Runners-up at Rofel Grims Open Chess Championship (twice)",
+    "🏅 Awarded by Lions English School as Chess Champion & Top Rank holder (3 years)",
+    "⭐ Best Player in Union Territory of DNH & Daman & Diu (2022), felicitated by the Administrator",
+    "🎓 Current Captain of Ravenshaw University Chess Team (Odisha)",
+    "🎯 Played in multiple National & International Rated Chess Tournaments across India",
+    "🌍 Represented National & International Chess Events"
+  ],
+  coaching: [
+    "1 year of professional coaching with Genius Kid (Online & Offline)",
+    "Beginner & Intermediate level training expertise",
+    "Focused training on Openings & Middle Game strategies",
+    "Guided by expert mentorship programs"
+  ],
+  students: [],
+  fideId: "48769738",
+  aicfId: "1700169D2022",
+  fideRating: "1620",
+  rapidRating: "1687",
+  languages: ["English", "Hindi", "Odia"]
+}
+
 ];
 
 export default function Coaches() {
@@ -173,7 +205,7 @@ export default function Coaches() {
         >
           Our{" "}
           <span className="bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
-            Coaches
+           Star Coaches
           </span>
         </Typography>
 

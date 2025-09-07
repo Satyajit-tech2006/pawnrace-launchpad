@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { useAuth } from "@/contexts/AuthContext"; // ✅ import AuthContext
+import { useAuth } from "@/contexts/AuthContext"; 
 
 const StudentAssignment = () => {
-  const { user } = useAuth(); // ✅ get logged-in student
+  const { user } = useAuth();
   const [assignments, setAssignments] = useState([]);
   const [submission, setSubmission] = useState("");
   const [selectedAssignment, setSelectedAssignment] = useState(null);
 
   // ✅ Fetch assignments for this student
   const fetchAssignments = async () => {
-    if (!user?._id) return; // wait until user is loaded
-
+    if (!user?._id) return;
     try {
       const res = await axios.get(
         `http://localhost:5000/api/assignments?studentId=${user._id}`
@@ -29,7 +28,7 @@ const StudentAssignment = () => {
       await axios.post(
         `http://localhost:5000/api/assignments/${assignmentId}/submit`,
         {
-          studentId: user._id, // ✅ attach student id
+          studentId: user._id,
           submission,
         }
       );
@@ -63,6 +62,18 @@ const StudentAssignment = () => {
             className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl shadow-lg mb-6"
           >
             <h2 className="text-xl font-bold">{assignment.topic}</h2>
+
+            {/* ✅ Show Assignment Link */}
+            {assignment.link && (
+              <a
+                href={assignment.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 underline mt-2 inline-block"
+              >
+                🔗 Open Assignment
+              </a>
+            )}
 
             <button
               onClick={() => setSelectedAssignment(assignment._id)}

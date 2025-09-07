@@ -29,6 +29,9 @@ const Navbar = () => {
     { title: 'Home', href: '/' },
     { title: 'Coaches', href: '/coaches' },
     { title: 'Contact', href: '/contact' },
+    { title: 'Ourvision', href: '/ourvission' },
+    { title: 'About Us', href: '/aboutus' },
+    { title: 'Curriculum', href: '/Curriculum' },
   ];
 
   const handleAuthClick = (mode) => {

@@ -11,20 +11,56 @@ import {
   MessageSquare,
   Settings,
   Database,
-  LucideIcon,
+  Brain,
 } from "lucide-react";
 
 // --- COACH MENU ITEMS ---
 const coachMenuItems = [
-  { name: "My Students", icon: Users, color: "from-blue-500 to-indigo-600" },
-  { name: "Classes", icon: Calendar, color: "from-green-400 to-emerald-600" },
-  { name: "Assignments", icon: ClipboardCheck, color: "from-pink-500 to-rose-500" },
-  { name: "Test Results", icon: FileBarChart, color: "from-yellow-400 to-orange-500" },
-  { name: "Tournaments", icon: Trophy, color: "from-purple-500 to-indigo-500" },
-  { name: "Chats", icon: MessageSquare, color: "from-cyan-400 to-blue-500" },
-  { name: "Database", icon: Database, color: "from-orange-400 to-red-500" },
-  { name: "Settings", icon: Settings, color: "from-gray-400 to-gray-600" },
-].map((item) => ({ ...item, path: item.name.toLowerCase().replace(/\s+/g, "-") }));
+  {
+    name: "My Students",
+    icon: Users,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Classes",
+    icon: Calendar,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Assignments",
+    icon: ClipboardCheck,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Test Results",
+    icon: FileBarChart,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Tournaments",
+    icon: Trophy,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Chats",
+    icon: MessageSquare,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Database",
+    icon: Database,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
+    name: "Settings",
+    icon: Settings,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  
+].map((item) => ({
+  ...item,
+  path: item.name.toLowerCase().replace(/\s+/g, "-"),
+}));
 
 // MenuCard Component
 const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
@@ -41,11 +77,11 @@ const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
       className="cursor-pointer flex flex-col items-center group"
     >
       <div
-        className={`flex items-center justify-center rounded-2xl bg-gradient-to-br ${color} shadow-lg group-hover:shadow-xl transition-all duration-300 w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28`}
+        className={`flex items-center justify-center rounded-2xl ${color} shadow-xl group-hover:shadow-2xl transition-all duration-300 w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 backdrop-blur-md bg-opacity-90 border border-white/10`}
       >
         <Icon className="stroke-white stroke-[2px] w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10" />
       </div>
-      <p className="text-gray-200 mt-3 sm:mt-4 font-semibold text-center transition-all duration-300 group-hover:text-white text-sm sm:text-base lg:text-lg">
+      <p className="text-gray-300 mt-3 sm:mt-4 font-semibold text-center transition-all duration-300 group-hover:text-white text-sm sm:text-base lg:text-lg">
         {name}
       </p>
     </motion.div>
@@ -55,14 +91,15 @@ const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
 // CoachDashboard Component
 const CoachDashboard = () => {
   const navigate = useNavigate();
+
   const handleMenuClick = (path) => {
     navigate(`/coach-dashboard/${path}`);
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#111827] via-[#1a173d] to-black"></div>
+      {/* Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-black"></div>
 
       {/* Foreground */}
       <div className="relative z-10">
@@ -71,11 +108,11 @@ const CoachDashboard = () => {
           <div className="max-w-7xl mx-auto">
             {/* Welcome Section */}
             <div className="text-center mb-12">
-              <h1 className="text-2xl md:text-3xl font-bold">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">
                 Welcome Coach!
               </h1>
               <p className="text-gray-400 mt-2">
-                Manage your students and activities below.
+                Manage your students, classes, and activities below.
               </p>
             </div>
 

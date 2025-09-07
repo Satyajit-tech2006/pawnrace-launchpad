@@ -1,45 +1,46 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React from "react";
+import { Routes, Route } from "react-router-dom";
 
 // Import Page Components
-import Home from '../pages/Home.jsx';
-import CoursesPage from '../pages/CoursesPage.jsx';
-import MentorsPage from '../pages/MentorsPage.tsx';
-import PricingPage from '../pages/PricingPage.tsx';
-import TournamentsPage from '../pages/TournamentsPage.jsx';
-import About from '../pages/About.tsx';
-import HowItWorksPage from '../pages/HowItWorksPage.tsx';
-import WhyUsPage from '../pages/WhyUsPage.tsx';
-import FAQPage from '../pages/FAQPage.tsx';
-import NotFound from '../pages/NotFound.jsx';
-import Contacts from '../components/Contacts.jsx';
-import Coaches from '../components/Coaches.jsx';
-
+import Home from "../pages/Home.jsx";
+import CoursesPage from "../pages/CoursesPage.jsx";
+import MentorsPage from "../pages/MentorsPage.tsx";
+import PricingPage from "../pages/PricingPage.tsx";
+import TournamentsPage from "../pages/TournamentsPage.jsx";
+import OurVission from "../components/OurVission.jsx";
+import HowItWorksPage from "../pages/HowItWorksPage.tsx";
+import WhyUsPage from "../pages/WhyUsPage.tsx";
+import FAQPage from "../pages/FAQPage.tsx";
+import NotFound from "../pages/NotFound.jsx";
+import Contacts from "../components/Contacts.jsx";
+import Coaches from "../components/Coaches.jsx";
+import ComingSoon from "../pages/ComingSoon.jsx";
+import Curriculum from "../components/Curriculum.jsx";
 // Import Dashboard & Route Guards
-import ProtectedRoute from './ProtectedRoute.jsx';
+import ProtectedRoute from "./ProtectedRoute.jsx";
 // Corrected the file extension from .jsx to .tsx
 // import DashboardLayout from '../components/dashboard/DashboardLayout.tsx';
 
 // Coach Dashboard Pages
-import CoachDashboard from '../pages/dashboard/coach/CoachDashboard.tsx';
-import CoachSchedule from '../pages/dashboard/coach/CoachSchedule.tsx';
-import CoachStudents from '../pages/dashboard/coach/CoachStudents.tsx';
-import { CoachClasses } from '../pages/dashboard/coach/CoachClasses.jsx';
-import CoachAssignment from '../pages/dashboard/coach/CoachAssignment.jsx';
-import CoachTournament from '../pages/dashboard/coach/CoachTournament.jsx';
-import CoachTestResults from '../pages/dashboard/coach/CoachTestResults.jsx';
-import CoachChat from '../pages/dashboard/coach/CoachChat.jsx';
-import MyStudents from '../pages/dashboard/coach/MyStudents.jsx';
+import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
+import CoachSchedule from "../pages/dashboard/coach/CoachSchedule.tsx";
+import CoachStudents from "../pages/dashboard/coach/CoachStudents.tsx";
+import { CoachClasses } from "../pages/dashboard/coach/CoachClasses.jsx";
+import CoachAssignment from "../pages/dashboard/coach/CoachAssignment.jsx";
+import CoachTournament from "../pages/dashboard/coach/CoachTournament.jsx";
+import CoachTestResults from "../pages/dashboard/coach/CoachTestResults.jsx";
+import CoachChat from "../pages/dashboard/coach/CoachChat.jsx";
+import MyStudents from "../pages/dashboard/coach/MyStudents.jsx";
 
 // Student Dashboard Pages
-import StudentDashboard from '../pages/dashboard/student/StudentDashboard.tsx';
-import StudentSchedule from '../pages/dashboard/student/StudentSchedule.tsx';
-import Classes from '../pages/dashboard/student/Classes.jsx';
-import StudentAssignment from '../pages/dashboard/student/StudentAssignments.jsx';
-import StudentTournament from '../pages/dashboard/student/StudentTournament.jsx';
-import StudentTestResults from '../pages/dashboard/student/StudentTestResults.jsx';
-import StudentChat from '../pages/dashboard/student/StudentChat.jsx';
-
+import StudentDashboard from "../pages/dashboard/student/StudentDashboard.tsx";
+import StudentSchedule from "../pages/dashboard/student/StudentSchedule.tsx";
+import Classes from "../pages/dashboard/student/Classes.jsx";
+import StudentAssignment from "../pages/dashboard/student/StudentAssignments.jsx";
+import StudentTournament from "../pages/dashboard/student/StudentTournament.jsx";
+import StudentTestResults from "../pages/dashboard/student/StudentTestResults.jsx";
+import StudentChat from "../pages/dashboard/student/StudentChat.jsx";
+import AboutUs from "../components/AboutUs.jsx";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -49,22 +50,17 @@ const AppRoutes = () => {
       <Route path="/mentors" element={<MentorsPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/tournaments" element={<TournamentsPage />} />
-      <Route path="/about" element={<About />} />
+      <Route path="/ourvission" element={<OurVission />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/why-us" element={<WhyUsPage />} />
       <Route path="/faq" element={<FAQPage />} />
       <Route path="/contact" element={<Contacts />} />
       <Route path="/coaches" element={<Coaches />} />
+      <Route path="/aboutus" element={<AboutUs />} />
+      <Route path="/curriculum" element={<Curriculum />} />
 
       {/* Student Dashboard - Protected Routes */}
-      <Route
-        path="/student-dashboard"
-        // element={
-        //   <ProtectedRoute requiredRole="student">
-        //     {/* <DashboardLayout /> */}
-        //               </ProtectedRoute>
-        // }
-      >
+      <Route path="/student-dashboard">
         <Route index element={<StudentDashboard />} />
         <Route path="schedule" element={<StudentSchedule />} />
         <Route path="assignments" element={<StudentAssignment />} />
@@ -72,17 +68,11 @@ const AppRoutes = () => {
         <Route path="tournaments" element={<StudentTournament />} />
         <Route path="test-results" element={<StudentTestResults />} />
         <Route path="contact-coach" element={<StudentChat />} />
+        <Route path="iqpuzzles" element={<ComingSoon />} />
       </Route>
 
       {/* Coach Dashboard - Protected Routes */}
-      <Route
-        path="/coach-dashboard"
-        // element={
-        //   <ProtectedRoute requiredRole="coach">
-        //     {/* <DashboardLayout /> */}
-        //   </ProtectedRoute>
-        // }
-      >
+      <Route path="/coach-dashboard">
         <Route index element={<CoachDashboard />} />
         <Route path="schedule" element={<CoachSchedule />} />
         <Route path="students" element={<CoachStudents />} />
@@ -92,6 +82,7 @@ const AppRoutes = () => {
         <Route path="test-results" element={<CoachTestResults />} />
         <Route path="chats" element={<CoachChat />} />
         <Route path="my-students" element={<MyStudents />} />
+        <Route path="database" element={<ComingSoon />} />
       </Route>
 
       {/* Not Found Route */}
@@ -101,4 +92,3 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
-
