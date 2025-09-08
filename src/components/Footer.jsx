@@ -15,12 +15,12 @@ function Footer() {
       // { name: 'Careers', to: '/careers' },
       // { name: 'Press', to: '/press' }
     ],
-    // 'For Students': [
-    //   { name: 'Find a Coach', to: '/mentors' },
-    //   { name: 'Pricing', to: '/pricing' },
-    //   { name: 'Success Stories', to: '/testimonials' },
-    //   { name: 'Support', to: '/contact' }
-    // ],
+    'Contact Us': [
+      { name: '+91 78945 89238', to: '' },
+      { name: 'pawnraceacademy@gmail.com', to: '' },
+      { name: 'Puri , Odisha , India', to: '' },
+     
+    ],
     // 'For Coaches': [
     //   { name: 'Become a Coach', to: '/become-a-coach' },
     //   { name: 'Coach Resources', to: '/coach-resources' },
@@ -122,17 +122,11 @@ const ChessPawnIcon = ({ className }) => (
             <p className="text-gray-400 mb-6">
               Get chess tips, tournament updates, and exclusive offers
             </p>
-            <form className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 rounded-lg text-gray-900 bg-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                required
-              />
-              <button type="submit" className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-6 py-2 rounded-lg font-semibold transition-colors duration-200">
+            
+              <button type="submit" className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-6 py-2 rounded-lg font-semibold transition-colors duration-200" onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSdiz9pqLM32FBZHNBh6EQPeAnOG5K3qevs9JhgGvqptWU8P4w/viewform?usp=dialog", "_blank")}>
                 Subscribe
               </button>
-            </form>
+           
           </div>
         </div>
 
@@ -140,28 +134,11 @@ const ChessPawnIcon = ({ className }) => (
         <div className="border-t border-gray-800 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-gray-500 text-sm">
-              © {new Date().getFullYear()} PawnRace. All rights reserved.
+              © {new Date().getFullYear()} PawnRace CHESS ACADEMY All rights reserved.
             </div>
             
             <div className="flex space-x-6 text-sm">
-              <Link
-                to="/privacy-policy"
-                className="text-gray-400 hover:text-white transition-colors duration-200"
-              >
-                Privacy Policy
-              </Link>
-              <Link
-                to="/terms-of-service"
-                className="text-gray-400 hover:text-white transition-colors duration-200"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                to="/cookie-policy"
-                className="text-gray-400 hover:text-white transition-colors duration-200"
-              >
-                Cookie Policy
-              </Link>
+           
             </div>
           </div>
         </div>

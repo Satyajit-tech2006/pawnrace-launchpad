@@ -12,6 +12,10 @@ export default function App() {
 
   return <Hero onLoginClick={handleLoginClick} />;
 }
+function bookDemo() {
+  // console.log("Book A Free Demo clicked");
+  window.open("https://docs.google.com/forms/d/e/1FAIpQLSd368-GnfJjgbQdIeAiU6ro68983N8OPo6upy5n0kDI9YClkA/viewform?usp=dialog", "_blank");
+}
 
 function Hero({ onLoginClick }) {
   // Using a placeholder image as local assets are not available.
@@ -109,10 +113,10 @@ function Hero({ onLoginClick }) {
                 {/* Call-to-Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <button
-                    onClick={onLoginClick}
+                    onClick={bookDemo}
                     className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold group bg-amber-500 text-gray-900 rounded-lg hover:bg-amber-400 transition-all duration-300 shadow-lg shadow-amber-500/20 transform hover:scale-105"
                   >
-                    Join as Student
+                    Book A Free Demo
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </button>
 {/* 

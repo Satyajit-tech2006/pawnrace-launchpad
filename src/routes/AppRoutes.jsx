@@ -175,6 +175,7 @@ const AppRoutes = () => {
         <Route path="chats" element={<CoachChat />} />
         <Route path="my-students" element={<MyStudents />} />
         <Route path="database" element={<ComingSoon />} />
+        <Route path="settings" element={<ComingSoon />} />
       </Route>
 
       {/* Not Found Route */}

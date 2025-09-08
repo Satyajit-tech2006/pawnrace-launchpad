@@ -146,37 +146,36 @@ const coaches = [
     fideId: "46690077",
   },
   {
-  name: "Anshuman Barik",
-  image:
-    "https://i.ibb.co/Cp9Fst6H/Whats-App-Image-2025-09-07-at-03-25-57-01220eea.jpg", // <-- Replace with actual image link if available
-  title:
-    "International Rated Chess Player | FIDE Arena International Master & Certified Instructor",
-  description:
-    "With over 5 years of playing experience and proven coaching expertise, Anshuman Barik is a passionate and certified chess instructor recognized by AICF & FIDE.",
-  achievements: [
-    "🏆 Represented Nationals SGFI (School Games Federation of India) 3 times",
-    "🏆 Awarded Champion’s Trophy in U-17 Open UT Chess Championship",
-    "🥈 Secured Runners-up at Rofel Grims Open Chess Championship (twice)",
-    "🏅 Awarded by Lions English School as Chess Champion & Top Rank holder (3 years)",
-    "⭐ Best Player in Union Territory of DNH & Daman & Diu (2022), felicitated by the Administrator",
-    "🎓 Current Captain of Ravenshaw University Chess Team (Odisha)",
-    "🎯 Played in multiple National & International Rated Chess Tournaments across India",
-    "🌍 Represented National & International Chess Events"
-  ],
-  coaching: [
-    "1 year of professional coaching with Genius Kid (Online & Offline)",
-    "Beginner & Intermediate level training expertise",
-    "Focused training on Openings & Middle Game strategies",
-    "Guided by expert mentorship programs"
-  ],
-  students: [],
-  fideId: "48769738",
-  aicfId: "1700169D2022",
-  fideRating: "1620",
-  rapidRating: "1687",
-  languages: ["English", "Hindi", "Odia"]
-}
-
+    name: "Anshuman Barik",
+    image:
+      "https://i.ibb.co/Cp9Fst6H/Whats-App-Image-2025-09-07-at-03-25-57-01220eea.jpg", // <-- Replace with actual image link if available
+    title:
+      "International Rated Chess Player | FIDE Arena International Master & Certified Instructor",
+    description:
+      "With over 5 years of playing experience and proven coaching expertise, Anshuman Barik is a passionate and certified chess instructor recognized by AICF & FIDE.",
+    achievements: [
+      "🏆 Represented Nationals SGFI (School Games Federation of India) 3 times",
+      "🏆 Awarded Champion’s Trophy in U-17 Open UT Chess Championship",
+      "🥈 Secured Runners-up at Rofel Grims Open Chess Championship (twice)",
+      "🏅 Awarded by Lions English School as Chess Champion & Top Rank holder (3 years)",
+      "⭐ Best Player in Union Territory of DNH & Daman & Diu (2022), felicitated by the Administrator",
+      "🎓 Current Captain of Ravenshaw University Chess Team (Odisha)",
+      "🎯 Played in multiple National & International Rated Chess Tournaments across India",
+      "🌍 Represented National & International Chess Events",
+    ],
+    coaching: [
+      "1 year of professional coaching with Genius Kid (Online & Offline)",
+      "Beginner & Intermediate level training expertise",
+      "Focused training on Openings & Middle Game strategies",
+      "Guided by expert mentorship programs",
+    ],
+    students: [],
+    fideId: "48769738",
+    aicfId: "1700169D2022",
+    fideRating: "1620",
+    rapidRating: "1687",
+    languages: ["English", "Hindi", "Odia"],
+  },
 ];
 
 export default function Coaches() {
@@ -195,15 +194,14 @@ export default function Coaches() {
 
   return (
     <>
-
       <div className="flex flex-col items-center p-4 sm:p-6 bg-gradient-to-b from-zinc-50">
         <Typography
           variant="h4"
           className="text-center font-extrabold text-gray-900 pb-12 sm:mb-8"
         >
           Our{" "}
-          <span className="bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">
-           Star Coaches
+          <span className="bg-gradient-to-r text-black bg-clip-text ">
+            Star Coaches
           </span>
         </Typography>
 
@@ -216,7 +214,7 @@ export default function Coaches() {
               sx={{
                 borderRadius: "20px",
                 background: "linear-gradient(135deg, #1e293b, #0f172a)",
-                border: "2px solid #3b82f6",
+                border: "2px solid yellow",
                 padding: "10px",
                 color: "white",
               }}
@@ -229,7 +227,7 @@ export default function Coaches() {
                   height: { xs: 280, sm: 220, md: 300, lg: 360 }, // more height in desktop
                   objectFit: "cover",
                   borderRadius: "15px",
-                  border: "3px solid #3b82f6",
+                  border: "3px solid black",
                 }}
               />
               <CardContent className="text-center space-y-3">
@@ -250,14 +248,14 @@ export default function Coaches() {
                   variant="contained"
                   size="medium"
                   sx={{
-                    background: "linear-gradient(135deg, #facc15, #3b82f6)",
+                    background: "yellow",
+                    color: "black",
                     textTransform: "none",
                     fontWeight: "bold",
                     borderRadius: "10px",
                     padding: "8px 20px",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
                     "&:hover": {
-                      background: "linear-gradient(135deg, #eab308, #2563eb)",
                       transform: "scale(1.05)",
                     },
                   }}
@@ -280,7 +278,7 @@ export default function Coaches() {
             sx: {
               borderRadius: "20px",
               background: "linear-gradient(180deg, #1e293b, #0f172a)",
-              border: "2px solid #3b82f6",
+              border: "2px solid yellow",
               p: { xs: 1, sm: 2 },
               color: "white",
             },
@@ -292,24 +290,12 @@ export default function Coaches() {
               <img
                 src={selectedCoach.image}
                 alt={selectedCoach.name}
-                className="rounded-xl shadow-lg w-44 sm:w-56 border-4 border-blue-500"
+                className="rounded-xl shadow-lg w-44 sm:w-56 border-4 border-yellow-500"
               />
-              {/* FIDE Photo */}
-              {selectedCoach.fideId && (
-                <img
-                  src={`https://ratings.fide.com/pinfo?pid=${selectedCoach.fideId}`}
-                  alt="FIDE Profile"
-                  className="rounded-lg shadow-md w-32 border-2 border-yellow-400"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "https://via.placeholder.com/150?text=No+FIDE+Photo";
-                  }}
-                />
-              )}
 
               <Typography
                 variant="h6"
-                className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-blue-400 to-indigo-400"
+                className="font-extrabold text-transparent bg-clip-text text-yellow-400 text-center"
               >
                 {selectedCoach.name}
               </Typography>
@@ -383,10 +369,9 @@ export default function Coaches() {
                     mt: 2,
                     borderRadius: "10px",
                     fontWeight: "bold",
-                    background: "linear-gradient(135deg, #3b82f6, #06b6d4)",
-                    "&:hover": {
-                      background: "linear-gradient(135deg, #2563eb, #0891b2)",
-                    },
+
+                    background: "yellow",
+                    color: "black",
                   }}
                 >
                   View FIDE Profile
@@ -398,14 +383,12 @@ export default function Coaches() {
                 variant="outlined"
                 sx={{
                   mt: 2,
+                  background: "yellow",
                   borderRadius: "10px",
-                  color: "#3b82f6",
+                  color: "black",
                   fontWeight: "bold",
-                  borderColor: "#3b82f6",
-                  "&:hover": {
-                    background: "#3b82f6",
-                    color: "white",
-                  },
+                  borderColor: "black",
+                 
                 }}
               >
                 Close

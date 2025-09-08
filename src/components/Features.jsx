@@ -107,7 +107,7 @@ function Features() {
         {/* Call to Action */}
         <div className="text-center mt-16">
           <div className="inline-flex items-center space-x-2 text-accent font-semibold text-lg">
-            <span>Ready to start your chess journey?</span>
+            <span className="text-black">Ready to start your chess journey?</span>
             <span className="animate-pulse">♔</span>
           </div>
         </div>
