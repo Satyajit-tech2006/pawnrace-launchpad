@@ -20,7 +20,7 @@ const DashboardNavbar = () => {
   // const [hasScrolled, setHasScrolled] = React.useState(false);
   
   // Dummy user for example
-  const user = { name: "Alex" };
+  const user = { name: "" };
   // Dummy session for example
   const session = { destroy: () => console.log("Logout") };
 
