@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import DashboardNavbar from "../../../components/Dashbordnavbar";
+import DashboardNavbar from "../../../components/Dashboradnavbar";
 
 const CoachTournament = () => {
   const [tournaments, setTournaments] = useState([]);
