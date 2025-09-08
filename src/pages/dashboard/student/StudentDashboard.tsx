@@ -208,7 +208,7 @@ const StudentDashboard: React.FC = () => {
             {/* Welcome Section */}
             <div className="text-center mb-12">
               <h1 className="text-2xl md:text-3xl font-bold">
-                Welcome back, Alex!
+                Welcome back!
               </h1>
               <p className="text-gray-400 mt-2">
                 Choose an option below to get started.

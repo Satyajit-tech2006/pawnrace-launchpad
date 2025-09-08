@@ -8,7 +8,6 @@ import { ENDPOINTS } from "../../../lib/endpoints.js";
 const formatClassTime = (isoString) => {
   if (!isoString) return { date: 'N/A', time: 'N/A' };
   const date = new Date(isoString);
-  // 1. Corrected the typo in this variable name
   const formattedDate = date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return { date: formattedDate, time: formattedTime };
@@ -29,8 +28,8 @@ const Classes = () => {
         setLoading(true);
         setError(null);
 
-        // 2. Corrected the endpoint key to match your endpoints.js file
-        const enrolledCoursesRes = await apiClient.get(ENDPOINTS.COURSES.GET_STUDENT_COURSES);
+        // 1. CORRECTED: Using the correct endpoint key from your endpoints.js file.
+        const enrolledCoursesRes = await apiClient.get(ENDPOINTS.COURSES.GET_MY_COURSES_AS_STUDENT);
         const enrolledCourses = enrolledCoursesRes.data.data || [];
 
         if (enrolledCourses.length > 0) {
