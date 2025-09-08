@@ -46,10 +46,10 @@ const Contacts = () => {
           <motion.div {...fadeInUp(0.2)} className={`p-6 ${glass}`}>
             <h3 className="text-xl font-semibold text-yellow-300 mb-2">📧 Email</h3>
             <a
-              href="mailto:pawnraceacademy@gmail.com"
+              href="mailto:academy@pawnrace.com."
               className="text-yellow-400 hover:underline"
             >
-              pawnraceacademy@gmail.com
+              academy@pawnrace.com
             </a>
           </motion.div>
 

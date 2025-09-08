@@ -17,7 +17,7 @@ function Footer() {
     ],
     'Contact Us': [
       { name: '+91 78945 89238', to: '' },
-      { name: 'pawnraceacademy@gmail.com', to: '' },
+      { name: 'academy@pawnrace.com', to: '' },
       { name: 'Puri , Odisha , India', to: '' },
      
     ],
