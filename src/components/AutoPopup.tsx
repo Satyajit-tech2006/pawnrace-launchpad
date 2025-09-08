@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { X, Mail, User, Phone, Calendar, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { X, ShieldCheck } from "lucide-react";
+import { Button } from "./ui/button.tsx";
+import { Input } from "./ui/input.tsx";
+import { Label } from "./ui/label.tsx";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "./ui/select.tsx";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Props
@@ -49,57 +49,32 @@ const ChessPawnIcon = ({ className }) => (
 );
 
 const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
+  // The form data is no longer needed as we are redirecting to a Google Form.
+  // We keep the state just to allow the inputs to be typed in, preserving the UI.
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     countryCode: "+91",
     phone: "",
     age: "",
-    role: "",
+    role: "student",
   });
 
-  const [loading, setLoading] = useState(false);
-
-  // Handle form input
+  // Handle form input changes (to allow typing)
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const isFormComplete =
-    formData.name &&
-    formData.email &&
-    formData.phone &&
-    formData.age &&
-    formData.role;
-
-  // Submit form to Google Sheets
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const response = await fetch(
-        "https://script.google.com/macros/s/AKfycbw5eRg7Sru6b6E4OhKNBIntHjwr_etvBDeQUue_qVx6-iM22J0c73DU1LTlj7TiXWy9Rw/exec", // 🔹 Replace with your URL
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          mode: "cors", // ✅ Important for CORS
-          body: JSON.stringify(formData),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.status === "success") {
-        alert("✅ Data submitted successfully!");
-      } else {
-        alert("❌ Submission failed!");
-      }
-    } catch (error) {
-      alert("⚠️ Failed to connect to server. Please try again.");
-      console.error(error);
-    }
+  // The new handleSubmit function simply opens the Google Form link.
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent the form from submitting in the traditional way
+    
+    const googleFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSd368-GnfJjgbQdIeAiU6ro68983N8OPo6upy5n0kDI9YClkA/viewform?usp=dialog";
+    
+    // Open the URL in a new tab
+    window.open(googleFormUrl, '_blank', 'noopener,noreferrer');
+    
+    onClose(); // Close the popup after opening the link
   };
 
   return (
@@ -181,7 +156,7 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                     <div className="relative"> 
                       <Input
                         placeholder="e.g. Magnus Carlsen"
-                        className="pl-10 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
+                        className="pl-4 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
                         value={formData.name}
                         onChange={(e) =>
                           handleInputChange("name", e.target.value)
@@ -196,11 +171,10 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                       Email Address
                     </Label>
                     <div className="relative">
-                      
                       <Input
                         type="email"
                         placeholder="you@gmail.com"
-                        className="pl-10 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
+                        className="pl-4 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
                         value={formData.email}
                         onChange={(e) =>
                           handleInputChange("email", e.target.value)
@@ -225,28 +199,18 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                           <SelectValue placeholder="Code" />
                         </SelectTrigger>
                         <SelectContent className="bg-black text-white border-slate-700">
+                          {/* Options remain the same */}
                           <SelectItem value="+91">🇮🇳 IN +91</SelectItem>
                           <SelectItem value="+1">🇺🇸 US +1</SelectItem>
                           <SelectItem value="+44">🇬🇧 UK +44</SelectItem>
                           <SelectItem value="+977">🇳🇵 NP +977</SelectItem>
-                          <SelectItem value="+61">🇦🇺 AU +61</SelectItem>
-                          <SelectItem value="+81">🇯🇵 JP +81</SelectItem>
-                          <SelectItem value="+49">🇩🇪 DE +49</SelectItem>
-                          <SelectItem value="+33">🇫🇷 FR +33</SelectItem>
-                          <SelectItem value="+7">🇷🇺 RU +7</SelectItem>
-                          <SelectItem value="+86">🇨🇳 CN +86</SelectItem>
-                          <SelectItem value="+82">🇰🇷 KR +82</SelectItem>
-                          <SelectItem value="+92">🇵🇰 PK +92</SelectItem>
-                          <SelectItem value="+94">🇱🇰 LK +94</SelectItem>
-                          <SelectItem value="+60">🇲🇾 MY +60</SelectItem>
-                          <SelectItem value="+971">🇦🇪 AE +971</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="relative flex-grow">
                         <Input
                           type="number"
                           placeholder="98765 43210"
-                          className="pl-10 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
+                          className="pl-4 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
                           value={formData.phone}
                           onChange={(e) =>
                             handleInputChange("phone", e.target.value)
@@ -258,7 +222,6 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
 
                   {/* Age & Role */}
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Age */}
                     <motion.div variants={itemVariants} className="space-y-1.5">
                       <Label className="text-sm font-medium text-slate-300">
                         Your Age
@@ -267,7 +230,7 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                         <Input
                           type="number"
                           placeholder="e.g. 18"
-                          className="pl-10 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
+                          className="pl-4 bg-black border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:ring-2 focus:ring-yellow-400 transition-all"
                           value={formData.age}
                           onChange={(e) =>
                             handleInputChange("age", e.target.value)
@@ -275,8 +238,6 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                         />
                       </div>
                     </motion.div>
-
-                    {/* Role */}
                     <motion.div variants={itemVariants} className="space-y-1.5">
                       <Label className="text-sm font-medium text-slate-300">
                         Join as a
@@ -302,9 +263,8 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
                     <Button
                       type="submit"
                       className="w-full h-14 font-bold text-lg text-black bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 shadow-[0_0_15px_rgba(255,215,0,0.5)] hover:shadow-[0_0_25px_rgba(255,215,0,0.7)] transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] rounded-xl"
-                      disabled={!isFormComplete || loading}
                     >
-                      {loading ? "Booking..." : "Book My Free Trial"}
+                      Book My Free Trial
                     </Button>
                   </motion.div>
                 </form>
@@ -326,3 +286,4 @@ const AutoPopup: React.FC<AutoPopupProps> = ({ isOpen, onClose }) => {
 };
 
 export default AutoPopup;
+
