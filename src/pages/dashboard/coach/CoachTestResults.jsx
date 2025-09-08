@@ -1,80 +1,106 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { motion } from "framer-motion";
+import { useAuth } from "../../../contexts/AuthContext.jsx";
+import apiClient from "../../../lib/api.js";
+import { ENDPOINTS } from "../../../lib/endpoints.js";
+import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
+import { Button } from "../../../components/ui/button.tsx";
 
 const CoachTestResults = () => {
-  const [tests, setTests] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [newTest, setNewTest] = useState("");
-  const [zoomLink, setZoomLink] = useState("");
-  const [selectedStudent, setSelectedStudent] = useState("");
-  const [review, setReview] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [testsByCourse, setTestsByCourse] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // ✅ Fetch tests
-  const fetchTests = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/tests");
-      setTests(res.data);
-    } catch (err) {
-      console.error("Error fetching tests:", err);
-    }
-  };
+  // State for the creation form
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [newTestName, setNewTestName] = useState("");
+  const [newTestZoomLink, setNewTestZoomLink] = useState("");
+  
+  const { user } = useAuth();
 
-  // ✅ Fetch students
-  const fetchStudents = async () => {
+  const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/students");
-      setStudents(res.data);
-    } catch (err) {
-      console.error("Error fetching students:", err);
-    }
-  };
+      setLoading(true);
+      setError(null);
 
-  // ✅ Assign test to student
-  const handleAddTest = async (e) => {
-    e.preventDefault();
-    if (!selectedStudent) {
-      alert("Please select a student");
-      return;
-    }
-    try {
-      await axios.post("http://localhost:5000/api/tests", {
-        name: newTest,
-        zoomLink,
-        studentId: selectedStudent,
-      });
-      setNewTest("");
-      setZoomLink("");
-      setSelectedStudent("");
-      fetchTests();
-    } catch (err) {
-      console.error("Error adding test:", err);
-    }
-  };
+      // 1. Fetch all courses the coach owns
+      const coursesResponse = await apiClient.get(ENDPOINTS.COURSES.GET_MY_COURSES_AS_COACH);
+      const coachCourses = coursesResponse.data.data || [];
+      setCourses(coachCourses);
 
-  // ✅ Add review
-  const handleReview = async (testId) => {
-    try {
-      await axios.put(`http://localhost:5000/api/tests/${testId}/review`, {
-        review,
-      });
-      setReview("");
-      fetchTests();
+      // 2. For each course, fetch its tests
+      if (coachCourses.length > 0) {
+        const testPromises = coachCourses.map(course =>
+          apiClient.get(ENDPOINTS.TESTS.GET_BY_COURSE(course._id))
+        );
+        const testResults = await Promise.all(testPromises);
+
+        // 3. Organize tests into a map for easy lookup: { courseId: [tests] }
+        const testsMap = {};
+        coachCourses.forEach((course, index) => {
+          testsMap[course._id] = testResults[index].data.data || [];
+        });
+        setTestsByCourse(testsMap);
+      }
     } catch (err) {
-      console.error("Error adding review:", err);
+      console.error("Error fetching test data:", err);
+      setError("Failed to load test data. Please refresh the page.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTests();
-    fetchStudents();
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  // Handler for creating a new test
+  const handleAddTest = async (e) => {
+    e.preventDefault();
+    if (!selectedCourseId || !newTestName.trim() || !newTestZoomLink.trim()) {
+      toast.error("Please select a course and fill out all fields.");
+      return;
+    }
+    try {
+      await apiClient.post(ENDPOINTS.TESTS.CREATE(selectedCourseId), {
+        testName: newTestName,
+        zoomLink: newTestZoomLink,
+      });
+      toast.success("Test created successfully!");
+      // Reset form and refetch data
+      setSelectedCourseId("");
+      setNewTestName("");
+      setNewTestZoomLink("");
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to create test.");
+      console.error("Error creating test:", err);
+    }
+  };
+  
+  // Handler for deleting a test
+  const handleDeleteTest = async (testId) => {
+    if (window.confirm("Are you sure you want to delete this test?")) {
+        try {
+            await apiClient.delete(ENDPOINTS.TESTS.DELETE(testId));
+            toast.success("Test deleted.");
+            fetchData(); // Refresh data
+        } catch(err) {
+            toast.error(err.response?.data?.message || "Failed to delete test.");
+            console.error("Error deleting test:", err);
+        }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#10172a] via-[#0a1020] to-black p-6 text-white">
       <h1 className="text-3xl font-extrabold text-center mb-8">👨‍🏫 Manage Tests</h1>
 
-      {/* ➕ Assign Test */}
+      {/* Assign Test Form */}
       <motion.form
         onSubmit={handleAddTest}
         initial={{ opacity: 0, scale: 0.9 }}
@@ -84,17 +110,17 @@ const CoachTestResults = () => {
       >
         <h2 className="text-xl font-semibold mb-3">➕ Assign New Test</h2>
 
-        {/* Select Student */}
+        {/* Select Course Dropdown */}
         <select
-          value={selectedStudent}
-          onChange={(e) => setSelectedStudent(e.target.value)}
+          value={selectedCourseId}
+          onChange={(e) => setSelectedCourseId(e.target.value)}
           className="w-full p-3 rounded-lg bg-black/40 border border-gray-500 text-white mb-3"
           required
         >
-          <option value="">-- Select Student --</option>
-          {students.map((student) => (
-            <option key={student._id} value={student._id}>
-              {student.name}
+          <option value="">-- Select Course --</option>
+          {courses.map((course) => (
+            <option key={course._id} value={course._id}>
+              {course.title}
             </option>
           ))}
         </select>
@@ -104,8 +130,8 @@ const CoachTestResults = () => {
           type="text"
           className="w-full p-3 mb-3 rounded-lg bg-black/40 border border-gray-500 text-white focus:ring-2 focus:ring-violet-500"
           placeholder="Enter test name..."
-          value={newTest}
-          onChange={(e) => setNewTest(e.target.value)}
+          value={newTestName}
+          onChange={(e) => setNewTestName(e.target.value)}
           required
         />
 
@@ -114,8 +140,8 @@ const CoachTestResults = () => {
           type="url"
           className="w-full p-3 mb-3 rounded-lg bg-black/40 border border-gray-500 text-white focus:ring-2 focus:ring-blue-500"
           placeholder="Enter Zoom link..."
-          value={zoomLink}
-          onChange={(e) => setZoomLink(e.target.value)}
+          value={newTestZoomLink}
+          onChange={(e) => setNewTestZoomLink(e.target.value)}
           required
         />
 
@@ -123,55 +149,45 @@ const CoachTestResults = () => {
           type="submit"
           className="mt-3 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg shadow-md"
         >
-          Assign Test
+          Assign Test to Course
         </button>
       </motion.form>
 
-      {/* 📄 Review Tests */}
-      {tests.length === 0 ? (
-        <p className="text-gray-400 text-center">No tests assigned yet.</p>
-      ) : (
-        tests.map((test, index) => (
-          <motion.div
-            key={test._id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl shadow-lg mb-6"
-          >
-            <h2 className="text-xl font-bold">{test.name}</h2>
-            <p className="text-gray-300">
-              🎓 Assigned to: {test.student?.name || "Unknown"}
-            </p>
-
-            {/* Zoom Link */}
-            {test.zoomLink && (
-              <a
-                href={test.zoomLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md"
-              >
-                Join Link
-              </a>
-            )}
-
-            {/* Review Section */}
-            <textarea
-              className="w-full mt-4 p-3 rounded-lg bg-black/40 border border-gray-500 text-white focus:ring-2 focus:ring-green-500"
-              rows="2"
-              placeholder="Write coach review..."
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
-            ></textarea>
-            <button
-              onClick={() => handleReview(test._id)}
-              className="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md"
-            >
-              Save Review
-            </button>
-          </motion.div>
-        ))
+      {/* Review Tests Section */}
+      <h2 className="text-2xl font-semibold mb-3">📄 Assigned Tests</h2>
+       {loading ? <p className="text-center">Loading tests...</p>
+      : error ? <p className="text-center text-red-400">{error}</p>
+      : courses.length === 0 ? <p className="text-gray-400">Create a course to start assigning tests.</p>
+      : (
+        <div className="space-y-6">
+          {courses.map(course => (
+            <div key={course._id}>
+              <h3 className="text-xl font-bold text-violet-400 mb-2">{course.title}</h3>
+              {testsByCourse[course._id]?.length > 0 ? (
+                testsByCourse[course._id].map((test) => (
+                  <motion.div
+                    key={test._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white/10 backdrop-blur-lg p-4 rounded-lg shadow-lg mb-4 flex justify-between items-center"
+                  >
+                    <div>
+                        <h4 className="text-lg font-semibold">{test.testName}</h4>
+                        <a href={test.zoomLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-1 inline-block">
+                            🔗 Join Link
+                        </a>
+                    </div>
+                    <Button variant="destructive" size="icon" onClick={() => handleDeleteTest(test._id)}>
+                        <Trash2 className="h-4 w-4"/>
+                    </Button>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm ml-2">No tests assigned to this course yet.</p>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
