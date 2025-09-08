@@ -9,8 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import DashboardNavbar from "../../../components/Dashbordnavbar";
-
+import DashboardNavbar from "../../../components/Dashboradnavbar";
 
 const StudentSchedule: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(
@@ -82,7 +81,9 @@ const StudentSchedule: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-11">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">📅 My Schedule</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              📅 My Schedule
+            </h1>
             <p className="text-muted-foreground mt-1">
               Manage your chess lessons and practice sessions
             </p>

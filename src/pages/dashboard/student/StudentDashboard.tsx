@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import DashboardNavbar from "../../../components/Dashbordnavbar";
+import DashboardNavbar from "../../../components/Dashboradnavbar";
 import {
   GraduationCap,
   Trophy,
