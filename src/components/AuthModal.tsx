@@ -312,12 +312,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
               {/* Switch Mode */}
               <div className="text-center pt-4 border-t border-gray-800">
                 <p className="text-gray-400">
-                  {mode === "login" ? "Don't have an account?" : "Already have an account?"}
+                  {mode === "login" ? "" : "Already have an account?"}
                   <button
                     onClick={() => handleSwitchMode(mode === "login" ? "signup" : "login")}
                     className="ml-2 text-yellow-400 hover:underline font-medium"
                   >
-                    {mode === "login" ? "Sign up" : "Sign in"}
+                    {mode === "login" ? "" : "Sign in"}
                   </button>
                 </p>
               </div>
