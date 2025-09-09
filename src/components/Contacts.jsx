@@ -34,8 +34,9 @@ const Contacts = () => {
           className="mt-6 text-lg md:text-xl text-gray-300 text-center max-w-2xl mx-auto leading-relaxed"
         >
           We'd love to hear from you! Whether you have a question, need support,
-          or want to join <span className="text-yellow-400 font-semibold">PawnRace</span>,
-          feel free to reach out.
+          or want to join{" "}
+          <span className="text-yellow-400 font-semibold">PawnRace</span>, feel
+          free to reach out.
         </motion.p>
       </section>
 
@@ -44,18 +45,22 @@ const Contacts = () => {
         <div className="grid md:grid-cols-3 gap-8 text-center">
           {/* Email */}
           <motion.div {...fadeInUp(0.2)} className={`p-6 ${glass}`}>
-            <h3 className="text-xl font-semibold text-yellow-300 mb-2">📧 Email</h3>
+            <h3 className="text-xl font-semibold text-yellow-300 mb-2">
+              📧 Email
+            </h3>
             <a
-              href="mailto:pawnraceacademy@gmail.com"
+              href="mailto:academy@pawnrace.com"
               className="text-yellow-400 hover:underline"
             >
-              pawnraceacademy@gmail.com
+              academy@pawnrace.com
             </a>
           </motion.div>
 
           {/* WhatsApp */}
           <motion.div {...fadeInUp(0.3)} className={`p-6 ${glass}`}>
-            <h3 className="text-xl font-semibold text-yellow-300 mb-2">💬 WhatsApp</h3>
+            <h3 className="text-xl font-semibold text-yellow-300 mb-2">
+              💬 WhatsApp
+            </h3>
             <a
               href="https://wa.me/918984021185"
               target="_blank"
@@ -68,7 +73,9 @@ const Contacts = () => {
 
           {/* Location */}
           <motion.div {...fadeInUp(0.4)} className={`p-6 ${glass}`}>
-            <h3 className="text-xl font-semibold text-yellow-300 mb-2">📍 Location</h3>
+            <h3 className="text-xl font-semibold text-yellow-300 mb-2">
+              📍 Location
+            </h3>
             <p className="text-gray-300">Puri, Odisha, India</p>
           </motion.div>
         </div>
@@ -81,7 +88,8 @@ const Contacts = () => {
             📝 Have a Query?
           </h3>
           <p className="text-gray-300 mb-8">
-            Click below to fill out our quick form and we’ll get back to you as soon as possible.
+            Click below to fill out our quick form and we’ll get back to you as
+            soon as possible.
           </p>
           <button
             onClick={() =>
