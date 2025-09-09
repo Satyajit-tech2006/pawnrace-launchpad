@@ -50,7 +50,7 @@ const coaches = [
   {
     name: "Dikshant Dash",
     image:
-      "https://i.ibb.co/gZ4yN794/Whats-App-Image-2025-09-07-at-03-32-14-f3e0bc98.jpg",
+      "https://i.ibb.co/21kBv1dK/Whats-App-Image-2025-09-08-at-19-51-53-ab248d0c.jpg",
     title: "International Chess Sensation",
     description:
       "With over 14 years of playing experience and a remarkable rating of 1800+, Dikshant Dash is a force to be reckoned with in the chess world.",
@@ -227,7 +227,7 @@ export default function Coaches() {
                   height: { xs: 280, sm: 220, md: 300, lg: 360 }, // more height in desktop
                   objectFit: "cover",
                   borderRadius: "15px",
-                  border: "3px solid black",
+                  border: "2px solid yellow",
                 }}
               />
               <CardContent className="text-center space-y-3">
