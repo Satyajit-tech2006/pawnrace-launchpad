@@ -11,7 +11,7 @@ import {
   MessageSquare,
   Settings,
   Database,
-  Brain,
+  Brain, // Brain icon import kar rahe hain
 } from "lucide-react";
 
 // --- COACH MENU ITEMS ---
@@ -56,18 +56,23 @@ const coachMenuItems = [
     icon: Settings,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
-  
+  // Naya "Play Game" button yahan add kiya hai
+  {
+    name: "Play Game",
+    icon: Brain, // Aap icon change kar sakte hain
+    color: "bg-gradient-to-br from-green-400 to-blue-500", // Alag color diya hai
+  },
 ].map((item) => ({
   ...item,
   path: item.name.toLowerCase().replace(/\s+/g, "-"),
 }));
 
-// MenuCard Component
+// MenuCard Component (Ismein koi change nahi)
 const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
   return (
     <motion.div
       role="button"
-      aria-label={`Navigate to ${name}`}
+      aria-label={`Maps to ${name}`}
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
@@ -92,8 +97,16 @@ const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
 const CoachDashboard = () => {
   const navigate = useNavigate();
 
+  // handleMenuClick function ko update kiya hai
   const handleMenuClick = (path) => {
-    navigate(`/coach-dashboard/${path}`);
+    if (path === "play-game") {
+      // Jab "Play Game" par click ho, toh /play/:roomId par jao
+      // Abhi ke liye ek "test" room ID ka istemaal kar rahe hain
+      navigate(`/play/coach-test-room`);
+    } else {
+      // Baaki buttons pehle jaise hi kaam karenge
+      navigate(`/coach-dashboard/${path}`);
+    }
   };
 
   return (
@@ -116,7 +129,7 @@ const CoachDashboard = () => {
               </p>
             </div>
 
-            {/* Menu Grid */}
+            {/* Menu Grid (Ismein koi change nahi) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

@@ -17,10 +17,11 @@ import Coaches from "../components/Coaches.jsx";
 import ComingSoon from "../pages/ComingSoon.jsx";
 import Curriculum from "../components/Curriculum.jsx";
 import { Layout } from "../components/Layout";
+import LiveGamePage from "../pages/LiveGamePage.jsx";
+import AboutUs from "../components/AboutUs.jsx";
+
 // Import Dashboard & Route Guards
-import ProtectedRoute from "./ProtectedRoute.jsx";
-// Corrected the file extension from .jsx to .tsx
-// import DashboardLayout from '../components/dashboard/DashboardLayout.tsx';
+// import ProtectedRoute from "./ProtectedRoute.jsx"; // ProtectedRoute ko skip kar diya hai
 
 // Coach Dashboard Pages
 import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
@@ -41,11 +42,11 @@ import StudentAssignment from "../pages/dashboard/student/StudentAssignments.jsx
 import StudentTournament from "../pages/dashboard/student/StudentTournament.jsx";
 import StudentTestResults from "../pages/dashboard/student/StudentTestResults.jsx";
 import StudentChat from "../pages/dashboard/student/StudentChat.jsx";
-import AboutUs from "../components/AboutUs.jsx";
+
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* --- Public Routes --- */}
       <Route
         path="/"
         element={
@@ -151,7 +152,9 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Student Dashboard - Protected Routes */}
+      {/* --- Dashboard Routes (Sab ab direct accessible hain) --- */}
+      
+      {/* Student Dashboard */}
       <Route path="/student-dashboard">
         <Route index element={<StudentDashboard />} />
         <Route path="schedule" element={<StudentSchedule />} />
@@ -163,7 +166,7 @@ const AppRoutes = () => {
         <Route path="iqpuzzles" element={<ComingSoon />} />
       </Route>
 
-      {/* Coach Dashboard - Protected Routes */}
+      {/* Coach Dashboard */}
       <Route path="/coach-dashboard">
         <Route index element={<CoachDashboard />} />
         <Route path="schedule" element={<CoachSchedule />} />
@@ -178,7 +181,10 @@ const AppRoutes = () => {
         <Route path="settings" element={<ComingSoon />} />
       </Route>
 
-      {/* Not Found Route */}
+      {/* Live Game Route (Direct accessible) */}
+      <Route path="/play/:roomId" element={<LiveGamePage />} />
+
+      {/* Not Found Route (Sabse neeche) */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

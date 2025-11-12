@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 // --- BACKGROUND ANIMATION COMPONENTS ---
-
+// ... (Yahan koi change nahi hai ... KingIcon, QueenIcon, RookIcon, etc.)
 const KingIcon = ({ className }) => (
   <svg
     className={className}
@@ -145,9 +145,15 @@ const menuItems = [
     icon: Brain,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
+  // Naya "Play Game" button yahan add kiya hai
+  {
+    name: "Play Game",
+    icon: Trophy, // Yahan Trophy icon use kar lete hain (ya Brain bhi kar sakte hain)
+    color: "bg-gradient-to-br from-green-400 to-blue-500", // Alag color
+  },
 ].map((item) => ({ ...item, path: item.name.toLowerCase().replace(" ", "-") }));
 
-// MenuCard Component
+// MenuCard Component (Ismein koi change nahi)
 interface MenuCardProps {
   name: string;
   icon: LucideIcon;
@@ -190,8 +196,17 @@ const MenuCard: React.FC<MenuCardProps> = ({
 // StudentDashboard Component
 const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  // handleMenuClick function ko update kiya hai
   const handleMenuClick = (path: string) => {
-    navigate(`/student-dashboard/${path}`);
+    if (path === "play-game") {
+      // Jab "Play Game" par click ho, toh /play/:roomId par jao
+      // Abhi ke liye ek "test" room ID ka istemaal kar rahe hain
+      navigate(`/play/student-test-room`);
+    } else {
+      // Baaki buttons pehle jaise hi kaam karenge
+      navigate(`/student-dashboard/${path}`);
+    }
   };
 
   return (
@@ -215,7 +230,7 @@ const StudentDashboard: React.FC = () => {
               </p>
             </div>
 
-            {/* Menu Grid */}
+            {/* Menu Grid (Ismein koi change nahi) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
