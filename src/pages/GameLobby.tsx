@@ -1,3 +1,4 @@
+// src/pages/GameLobby.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -40,7 +41,7 @@ export default function GameLobby() {
         <div className="my-8 border-t border-gray-700"></div>
 
         {/* === Student ke liye === */}
-        <h2 className="text-2xl font-bold mb-4">Join Game (Student)</h2>
+        <h2 className="text-2xl font-bold mb-4">Join Game</h2>
         <p className="mb-4 text-gray-400">Coach se mili Room ID yahan daalein.</p>
         <div className="flex gap-2">
           <input

@@ -1,6 +1,6 @@
 // src/components/ChessGame.tsx
 import React, { useEffect, useRef, useState } from "react";
-import Chessboard from "chessboardjsx"; // chessboardjsx default export
+import Chessboard from "chessboardjsx";
 import { Chess } from "chess.js";
 import { io, Socket } from "socket.io-client";
 
@@ -11,8 +11,14 @@ type Props = {
   startFEN?: string;
 };
 
-export default function ChessGame({ roomId, role, serverUrl = "http://localhost:4000", startFEN }: Props) {
-  const [game] = useState(() => new (Chess as any)(startFEN));
+export default function ChessGame({
+  roomId,
+  role,
+  serverUrl = "http://localhost:4000",
+  startFEN,
+}: Props) {
+  // create one chess instance
+  const [game] = useState(() => new Chess(startFEN));
   const [fen, setFen] = useState<string>(game.fen());
   const socketRef = useRef<Socket | null>(null);
   const orientation = role === "coach" ? "white" : "black";
@@ -39,7 +45,9 @@ export default function ChessGame({ roomId, role, serverUrl = "http://localhost:
         try {
           game.load(newFen);
           setFen(game.fen());
-        } catch (e) {}
+        } catch (e) {
+          console.error("Failed to sync state:", e);
+        }
       }
     });
 
@@ -47,22 +55,36 @@ export default function ChessGame({ roomId, role, serverUrl = "http://localhost:
       socket.emit("leaveRoom", { roomId });
       socket.disconnect();
     };
+    // we intentionally do not include `game` in deps because it is created once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, role, serverUrl]);
 
-  function onDrop(e: any) {
-    // chessboardjsx provides piece drop event: { sourceSquare, targetSquare, piece }
+  // chessboardjsx onDrop signature: ({ sourceSquare, targetSquare, piece, ...})
+  function onDrop(e: { sourceSquare: string; targetSquare: string }) {
     const { sourceSquare, targetSquare } = e;
-    const move = game.move({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: "q",
-    });
 
-    if (move === null) {
-      return; // illegal move -> do nothing
+    // try to make the move on the chess.js game instance
+    let move = null;
+    try {
+      move = game.move({
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: "q", // auto-promote to queen
+      });
+    } catch (err) {
+      console.error("Error making move:", err);
+      // reset board to authoritative FEN if something unexpected happened
+      setFen(game.fen());
+      return;
     }
 
+    if (move === null) {
+      // illegal move: force the board to display the authoritative FEN again
+      setFen(game.fen());
+      return;
+    }
+
+    // legal move: update local FEN and send to server
     setFen(game.fen());
     socketRef.current?.emit("makeMove", {
       roomId,
@@ -75,29 +97,33 @@ export default function ChessGame({ roomId, role, serverUrl = "http://localhost:
   function resetBoard() {
     game.reset();
     setFen(game.fen());
-    socketRef.current?.emit("syncState", { roomId, fen: game.fen(), pgn: game.pgn() });
+    socketRef.current?.emit("syncState", {
+      roomId,
+      fen: game.fen(),
+      pgn: game.pgn(),
+    });
   }
 
   return (
     <div style={{ maxWidth: 520, margin: "0 auto" }}>
       <div style={{ marginBottom: 8 }}>
-        <strong>Role:</strong> {role} — <strong>Turn:</strong> {game.turn() === "w" ? "White" : "Black"}
+        <strong>Role:</strong> {role} — <strong>Turn:</strong>{" "}
+        {game.turn() === "w" ? "White" : "Black"}
       </div>
 
       <Chessboard
         width={480}
         position={fen}
         orientation={orientation}
-        onDrop={(from: string, to: string) => {
-          // chessboardjsx onDrop signature (from, to)
-          // wrap into expected shape for our onDrop
-          onDrop({ sourceSquare: from, targetSquare: to });
-        }}
+        onDrop={onDrop}
         draggable={true}
       />
 
       <div style={{ marginTop: 8 }}>
-        <button onClick={resetBoard} style={{ padding: "6px 10px", borderRadius: 6 }}>
+        <button
+          onClick={resetBoard}
+          style={{ padding: "6px 10px", borderRadius: 6 }}
+        >
           Reset
         </button>
         <div style={{ marginTop: 6 }}>
