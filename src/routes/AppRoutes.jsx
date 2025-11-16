@@ -19,7 +19,7 @@ import Curriculum from "../components/Curriculum.jsx";
 import { Layout } from "../components/Layout";
 import LiveGamePage from "../pages/LiveGamePage.jsx";
 import AboutUs from "../components/AboutUs.jsx";
-
+import GameLobby from '../pages/GameLobby';
 // Import Dashboard & Route Guards
 // import ProtectedRoute from "./ProtectedRoute.jsx"; // ProtectedRoute ko skip kar diya hai
 
@@ -182,6 +182,7 @@ const AppRoutes = () => {
       </Route>
 
       {/* Live Game Route (Direct accessible) */}
+      <Route path="/play" element={<GameLobby />} />
       <Route path="/play/:roomId" element={<LiveGamePage />} />
 
       {/* Not Found Route (Sabse neeche) */}

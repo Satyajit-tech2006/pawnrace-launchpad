@@ -18,7 +18,7 @@ export default function LiveGamePage() {
   if (!userRole) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-        <h2 className="text-2xl font-bold mb-6">Aap kaun hain?</h2>
+        <h2 className="text-2xl font-bold mb-6">Who Are You</h2>
         <div className="flex gap-4">
           <button
             onClick={() => setUserRole('coach')}

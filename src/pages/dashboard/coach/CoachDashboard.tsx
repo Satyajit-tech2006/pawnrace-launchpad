@@ -98,17 +98,17 @@ const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
 const CoachDashboard = () => {
   const navigate = useNavigate();
 
-  // handleMenuClick function ko update kiya hai
+  // ***** YAHAN BADLAAV KIYA GAYA HAI *****
   const handleMenuClick = (path) => {
     if (path === "play-game") {
-      // Jab "Play Game" par click ho, toh /play/:roomId par jao
-      // Abhi ke liye ek "test" room ID ka istemaal kar rahe hain
-      navigate(`/play/coach-test-room`);
+      // Jab "Play Game" par click ho, toh lobby page par jao
+      navigate(`/play`);
     } else {
       // Baaki buttons pehle jaise hi kaam karenge
       navigate(`/coach-dashboard/${path}`);
     }
   };
+  // ****************************************
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative">
