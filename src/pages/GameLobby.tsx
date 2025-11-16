@@ -28,7 +28,7 @@ export default function GameLobby() {
       <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md text-center">
         
         {/* === Coach ke liye === */}
-        <h2 className="text-2xl font-bold mb-4">Create Game (Coach)</h2>
+        <h2 className="text-2xl font-bold mb-4">Create Game</h2>
         <p className="mb-4 text-gray-400">Ek naya game shuru karein aur ID share karein.</p>
         <button
           onClick={createRoom}
