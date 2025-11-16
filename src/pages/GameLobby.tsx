@@ -37,7 +37,7 @@ export default function GameLobby() {
         
         {/* === Game Banane ke liye === */}
         <h2 className="text-2xl font-bold mb-4">Create Game</h2>
-        <p className="mb-4 text-gray-400">Ek naya game shuru karein aur ID share karein.</p>
+        <p className="mb-4 text-gray-400">Start A New Game and Share your room id</p>
         
         {/* YEH HAI NAYA LOGIC: Jab tak color na chuna ho, tab tak yeh button dikhao */}
         {!showColorChoice && (
@@ -75,7 +75,7 @@ export default function GameLobby() {
         {/* === Game Join karne ke liye === */}
         <h2 className="text-2xl font-bold mb-4">Join Game</h2>
         {/* YEH HAI NAYA CHANGE: Text badal diya gaya hai */}
-        <p className="mb-4 text-gray-400">Dost se mili Room ID yahan daalein.</p>
+        <p className="mb-4 text-gray-400"> Room ID </p>
         <div className="flex gap-2">
           <input
             type="text"

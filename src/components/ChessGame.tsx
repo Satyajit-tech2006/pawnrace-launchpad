@@ -162,9 +162,9 @@ export default function ChessGame({
         {/* YEH HAI NAYA CHANGE: UI update */}
         <strong>Room ID:</strong> {roomId}
         <br />
-        <strong>Aapka Color:</strong> {myColor === 'w' ? "White (Safed)" : myColor === 'b' ? "Black (Kaala)" : "Waiting..."}
+        <strong>Your Color:</strong> {myColor === 'w' ? "White (Safed)" : myColor === 'b' ? "Black (Kaala)" : "Waiting..."}
         <br />
-        <strong>Kiski Chaal:</strong> {game.turn() === "w" ? "White" : "Black"}
+        <strong>move:</strong> {game.turn() === "w" ? "White" : "Black"}
         {isMyTurn && myColor && " (Aapki Chaal)"}
       </div>
 
