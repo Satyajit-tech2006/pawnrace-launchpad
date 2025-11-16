@@ -1,54 +1,60 @@
-import React, { useState } from 'react'; // 1. useState ko import kiya
-import { useParams } from 'react-router-dom';
-// import { useAuth } from '../contexts/AuthContext.jsx'; // 2. useAuth ko hata diya
-import ChessGame from '../components/ChessGame.tsx'; // ChessGame component ka path check kar lena
+// src/pages/LiveGamePage.jsx
+import React, { useState } from "react";
+import { useParams } from "react-router-dom";
+import ChessGame from "../components/ChessGame.tsx"; // ChessGame component
 
-/**
- * Yeh page '/play/:roomId' route par render hoga.
- * Ismein authentication nahi hai. User khud apna role choose karega.
- */
-export default function LiveGamePage() {
-  // 1. URL se 'roomId' nikaalna
+const LiveGamePage = () => {
   const { roomId } = useParams();
   
-  // 2. User ka role store karne ke liye state banaya
-  const [userRole, setUserRole] = useState(null); // Shuru mein role null hai
+  // Hum user ka role yahan 'state' mein store karenge.
+  // Shuru mein yeh 'null' hoga.
+  const [userRole, setUserRole] = useState(null);
 
-  // 3. Jab tak role select nahi hota, yeh UI dikhega
+  // Agar user ne abhi tak role select nahi kiya hai (userRole null hai)
   if (!userRole) {
     return (
+      // Role selection screen - bina Layout ke, full screen
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-        <h2 className="text-2xl font-bold mb-6">Who Are You</h2>
-        <div className="flex gap-4">
-          <button
-            onClick={() => setUserRole('coach')}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold text-lg"
-          >
-            I am a Coach
-          </button>
-          <button
-            onClick={() => setUserRole('student')}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold text-lg"
-          >
-            I am a Student
-          </button>
+        <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md text-center">
+          <h1 className="text-2xl font-bold mb-4">Join Game Room</h1>
+          <p className="text-gray-400 mb-6">Aap kaise join karna chahte hain?</p>
+          
+          <div className="flex flex-col gap-4">
+            <button
+              // Coach (White) banne ke liye
+              onClick={() => setUserRole("coach")}
+              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold text-lg"
+            >
+              Join as Coach (Play as White)
+            </button>
+            <button
+              // Student (Black) banne ke liye
+              onClick={() => setUserRole("student")}
+              className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-white font-semibold text-lg"
+            >
+              Join as Student (Play as Black)
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // 4. Jaise hi user role select karta hai, ChessGame component render hoga
+  // Jab user role select kar lega (coach ya student), toh ChessGame component dikhao
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] to-black p-4 md:p-8">
-      <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-6">
-        Live Chess Match (Room: {roomId})
-      </h1>
+    // Game screen - bina Layout ke, full screen
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+      <h2 className="text-2xl font-bold text-center text-white mb-4">
+        Game Room: {roomId}
+      </h2>
       
       <ChessGame
         roomId={roomId}
-        role={userRole} // 4. Yahan selected role (coach/student) pass kiya
-        serverUrl={import.meta.env.VITE_API_URL} 
+        role={userRole} // Jo role user ne select kiya
+        serverUrl="http://localhost:4000" // Aapka backend URL
       />
     </div>
   );
-}
+};
+
+export default LiveGamePage;
