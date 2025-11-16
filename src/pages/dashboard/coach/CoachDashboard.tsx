@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Settings,
   Database,
+  Gamepad,
   Brain, // Brain icon import kar rahe hain
 } from "lucide-react";
 
@@ -59,8 +60,8 @@ const coachMenuItems = [
   // Naya "Play Game" button yahan add kiya hai
   {
     name: "Play Game",
-    icon: Brain, // Aap icon change kar sakte hain
-    color: "bg-gradient-to-br from-green-400 to-blue-500", // Alag color diya hai
+    icon: Gamepad, // Aap icon change kar sakte hain
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500", // Alag color diya hai
   },
 ].map((item) => ({
   ...item,

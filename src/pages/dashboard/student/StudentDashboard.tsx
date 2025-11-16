@@ -9,6 +9,7 @@ import {
   Award,
   FileBarChart,
   Phone,
+  Gamepad,
   Settings,
   Database,
   MessageSquare,
@@ -148,8 +149,8 @@ const menuItems = [
   // Naya "Play Game" button yahan add kiya hai
   {
     name: "Play Game",
-    icon: Trophy, // Yahan Trophy icon use kar lete hain (ya Brain bhi kar sakte hain)
-    color: "bg-gradient-to-br from-green-400 to-blue-500", // Alag color
+    icon: Gamepad, // Yahan Trophy icon use kar lete hain (ya Brain bhi kar sakte hain)
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500", // Alag color
   },
 ].map((item) => ({ ...item, path: item.name.toLowerCase().replace(" ", "-") }));
 
