@@ -3,18 +3,18 @@ import React, { useEffect, useRef, useState } from "react";
 import Chessboard from "chessboardjsx";
 import { Chess } from "chess.js";
 import { io, Socket } from "socket.io-client";
-import { useLocation } from "react-router-dom"; // YEH HAI NAYA IMPORT
+import { useLocation } from "react-router-dom"; // NEW IMPORT
 
 type Props = {
   roomId: string;
-  // 'role' prop hata diya gaya hai
+  // 'role' prop has been removed
   serverUrl?: string;
   startFEN?: string;
 };
 
 export default function ChessGame({
   roomId,
-  serverUrl = "http://localhost:4000",
+  serverUrl = "import.meta.env.VITE_SOCKET_URL",
   startFEN,
 }: Props) {
   // create one chess instance
@@ -22,32 +22,32 @@ export default function ChessGame({
   const [fen, setFen] = useState<string>(game.fen());
   const socketRef = useRef<Socket | null>(null);
 
-  // YEH HAIN NAYE CHANGES: 'role' ki jagah 'myColor' state
-  const location = useLocation(); // React Router se state lene ke liye
+  // NEW CHANGES: 'myColor' state instead of 'role'
+  const location = useLocation(); // To get state from React Router
   const [myColor, setMyColor] = useState<'w' | 'b' | null>(null);
-  
-  // Board ka orientation 'myColor' par depend karega
+
+  // Board orientation depends on 'myColor'
   const orientation = myColor === "b" ? "black" : "white";
-  // Aapki chaal hai ya nahi
+  // Is it your turn?
   const isMyTurn = game.turn() === myColor;
 
   useEffect(() => {
     const socket = io(serverUrl, { transports: ["websocket", "polling"] });
     socketRef.current = socket;
 
-    // YEH HAI NAYA CHANGE: Lobby se 'playerColor' state padho (sirf creator ke paas hoga)
-    const creatorColor = location.state?.playerColor; // 'w', 'b', ya undefined
+    // NEW CHANGE: Read 'playerColor' state from lobby (only creator will have it)
+    const creatorColor = location.state?.playerColor; // 'w', 'b', or undefined
 
-    // YEH HAI NAYA CHANGE: 'role' ki jagah 'playerColor' bhejo
-    socket.emit("joinRoom", { 
-      roomId, 
-      playerColor: creatorColor // Joiner ke liye yeh undefined hoga, jo theek hai
+    // NEW CHANGE: Send 'playerColor' instead of 'role'
+    socket.emit("joinRoom", {
+      roomId,
+      playerColor: creatorColor // For joiner this will be undefined, which is fine
     });
 
-    // YEH HAI NAYA LISTENER: Server se apna assigned color receive karo
+    // NEW LISTENER: Receive assigned color from server
     socket.on("colorAssigned", ({ color }: { color: 'w' | 'b' }) => {
       setMyColor(color);
-      console.log(`Mujhe color mila: ${color === 'w' ? 'White' : 'Black'}`);
+      console.log(`Assigned color: ${color === 'w' ? 'White' : 'Black'}`);
     });
 
     socket.on("opponentMove", ({ fen: newFen }: { fen?: string }) => {
@@ -72,39 +72,39 @@ export default function ChessGame({
       }
     });
 
-    // YEH HAIN NAYE EVENTS (Optional, par achhe hain)
+    // NEW EVENTS (Optional, but useful)
     socket.on("gameStart", () => {
-      console.log("Dono khiladi aa gaye, game shuru!");
-      // Yahan aap koi UI element update kar sakte hain
+      console.log("Both players have joined, game started!");
+      // You can update some UI element here
     });
 
     socket.on("peer_left", () => {
-      console.log("Saamne wala khiladi chala gaya...");
+      console.log("Opponent has left...");
       alert("Opponent disconnected.");
-      // Yahan aap user ko lobby mein vapis bhej sakte hain
+      // You can send user back to lobby here
     });
-    
+
     socket.on("error", ({ message }: { message: string }) => {
-      console.error("Server se error:", message);
+      console.error("Error from server:", message);
       alert(`Error: ${message}`);
-      // Yahan user ko lobby bhej do
+      // Send user to lobby here
     });
 
     return () => {
       socket.emit("leaveRoom", { roomId });
       socket.disconnect();
     };
-    
-    // YEH HAI NAYA CHANGE: Dependency array update kiya
+
+    // NEW CHANGE: Updated dependency array
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, serverUrl, location.state]); 
+  }, [roomId, serverUrl, location.state]);
 
   // chessboardjsx onDrop signature: ({ sourceSquare, targetSquare, piece, ...})
   function onDrop(e: { sourceSquare: string; targetSquare: string }) {
-    // YEH HAI NAYA CHANGE: Agar aapki turn nahi toh move mat karne do
+    // NEW CHANGE: Do not allow move if it's not your turn
     if (!isMyTurn) {
-      console.log("Aapki chaal nahi hai!");
-      setFen(game.fen()); // Board ko vapis purani state par lao
+      console.log("It's not your turn!");
+      setFen(game.fen()); // Restore board to previous state
       return;
     }
 
@@ -141,12 +141,12 @@ export default function ChessGame({
   }
 
   function resetBoard() {
-    // Sirf 'White' (ya creator) hi reset kar paaye (Optional logic)
+    // Only 'White' (or creator) can reset the board (Optional logic)
     if (myColor !== 'w') {
-      alert("Sirf White hi board reset kar sakta hai.");
+      alert("Only White can reset the board.");
       return;
     }
-    
+
     game.reset();
     setFen(game.fen());
     socketRef.current?.emit("syncState", {
@@ -159,13 +159,13 @@ export default function ChessGame({
   return (
     <div style={{ maxWidth: 520, margin: "0 auto" }}>
       <div style={{ marginBottom: 8 }}>
-        {/* YEH HAI NAYA CHANGE: UI update */}
+        {/* NEW CHANGE: UI update */}
         <strong>Room ID:</strong> {roomId}
         <br />
-        <strong>Your Color:</strong> {myColor === 'w' ? "White (Safed)" : myColor === 'b' ? "Black (Kaala)" : "Waiting..."}
+        <strong>Your Color:</strong> {myColor === 'w' ? "White" : myColor === 'b' ? "Black" : "Waiting..."}
         <br />
-        <strong>move:</strong> {game.turn() === "w" ? "White" : "Black"}
-        {isMyTurn && myColor && " (Aapki Chaal)"}
+        <strong>Move:</strong> {game.turn() === "w" ? "White" : "Black"}
+        {isMyTurn && myColor && " (Your Turn)"}
       </div>
 
       <Chessboard
@@ -173,8 +173,8 @@ export default function ChessGame({
         position={fen}
         orientation={orientation}
         onDrop={onDrop}
-        // YEH HAI NAYA CHANGE: Sirf apni turn par drag karne do
-        draggable={isMyTurn} 
+        // NEW CHANGE: Allow drag only on your turn
+        draggable={isMyTurn}
       />
 
       <div style={{ marginTop: 8 }}>

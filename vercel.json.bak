@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data: http://localhost:4000 https://fonts.gstatic.com; connect-src 'self' http://localhost:4000 ws://localhost:4000 https://api.dicebear.com; img-src 'self' https://images.rawpixel.com data:;"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data: import.meta.env.VITE_SOCKET_URLhttps://fonts.gstatic.com; connect-src 'self' import.meta.env.VITE_SOCKET_URLws://import.meta.env.VITE_SOCKET_URL https://api.dicebear.com; img-src 'self' https://images.rawpixel.com data:;"
         }
       ]
     }
