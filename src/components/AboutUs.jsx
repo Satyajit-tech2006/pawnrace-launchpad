@@ -30,12 +30,7 @@ const teamMembers = [
     img: "https://i.ibb.co/bgjm2bRZ/Whats-App-Image-2025-09-07-at-02-37-54-047b6678.jpg",
     desc: "Leads product design blending chess mastery with academic engagement for a seamless user experience.",
   },
-  {
-    name: "Arpita Majumder",
-    role: "Technical Team Member",
-    img: "https://i.ibb.co/XZbps55H/Whats-App-Image-2025-09-07-at-02-18-46-0f62507c.jpg",
-    desc: "Problem-solver and code enthusiast contributing to development of learning modules and puzzle engines.",
-  },
+ 
   {
     name: "Priti Prasana Sethi",
     role: "Video & Media Specialist",

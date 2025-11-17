@@ -11,7 +11,8 @@ import {
   MessageSquare,
   Settings,
   Database,
-  Brain,
+  Gamepad,
+  Brain, // Brain icon import kar rahe hain
 } from "lucide-react";
 
 // --- COACH MENU ITEMS ---
@@ -56,18 +57,23 @@ const coachMenuItems = [
     icon: Settings,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
-  
+  // Naya "Play Game" button yahan add kiya hai
+  {
+    name: "Play Game",
+    icon: Gamepad, // Aap icon change kar sakte hain
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500", // Alag color diya hai
+  },
 ].map((item) => ({
   ...item,
   path: item.name.toLowerCase().replace(/\s+/g, "-"),
 }));
 
-// MenuCard Component
+// MenuCard Component (Ismein koi change nahi)
 const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
   return (
     <motion.div
       role="button"
-      aria-label={`Navigate to ${name}`}
+      aria-label={`Maps to ${name}`}
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
@@ -92,9 +98,17 @@ const MenuCard = ({ name, icon: Icon, color, index, onClick }) => {
 const CoachDashboard = () => {
   const navigate = useNavigate();
 
+  // ***** YAHAN BADLAAV KIYA GAYA HAI *****
   const handleMenuClick = (path) => {
-    navigate(`/coach-dashboard/${path}`);
+    if (path === "play-game") {
+      // Jab "Play Game" par click ho, toh lobby page par jao
+      navigate(`/play`);
+    } else {
+      // Baaki buttons pehle jaise hi kaam karenge
+      navigate(`/coach-dashboard/${path}`);
+    }
   };
+  // ****************************************
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative">
@@ -116,7 +130,7 @@ const CoachDashboard = () => {
               </p>
             </div>
 
-            {/* Menu Grid */}
+            {/* Menu Grid (Ismein koi change nahi) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
