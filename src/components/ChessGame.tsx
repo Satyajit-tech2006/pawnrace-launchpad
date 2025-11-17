@@ -34,11 +34,54 @@ export default function ChessGame({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [boardSize, setBoardSize] = useState<number>(480); // fallback
 
+  // winner / toast state
+  const [winner, setWinner] = useState<"w" | "b" | "draw" | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
   // orientation for chessboardjsx expects 'white' | 'black'
   const orientation = myColor === "b" ? "black" : "white";
 
   // is it the player's turn? (game.turn() returns 'w' or 'b')
   const isMyTurn = myColor !== null && game.turn() === myColor;
+
+  /* -------------------------
+     Palette (from screenshot)
+     ------------------------- */
+  const palette = {
+    whiteWinBg: "#f6a800", // warm yellow/orange
+    whiteWinText: "#0b1230",
+    blackWinBg: "#0f2646", // dark navy
+    blackWinText: "#ffffff",
+    toastShadow: "rgba(2,6,23,0.45)",
+  };
+
+  /* -------------------------
+     Helper: show winner toast
+     ------------------------- */
+  const announceWinner = (result: "w" | "b" | "draw") => {
+    setWinner(result);
+    setShowToast(true);
+    // auto-hide after 6s
+    setTimeout(() => {
+      setShowToast(false);
+    }, 6000);
+  };
+
+  /* -------------------------
+     Check game-over after moves
+     ------------------------- */
+  const checkGameOverAndAnnounce = () => {
+    if (game.game_over()) {
+      if (game.in_checkmate()) {
+        // winner is the side that is NOT to move
+        const winnerSide = game.turn() === "w" ? "b" : "w";
+        announceWinner(winnerSide);
+      } else {
+        // draw/stalemate/other
+        announceWinner("draw");
+      }
+    }
+  };
 
   /* -------------------------
      Socket & server listeners
@@ -65,6 +108,8 @@ export default function ChessGame({
         try {
           game.load(newFen);
           setFen(game.fen());
+          // after we load opponent move, check for game over
+          checkGameOverAndAnnounce();
         } catch (e) {
           console.error("Failed to load FEN from opponent:", e);
         }
@@ -76,6 +121,7 @@ export default function ChessGame({
         try {
           game.load(newFen);
           setFen(game.fen());
+          checkGameOverAndAnnounce();
         } catch (e) {
           console.error("Failed to sync state:", e);
         }
@@ -189,6 +235,9 @@ export default function ChessGame({
       fen: game.fen(),
       pgn: game.pgn(),
     });
+
+    // after making our move, check for game over locally
+    checkGameOverAndAnnounce();
   }
 
   /* -------------------------
@@ -202,6 +251,8 @@ export default function ChessGame({
     }
     game.reset();
     setFen(game.fen());
+    setWinner(null);
+    setShowToast(false);
     socketRef.current?.emit("syncState", {
       roomId,
       fen: game.fen(),
@@ -218,52 +269,137 @@ export default function ChessGame({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* -------------------------
+     Toast styles (inline for simplicity)
+     ------------------------- */
+  const toastStyles: React.CSSProperties = {
+    position: "fixed",
+    right: 20,
+    top: 20,
+    zIndex: 9999,
+    minWidth: 220,
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: `0 8px 24px ${palette.toastShadow}`,
+    display: showToast ? "flex" : "none",
+    alignItems: "center",
+    gap: 12,
+    color: "#fff",
+    fontWeight: 600,
+  };
+
+  const getToastTheme = () => {
+    if (winner === "w") {
+      return {
+        background: palette.whiteWinBg,
+        color: palette.whiteWinText,
+      };
+    }
+    if (winner === "b") {
+      return {
+        background: palette.blackWinBg,
+        color: palette.blackWinText,
+      };
+    }
+    // draw
+    return {
+      background: "#6b7280",
+      color: "#fff",
+    };
+  };
+
   return (
-    <div ref={containerRef} style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-      <div style={{ width: boardSize, maxWidth: "100%" }}>
-        <div style={{ marginBottom: 8, color: "#fff", fontSize: 13 }}>
-          <div>
-            <strong>Room ID:</strong> {roomId}
-          </div>
-          <div>
-            <strong>Your Color:</strong>{" "}
-            {myColor === "w" ? "White" : myColor === "b" ? "Black" : "Waiting..."}
-          </div>
-          <div>
-            <strong>Move:</strong> {game.turn() === "w" ? "White" : "Black"}
-            {isMyTurn && myColor ? " (Your Turn)" : ""}
+    <>
+      {/* toast */}
+      <div
+        style={{
+          ...toastStyles,
+          ...(getToastTheme() as React.CSSProperties),
+        }}
+        role="status"
+        aria-live="polite"
+      >
+        <div style={{ flex: 1 }}>
+          {winner === "w" && <div>🏆 White wins</div>}
+          {winner === "b" && <div>🏆 Black wins</div>}
+          {winner === "draw" && <div>🤝 Draw / Stalemate</div>}
+          <div style={{ fontWeight: 500, fontSize: 12, opacity: 0.95, marginTop: 6 }}>
+            {winner === "w" && `White (Light) wins the game.`}
+            {winner === "b" && `Black (Dark) wins the game.`}
+            {winner === "draw" && `No winners — the game ended in a draw.`}
           </div>
         </div>
 
-        <div style={{ background: "#d6b98a", borderRadius: 8, overflow: "hidden" }}>
-          <Chessboard
-            width={boardSize}
-            position={fen}
-            orientation={orientation}
-            onDrop={onDrop}
-            draggable={isMyTurn}
-          />
-        </div>
+        <button
+          onClick={() => {
+            setShowToast(false);
+          }}
+          style={{
+            border: "none",
+            background: "transparent",
+            color: "inherit",
+            cursor: "pointer",
+            fontSize: 14,
+            padding: 6,
+            borderRadius: 8,
+            opacity: 0.95,
+          }}
+          aria-label="Dismiss"
+        >
+          ✕
+        </button>
+      </div>
 
-        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-          <button
-            onClick={resetBoard}
-            style={{
-              padding: "8px 12px",
-              borderRadius: 6,
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Reset Game
-          </button>
+      {/* main board */}
+      <div
+        ref={containerRef}
+        style={{ width: "100%", display: "flex", justifyContent: "center" }}
+      >
+        <div style={{ width: boardSize, maxWidth: "100%" }}>
+          <div style={{ marginBottom: 8, color: "#fff", fontSize: 13 }}>
+            <div>
+              <strong>Room ID:</strong> {roomId}
+            </div>
+            <div>
+              <strong>Your Color:</strong>{" "}
+              {myColor === "w" ? "White" : myColor === "b" ? "Black" : "Waiting..."}
+            </div>
+            <div>
+              <strong>Move:</strong> {game.turn() === "w" ? "White" : "Black"}
+              {isMyTurn && myColor ? " (Your Turn)" : ""}
+            </div>
+          </div>
 
-          <div style={{ marginTop: 6 }}>
-            <code style={{ color: "#ddd", fontSize: 12 }}>FEN:</code>{" "}
-            <span style={{ fontSize: 12, color: "#ddd" }}>{fen}</span>
+          <div style={{ background: "#d6b98a", borderRadius: 8, overflow: "hidden" }}>
+            <Chessboard
+              width={boardSize}
+              position={fen}
+              orientation={orientation}
+              onDrop={onDrop}
+              draggable={isMyTurn}
+            />
+          </div>
+
+          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+            <button
+              onClick={resetBoard}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 6,
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Reset Game
+            </button>
+
+            <div style={{ marginTop: 6 }}>
+              <code style={{ color: "#ddd", fontSize: 12 }}>FEN:</code>{" "}
+              <span style={{ fontSize: 12, color: "#ddd" }}>{fen}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
