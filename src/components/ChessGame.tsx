@@ -1,7 +1,7 @@
 // src/components/ChessGame.tsx
 import React, { useEffect, useRef, useState } from "react";
 import Chessboard from "chessboardjsx";
-import { Chess } from "chess.js";
+import { Chess, Move } from "chess.js";
 import { io, Socket } from "socket.io-client";
 import { useLocation } from "react-router-dom";
 
@@ -38,6 +38,10 @@ export default function ChessGame({
   const [winner, setWinner] = useState<"w" | "b" | "draw" | null>(null);
   const [showToast, setShowToast] = useState(false);
 
+  // selection & legal moves for click-to-move
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [legalMoves, setLegalMoves] = useState<string[]>([]);
+
   // orientation for chessboardjsx expects 'white' | 'black'
   const orientation = myColor === "b" ? "black" : "white";
 
@@ -53,6 +57,8 @@ export default function ChessGame({
     blackWinBg: "#0f2646", // dark navy
     blackWinText: "#ffffff",
     toastShadow: "rgba(2,6,23,0.45)",
+    highlightOrigin: "rgba(34,197,94,0.95)", // greenish for origin
+    highlightTarget: "rgba(59,130,246,0.85)", // bluish for targets
   };
 
   /* -------------------------
@@ -108,6 +114,9 @@ export default function ChessGame({
         try {
           game.load(newFen);
           setFen(game.fen());
+          // clear selection/targets when opponent moves
+          setSelectedSquare(null);
+          setLegalMoves([]);
           // after we load opponent move, check for game over
           checkGameOverAndAnnounce();
         } catch (e) {
@@ -121,6 +130,8 @@ export default function ChessGame({
         try {
           game.load(newFen);
           setFen(game.fen());
+          setSelectedSquare(null);
+          setLegalMoves([]);
           checkGameOverAndAnnounce();
         } catch (e) {
           console.error("Failed to sync state:", e);
@@ -191,30 +202,46 @@ export default function ChessGame({
   }, [headerHeight]);
 
   /* -------------------------
-     Make move handler
+     Click-to-move logic
      ------------------------- */
-  function onDrop(e: { sourceSquare: string; targetSquare: string; piece?: string }) {
-    // block moves if color not yet assigned or not player's turn
-    if (!myColor) {
-      console.log("Color not assigned yet.");
-      setFen(game.fen());
-      return;
-    }
-    if (!isMyTurn) {
-      console.log("It's not your turn!");
-      setFen(game.fen());
-      return;
+
+  // Build squareStyles for chessboardjsx to highlight origin & targets
+  const getSquareStyles = (): React.CSSProperties | Record<string, React.CSSProperties> => {
+    const styles: Record<string, React.CSSProperties> = {};
+
+    if (selectedSquare) {
+      styles[selectedSquare] = {
+        background: palette.highlightOrigin,
+        borderRadius: "6px",
+      };
     }
 
-    const { sourceSquare, targetSquare } = e;
+    for (const sq of legalMoves) {
+      // slightly different style for targets
+      styles[sq] = {
+        background: palette.highlightTarget,
+        borderRadius: "6px",
+      };
+    }
 
-    let move = null;
+    return styles;
+  };
+
+  // compute legal moves for a square using chess.js
+  const computeLegalMoves = (square: string) => {
+    // verbose: returns move objects with 'to'
+    // @ts-ignore - chess.js types may differ between versions
+    const moves = game.moves({ square, verbose: true }) as Array<{ to: string }>;
+    return moves.map((m) => m.to);
+  };
+
+  // helper to attempt a move (from -> to)
+  const makeMoveFromTo = (from: string, to: string) => {
+    // handle promotion by defaulting to queen
+    let move: Move | null = null;
     try {
-      move = game.move({
-        from: sourceSquare,
-        to: targetSquare,
-        promotion: "q",
-      });
+      // @ts-ignore promotion typing
+      move = game.move({ from, to, promotion: "q" });
     } catch (err) {
       console.error("Error making move:", err);
       setFen(game.fen());
@@ -222,13 +249,15 @@ export default function ChessGame({
     }
 
     if (move === null) {
-      // illegal move
+      // illegal move (shouldn't happen if we used computed legalMoves)
       setFen(game.fen());
       return;
     }
 
     // legal move: update local FEN and emit
     setFen(game.fen());
+    setSelectedSquare(null);
+    setLegalMoves([]);
     socketRef.current?.emit("makeMove", {
       roomId,
       move,
@@ -238,7 +267,41 @@ export default function ChessGame({
 
     // after making our move, check for game over locally
     checkGameOverAndAnnounce();
-  }
+  };
+
+  // handler for clicking a square on the board
+  const onSquareClick = (square: string) => {
+    // If color not assigned or not player's turn, ignore clicks for moving (but allow selecting when waiting? we'll block)
+    if (!myColor) {
+      console.log("Color not assigned yet.");
+      return;
+    }
+    if (!isMyTurn) {
+      console.log("Not your turn.");
+      return;
+    }
+
+    // If we already have a selected square and clicked one of the legal targets -> move
+    if (selectedSquare && legalMoves.includes(square)) {
+      makeMoveFromTo(selectedSquare, square);
+      return;
+    }
+
+    // Otherwise, check if clicked square contains our piece; if so show legal moves
+    const piece = game.get(square); // null or { type, color }
+    if (piece && piece.color === myColor) {
+      const targets = computeLegalMoves(square);
+      setSelectedSquare(square);
+      setLegalMoves(targets);
+      // update board visually by updating fen state (not necessary but keeps consistent)
+      setFen(game.fen());
+      return;
+    }
+
+    // clicked somewhere else -> clear selection
+    setSelectedSquare(null);
+    setLegalMoves([]);
+  };
 
   /* -------------------------
      Reset board
@@ -253,6 +316,8 @@ export default function ChessGame({
     setFen(game.fen());
     setWinner(null);
     setShowToast(false);
+    setSelectedSquare(null);
+    setLegalMoves([]);
     socketRef.current?.emit("syncState", {
       roomId,
       fen: game.fen(),
@@ -375,12 +440,18 @@ export default function ChessGame({
               width={boardSize}
               position={fen}
               orientation={orientation}
-              onDrop={onDrop}
-              draggable={isMyTurn}
+              // disable drag & drop: we use click-to-move
+              draggable={false}
+              // highlight selected & legal target squares
+              squareStyles={getSquareStyles()}
+              // chessboardjsx callbacks
+              onSquareClick={(sq: string) => onSquareClick(sq)}
+              // keep onDrop in case server or other logic uses it; but draggable is false so onDrop won't be triggered by user
+              onDrop={() => {}}
             />
           </div>
 
-          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
             <button
               onClick={resetBoard}
               style={{
@@ -396,6 +467,18 @@ export default function ChessGame({
             <div style={{ marginTop: 6 }}>
               <code style={{ color: "#ddd", fontSize: 12 }}>FEN:</code>{" "}
               <span style={{ fontSize: 12, color: "#ddd" }}>{fen}</span>
+            </div>
+
+            {/* show selected + targets debug (small) */}
+            <div style={{ marginLeft: "auto", color: "#ddd", fontSize: 12 }}>
+              {selectedSquare ? (
+                <>
+                  <div>Selected: {selectedSquare}</div>
+                  <div>Targets: {legalMoves.join(", ") || "—"}</div>
+                </>
+              ) : (
+                <div>Click your piece to see moves</div>
+              )}
             </div>
           </div>
         </div>
