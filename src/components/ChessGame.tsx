@@ -3,51 +3,61 @@ import React, { useEffect, useRef, useState } from "react";
 import Chessboard from "chessboardjsx";
 import { Chess } from "chess.js";
 import { io, Socket } from "socket.io-client";
-import { useLocation } from "react-router-dom"; // NEW IMPORT
+import { useLocation } from "react-router-dom";
 
 type Props = {
   roomId: string;
-  // 'role' prop has been removed
+  // 'role' prop removed
   serverUrl?: string;
   startFEN?: string;
+  headerHeight?: number; // optional: measured header height from parent to compute available space
 };
 
 export default function ChessGame({
   roomId,
-  serverUrl = "import.meta.env.VITE_SOCKET_URL",
+  serverUrl = import.meta.env.VITE_SOCKET_URL,
   startFEN,
+  headerHeight = 0,
 }: Props) {
-  // create one chess instance
+  // chess instance & FEN state
   const [game] = useState(() => new Chess(startFEN));
   const [fen, setFen] = useState<string>(game.fen());
+
+  // socket ref
   const socketRef = useRef<Socket | null>(null);
 
-  // NEW CHANGES: 'myColor' state instead of 'role'
-  const location = useLocation(); // To get state from React Router
-  const [myColor, setMyColor] = useState<'w' | 'b' | null>(null);
+  // color assignment (w or b)
+  const location = useLocation();
+  const [myColor, setMyColor] = useState<"w" | "b" | null>(null);
 
-  // Board orientation depends on 'myColor'
+  // responsive sizing
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [boardSize, setBoardSize] = useState<number>(480); // fallback
+
+  // orientation for chessboardjsx expects 'white' | 'black'
   const orientation = myColor === "b" ? "black" : "white";
-  // Is it your turn?
-  const isMyTurn = game.turn() === myColor;
 
+  // is it the player's turn? (game.turn() returns 'w' or 'b')
+  const isMyTurn = myColor !== null && game.turn() === myColor;
+
+  /* -------------------------
+     Socket & server listeners
+     ------------------------- */
   useEffect(() => {
     const socket = io(serverUrl, { transports: ["websocket", "polling"] });
     socketRef.current = socket;
 
-    // NEW CHANGE: Read 'playerColor' state from lobby (only creator will have it)
-    const creatorColor = location.state?.playerColor; // 'w', 'b', or undefined
+    // creator may pass initial color via location.state.playerColor
+    const creatorColor = location.state?.playerColor; // 'w' | 'b' | undefined
 
-    // NEW CHANGE: Send 'playerColor' instead of 'role'
     socket.emit("joinRoom", {
       roomId,
-      playerColor: creatorColor // For joiner this will be undefined, which is fine
+      playerColor: creatorColor,
     });
 
-    // NEW LISTENER: Receive assigned color from server
-    socket.on("colorAssigned", ({ color }: { color: 'w' | 'b' }) => {
+    socket.on("colorAssigned", ({ color }: { color: "w" | "b" }) => {
       setMyColor(color);
-      console.log(`Assigned color: ${color === 'w' ? 'White' : 'Black'}`);
+      console.log(`Assigned color: ${color === "w" ? "White" : "Black"}`);
     });
 
     socket.on("opponentMove", ({ fen: newFen }: { fen?: string }) => {
@@ -72,22 +82,18 @@ export default function ChessGame({
       }
     });
 
-    // NEW EVENTS (Optional, but useful)
     socket.on("gameStart", () => {
       console.log("Both players have joined, game started!");
-      // You can update some UI element here
     });
 
     socket.on("peer_left", () => {
       console.log("Opponent has left...");
       alert("Opponent disconnected.");
-      // You can send user back to lobby here
     });
 
     socket.on("error", ({ message }: { message: string }) => {
       console.error("Error from server:", message);
       alert(`Error: ${message}`);
-      // Send user to lobby here
     });
 
     return () => {
@@ -95,28 +101,73 @@ export default function ChessGame({
       socket.disconnect();
     };
 
-    // NEW CHANGE: Updated dependency array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, serverUrl, location.state]);
 
-  // chessboardjsx onDrop signature: ({ sourceSquare, targetSquare, piece, ...})
-  function onDrop(e: { sourceSquare: string; targetSquare: string }) {
-    // NEW CHANGE: Do not allow move if it's not your turn
+  /* -------------------------
+     Responsive board sizing
+     ------------------------- */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const computeSize = () => {
+      const rect = el.getBoundingClientRect();
+      const availableWidth = rect.width; // container width
+      const viewportHeight = window.innerHeight;
+
+      // approximate reserved vertical space:
+      // headerHeight from parent + some footer/margin safe buffer
+      const footerBuffer = 110; // adjust if your page has larger footer controls
+      const availableHeight = Math.max(
+        160,
+        viewportHeight - (headerHeight || 0) - footerBuffer
+      );
+
+      // choose the largest square that fits both width and availableHeight
+      const size = Math.floor(Math.min(availableWidth, availableHeight, 900)); // cap if desired
+      setBoardSize(Math.max(size, 200)); // minimum size
+    };
+
+    computeSize();
+
+    const ro = new ResizeObserver(() => computeSize());
+    ro.observe(el);
+
+    window.addEventListener("resize", computeSize);
+    window.addEventListener("orientationchange", computeSize);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", computeSize);
+      window.removeEventListener("orientationchange", computeSize);
+    };
+  }, [headerHeight]);
+
+  /* -------------------------
+     Make move handler
+     ------------------------- */
+  function onDrop(e: { sourceSquare: string; targetSquare: string; piece?: string }) {
+    // block moves if color not yet assigned or not player's turn
+    if (!myColor) {
+      console.log("Color not assigned yet.");
+      setFen(game.fen());
+      return;
+    }
     if (!isMyTurn) {
       console.log("It's not your turn!");
-      setFen(game.fen()); // Restore board to previous state
+      setFen(game.fen());
       return;
     }
 
     const { sourceSquare, targetSquare } = e;
 
-    // try to make the move on the chess.js game instance
     let move = null;
     try {
       move = game.move({
         from: sourceSquare,
         to: targetSquare,
-        promotion: "q", // auto-promote to queen
+        promotion: "q",
       });
     } catch (err) {
       console.error("Error making move:", err);
@@ -130,7 +181,7 @@ export default function ChessGame({
       return;
     }
 
-    // legal move: update local FEN and send to server
+    // legal move: update local FEN and emit
     setFen(game.fen());
     socketRef.current?.emit("makeMove", {
       roomId,
@@ -140,13 +191,15 @@ export default function ChessGame({
     });
   }
 
+  /* -------------------------
+     Reset board
+     ------------------------- */
   function resetBoard() {
-    // Only 'White' (or creator) can reset the board (Optional logic)
-    if (myColor !== 'w') {
+    // optional: restrict reset to White or creator — adjust as needed
+    if (myColor !== "w") {
       alert("Only White can reset the board.");
       return;
     }
-
     game.reset();
     setFen(game.fen());
     socketRef.current?.emit("syncState", {
@@ -156,36 +209,59 @@ export default function ChessGame({
     });
   }
 
+  /* -------------------------
+     Keep FEN updated if something else changes local game
+     ------------------------- */
+  useEffect(() => {
+    setFen(game.fen());
+    // no dependency on game (stable ref in state)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div style={{ maxWidth: 520, margin: "0 auto" }}>
-      <div style={{ marginBottom: 8 }}>
-        {/* NEW CHANGE: UI update */}
-        <strong>Room ID:</strong> {roomId}
-        <br />
-        <strong>Your Color:</strong> {myColor === 'w' ? "White" : myColor === 'b' ? "Black" : "Waiting..."}
-        <br />
-        <strong>Move:</strong> {game.turn() === "w" ? "White" : "Black"}
-        {isMyTurn && myColor && " (Your Turn)"}
-      </div>
+    <div ref={containerRef} style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+      <div style={{ width: boardSize, maxWidth: "100%" }}>
+        <div style={{ marginBottom: 8, color: "#fff", fontSize: 13 }}>
+          <div>
+            <strong>Room ID:</strong> {roomId}
+          </div>
+          <div>
+            <strong>Your Color:</strong>{" "}
+            {myColor === "w" ? "White" : myColor === "b" ? "Black" : "Waiting..."}
+          </div>
+          <div>
+            <strong>Move:</strong> {game.turn() === "w" ? "White" : "Black"}
+            {isMyTurn && myColor ? " (Your Turn)" : ""}
+          </div>
+        </div>
 
-      <Chessboard
-        width={480}
-        position={fen}
-        orientation={orientation}
-        onDrop={onDrop}
-        // NEW CHANGE: Allow drag only on your turn
-        draggable={isMyTurn}
-      />
+        <div style={{ background: "#d6b98a", borderRadius: 8, overflow: "hidden" }}>
+          <Chessboard
+            width={boardSize}
+            position={fen}
+            orientation={orientation}
+            onDrop={onDrop}
+            draggable={isMyTurn}
+          />
+        </div>
 
-      <div style={{ marginTop: 8 }}>
-        <button
-          onClick={resetBoard}
-          style={{ padding: "6px 10px", borderRadius: 6 }}
-        >
-          Reset Game
-        </button>
-        <div style={{ marginTop: 6 }}>
-          <code>FEN:</code> <span style={{ fontSize: 12 }}>{fen}</span>
+        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+          <button
+            onClick={resetBoard}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Reset Game
+          </button>
+
+          <div style={{ marginTop: 6 }}>
+            <code style={{ color: "#ddd", fontSize: 12 }}>FEN:</code>{" "}
+            <span style={{ fontSize: 12, color: "#ddd" }}>{fen}</span>
+          </div>
         </div>
       </div>
     </div>
