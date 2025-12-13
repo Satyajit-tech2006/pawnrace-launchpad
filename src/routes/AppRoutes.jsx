@@ -20,8 +20,8 @@ import { Layout } from "../components/Layout";
 import LiveGamePage from "../pages/LiveGamePage.jsx";
 import AboutUs from "../components/AboutUs.jsx";
 import GameLobby from '../pages/GameLobby';
-// Import Dashboard & Route Guards
-// import ProtectedRoute from "./ProtectedRoute.jsx"; // ProtectedRoute ko skip kar diya hai
+import Classroom from "../pages/Classroom.jsx";
+
 
 // Coach Dashboard Pages
 import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
@@ -47,112 +47,22 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* --- Public Routes --- */}
-      <Route
-        path="/"
-        element={
-          <Layout>
-            <Home />
-          </Layout>
-        }
-      />
-      <Route
-        path="/courses"
-        element={
-          <Layout>
-            <CoursesPage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/mentors"
-        element={
-          <Layout>
-            <MentorsPage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/pricing"
-        element={
-          <Layout>
-            <PricingPage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/tournaments"
-        element={
-          <Layout>
-            <TournamentsPage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/ourvission"
-        element={
-          <Layout>
-            <OurVission />
-          </Layout>
-        }
-      />
-      <Route
-        path="/how-it-works"
-        element={
-          <Layout>
-            <HowItWorksPage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/why-us"
-        element={
-          <Layout>
-            <WhyUsPage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/faq"
-        element={
-          <Layout>
-            <FAQPage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/contact"
-        element={
-          <Layout>
-            <Contacts />
-          </Layout>
-        }
-      />
-      <Route
-        path="/coaches"
-        element={
-          <Layout>
-            <Coaches />
-          </Layout>
-        }
-      />
-      <Route
-        path="/aboutus"
-        element={
-          <Layout>
-            <AboutUs />
-          </Layout>
-        }
-      />
-      <Route
-        path="/curriculum"
-        element={
-          <Layout>
-            <Curriculum />
-          </Layout>
-        }
-      />
+      <Route path="/" element={<Layout><Home /></Layout>} />
+      <Route path="/courses" element={<Layout><CoursesPage /></Layout>} />
+      <Route path="/mentors" element={<Layout><MentorsPage /></Layout>} />
+      <Route path="/pricing" element={<Layout><PricingPage /></Layout>} />
+      <Route path="/tournaments" element={<Layout><TournamentsPage /></Layout>} />
+      <Route path="/ourvission" element={<Layout><OurVission /></Layout>} />
+      <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
+      <Route path="/why-us" element={<Layout><WhyUsPage /></Layout>} />
+      <Route path="/faq" element={<Layout><FAQPage /></Layout>} />
+      <Route path="/contact" element={<Layout><Contacts /></Layout>} />
+      <Route path="/coaches" element={<Layout><Coaches /></Layout>} />
+      <Route path="/aboutus" element={<Layout><AboutUs /></Layout>} />
+      <Route path="/curriculum" element={<Layout><Curriculum /></Layout>} />
+      <Route path="/class/:roomId" element={<Classroom />} />
 
-      {/* --- Dashboard Routes (Sab ab direct accessible hain) --- */}
+      {/* --- Dashboard Routes --- */}
       
       {/* Student Dashboard */}
       <Route path="/student-dashboard">
@@ -181,11 +91,16 @@ const AppRoutes = () => {
         <Route path="settings" element={<ComingSoon />} />
       </Route>
 
-      {/* Live Game Route (Direct accessible) */}
+      {/* --- Game Routes --- */}
       <Route path="/play" element={<GameLobby />} />
+      
+      {/* Yeh hai normal play route */}
       <Route path="/play/:roomId" element={<LiveGamePage />} />
 
-      {/* Not Found Route (Sabse neeche) */}
+      {/* ✅ NEW: Yeh route add karo Classroom flow ke liye */}
+      <Route path="/classroom/:roomId" element={<LiveGamePage />} />
+
+      {/* Not Found */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

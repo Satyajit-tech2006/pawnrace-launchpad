@@ -1,188 +1,283 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom"; 
 import { useAuth } from "../../../contexts/AuthContext.jsx";
-import apiClient from "../../../lib/api.js";
+import apiClient from "../../../lib/api.js"; // Backend connect hone par use hoga
 import { ENDPOINTS } from "../../../lib/endpoints.js";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { Trash2, Video, User, Calendar, Clock } from "lucide-react";
 import { Button } from "../../../components/ui/button.tsx";
 
-// Helper function to format ISO date strings for display
+// Helper: Format Date
 const formatClassTime = (isoString) => {
   if (!isoString) return { date: 'N/A', time: 'N/A' };
   const date = new Date(isoString);
-  const formattedDate = date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const formattedDate = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return { date: formattedDate, time: formattedTime };
 };
 
-export const CoachClasses = () => { // Using named export to match AppRoutes.jsx
+export const CoachClasses = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
-  // State for data
-  const [courses, setCourses] = useState([]);
+  // --- States ---
+  const [students, setStudents] = useState([]); 
   const [upcomingClasses, setUpcomingClasses] = useState([]);
   const [completedClasses, setCompletedClasses] = useState([]);
+  
+  // Selection & Form States
+  const [selectedStudentId, setSelectedStudentId] = useState(""); 
+  const [loading, setLoading] = useState(false);
+  const [newClass, setNewClass] = useState({ title: "", date: "", time: "" });
 
-  // State for UI and forms
-  const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [loadingCourses, setLoadingCourses] = useState(true);
-  const [loadingClasses, setLoadingClasses] = useState(false);
-  const [error, setError] = useState(null);
-  const [newClass, setNewClass] = useState({ title: "", date: "", time: "", zoomLink: "" });
-
-  // Step 1: Fetch the coach's courses when the component mounts
-  const fetchCourses = async () => {
-    if (!user) return;
-    try {
-      setLoadingCourses(true);
-      const response = await apiClient.get(ENDPOINTS.COURSES.GET_MY_COURSES_AS_COACH);
-      setCourses(response.data.data || []);
-    } catch (err) {
-      setError("Could not fetch your courses.");
-      console.error("Error fetching courses:", err);
-    } finally {
-      setLoadingCourses(false);
-    }
-  };
+  // --- 1. Fetch Students (DEMO MODE) ---
   useEffect(() => {
-    fetchCourses();
+    setLoading(true);
+    // Asli backend call:
+    // apiClient.get(ENDPOINTS.COACH.GET_MY_STUDENTS).then(res => setStudents(res.data))...
+
+    // MOCK DATA:
+    setTimeout(() => {
+        setStudents([
+            { _id: "student_1", name: "Rohan Kumar", email: "rohan@chess.com" },
+            { _id: "student_2", name: "Anjali Gupta", email: "anjali@chess.com" },
+            { _id: "student_3", name: "Vikram Singh", email: "vikram@chess.com" }
+        ]);
+        setLoading(false);
+    }, 500);
   }, [user]);
 
-  // Step 3: Fetch classes for a course whenever a new course is selected
-  const fetchClassesForCourse = async () => {
-    if (!selectedCourseId) {
-      setUpcomingClasses([]);
-      setCompletedClasses([]);
-      return;
-    };
-
-    try {
-      setLoadingClasses(true);
-      const response = await apiClient.get(ENDPOINTS.CLASSES.GET_BY_COURSE(selectedCourseId));
-      const allClasses = response.data.data || [];
-      setUpcomingClasses(allClasses.filter(c => c.status === 'scheduled'));
-      setCompletedClasses(allClasses.filter(c => c.status === 'completed'));
-    } catch (err) {
-      toast.error("Failed to load classes for this course.");
-      console.error("Error fetching classes:", err);
-    } finally {
-      setLoadingClasses(false);
-    }
-  };
+  // --- 2. Fetch Classes for Selected Student (DEMO MODE) ---
   useEffect(() => {
-    fetchClassesForCourse();
-  }, [selectedCourseId]);
+    if (!selectedStudentId) {
+        setUpcomingClasses([]);
+        setCompletedClasses([]);
+        return;
+    }
 
+    setLoading(true);
+    // Asli backend call:
+    // apiClient.get(`classes?studentId=${selectedStudentId}`)...
+
+    // MOCK DATA:
+    setTimeout(() => {
+        // Sirf demo ke liye hum hardcoded classes dikha rahe hain
+        const demoClasses = [
+            { 
+                _id: "cls_101", 
+                title: "Opening Traps & Tricks", 
+                studentId: "student_1", 
+                classTime: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+                status: 'scheduled',
+                roomId: 'room-alpha-1'
+            },
+            { 
+                _id: "cls_102", 
+                title: "Rook Endgames", 
+                studentId: "student_2", 
+                classTime: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
+                status: 'scheduled',
+                roomId: 'room-beta-2'
+            }
+        ];
+
+        const filtered = demoClasses.filter(c => c.studentId === selectedStudentId);
+        setUpcomingClasses(filtered);
+        setCompletedClasses([]); // Empty for now
+        setLoading(false);
+    }, 400);
+
+  }, [selectedStudentId]);
+
+
+  // --- 3. Create Class (DEMO + LOGIC) ---
   const handleAddClass = async (e) => {
     e.preventDefault();
-    if (!selectedCourseId) {
-      toast.error("Please select a course first.");
+    if (!selectedStudentId) {
+      toast.error("Please select a student first.");
       return;
     }
+
     try {
       const classTime = new Date(`${newClass.date}T${newClass.time}`).toISOString();
-      await apiClient.post(ENDPOINTS.CLASSES.SCHEDULE(selectedCourseId), {
+      // Generate Random Room ID
+      const generatedRoomId = Math.random().toString(36).substring(2, 9) + Date.now().toString(36).substring(4, 8);
+
+      const newClassObj = {
         title: newClass.title,
         classTime,
-        zoomLink: newClass.zoomLink,
-      });
-      toast.success("Class scheduled successfully!");
-      setNewClass({ title: "", date: "", time: "", zoomLink: "" });
-      fetchClassesForCourse(); // Refetch classes for the currently selected course
+        studentId: selectedStudentId, 
+        roomId: generatedRoomId,     
+        coachId: user?.id || "coach_1",
+        status: 'scheduled',
+        _id: `temp_${Date.now()}` // Temp ID for UI
+      };
+
+      // Backend API Call (Uncomment later)
+      // await apiClient.post(ENDPOINTS.CLASSES.CREATE, newClassObj);
+
+      // UI Update (Simulation)
+      setUpcomingClasses([...upcomingClasses, newClassObj]);
+      
+      toast.success("Class assigned successfully!");
+      setNewClass({ title: "", date: "", time: "" });
+
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to add class.");
+      toast.error("Failed to schedule class.");
     }
   };
 
-  const markCompleted = async (classId) => {
-    try {
-        await apiClient.patch(ENDPOINTS.CLASSES.UPDATE(classId), { status: 'completed' });
-        toast.success("Class marked as completed.");
-        fetchClassesForCourse();
-    } catch (err) {
-        toast.error("Failed to update class status.");
-    }
+  // --- Actions ---
+  const handleJoinClass = (roomId) => {
+      navigate(`/classroom/${roomId}`);
   };
-  
-  const deleteClass = async (classId) => {
-     if (window.confirm("Are you sure you want to delete this class?")) {
-        try {
-            await apiClient.delete(ENDPOINTS.CLASSES.DELETE(classId));
-            toast.success("Class deleted.");
-            fetchClassesForCourse();
-        } catch (err) {
-            toast.error("Failed to delete class.");
-        }
-    }
+
+  const handleDelete = (id) => {
+      if(window.confirm("Cancel this class?")) {
+          setUpcomingClasses(upcomingClasses.filter(c => c._id !== id));
+          toast.success("Class cancelled.");
+      }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a1429] via-[#0a1020] to-black p-6 text-white">
-      <motion.h1 initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-3xl font-extrabold text-center mb-8">
-        🎓 Coach Classes
-      </motion.h1>
-
-      <motion.form onSubmit={handleAddClass} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl shadow-xl mb-8">
-        <h2 className="text-2xl font-semibold mb-4">➕ Add New Class</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="text" placeholder="Class Title" value={newClass.title} onChange={(e) => setNewClass({ ...newClass, title: e.target.value })} required className="border border-gray-500 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-violet-500"/>
-          <input type="date" value={newClass.date} onChange={(e) => setNewClass({ ...newClass, date: e.target.value })} required className="border border-gray-500 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-violet-500"/>
-          <input type="time" value={newClass.time} onChange={(e) => setNewClass({ ...newClass, time: e.target.value })} required className="border border-gray-500 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-violet-500"/>
-          <input type="text" placeholder="Zoom Link" value={newClass.zoomLink} onChange={(e) => setNewClass({ ...newClass, zoomLink: e.target.value })} required className="border border-gray-500 bg-transparent p-2 rounded focus:outline-none focus:ring-2 focus:ring-violet-500"/>
-          
-          <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} required className="border border-gray-500 bg-black text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 col-span-2">
-            <option value="" disabled>-- Select a Course to Manage --</option>
-            {courses.map((course) => (
-              <option key={course._id} value={course._id} className="bg-black text-white">{course.title}</option>
-            ))}
-          </select>
+      <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="max-w-5xl mx-auto">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-extrabold flex items-center gap-2">
+                🎓 Coach Classroom
+            </h1>
         </div>
-        <button type="submit" className="mt-4 bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-lg shadow-md transition-transform transform hover:scale-105">
-          Add Class
-        </button>
-      </motion.form>
 
-      {loadingCourses ? <p className="text-center text-gray-400">Loading your courses...</p> 
-      : error ? <p className="text-center text-red-500">{error}</p>
-      : (
-        <>
-          <h2 className="text-2xl font-semibold mb-3">📅 Upcoming Classes</h2>
-          <motion.div className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl shadow-lg mb-8 min-h-[100px]">
-            {loadingClasses ? <p>Loading...</p> : upcomingClasses.length === 0 ? <p className="text-gray-300">No upcoming classes for this course.</p> : (
-              upcomingClasses.map((cls, index) => (
-                <motion.div key={cls._id} initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: index * 0.1 }} className="flex justify-between items-center border-b border-gray-600 py-3">
-                  <div>
-                    <h3 className="text-lg font-semibold">{cls.title}</h3>
-                    <p className="text-sm text-gray-300">{formatClassTime(cls.classTime).date} • {formatClassTime(cls.classTime).time}</p>
-                    <a href={cls.zoomLink} target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Join Zoom</a>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={() => markCompleted(cls._id)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg transition-transform hover:scale-105">Mark Completed</Button>
-                    <Button onClick={() => deleteClass(cls._id)} variant="destructive" size="icon" className="transition-transform hover:scale-105"><Trash2 className="h-4 w-4"/></Button>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </motion.div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* LEFT COLUMN: Create Class Form */}
+            <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="lg:col-span-1">
+                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-xl sticky top-6">
+                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-violet-400"/> Schedule Class
+                    </h2>
+                    
+                    <form onSubmit={handleAddClass} className="space-y-4">
+                        {/* Student Select */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-gray-400 ml-1">Assign Student</label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-500"/>
+                                <select 
+                                    value={selectedStudentId} 
+                                    onChange={(e) => setSelectedStudentId(e.target.value)} 
+                                    required 
+                                    className="w-full bg-black/50 border border-gray-700 text-white p-2 pl-9 rounded-lg focus:ring-2 focus:ring-violet-600 outline-none appearance-none"
+                                >
+                                    <option value="" disabled>Select Student</option>
+                                    {students.map((s) => (
+                                        <option key={s._id} value={s._id}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-          <h2 className="text-2xl font-semibold mb-3">✅ Completed Classes</h2>
-          <motion.div className="bg-white/10 backdrop-blur-lg p-6 rounded-2xl shadow-lg min-h-[100px]">
-             {loadingClasses ? <p>Loading...</p> : completedClasses.length === 0 ? <p className="text-gray-300">No completed classes for this course.</p> : (
-              completedClasses.map((cls, index) => (
-                <motion.div key={cls._id} initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: index * 0.1 }} className="flex justify-between items-center border-b border-gray-600 py-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-400 line-through">{cls.title}</h3>
-                    <p className="text-sm text-gray-300">{formatClassTime(cls.classTime).date} • {formatClassTime(cls.classTime).time}</p>
-                  </div>
-                  <Button onClick={() => deleteClass(cls._id)} variant="destructive" size="icon" className="transition-transform hover:scale-105"><Trash2 className="h-4 w-4"/></Button>
-                </motion.div>
-              ))
-            )}
-          </motion.div>
-        </>
-      )}
+                        {/* Title */}
+                        <div className="space-y-2">
+                            <label className="text-sm text-gray-400 ml-1">Topic</label>
+                            <input 
+                                type="text" 
+                                placeholder="e.g. Queen's Gambit" 
+                                value={newClass.title} 
+                                onChange={(e) => setNewClass({ ...newClass, title: e.target.value })} 
+                                required 
+                                className="w-full bg-black/50 border border-gray-700 p-2 rounded-lg focus:ring-2 focus:ring-violet-600 outline-none"
+                            />
+                        </div>
+
+                        {/* Date & Time */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-2">
+                                <label className="text-sm text-gray-400 ml-1">Date</label>
+                                <input 
+                                    type="date" 
+                                    value={newClass.date} 
+                                    onChange={(e) => setNewClass({ ...newClass, date: e.target.value })} 
+                                    required 
+                                    className="w-full bg-black/50 border border-gray-700 p-2 rounded-lg focus:ring-2 focus:ring-violet-600 outline-none"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm text-gray-400 ml-1">Time</label>
+                                <input 
+                                    type="time" 
+                                    value={newClass.time} 
+                                    onChange={(e) => setNewClass({ ...newClass, time: e.target.value })} 
+                                    required 
+                                    className="w-full bg-black/50 border border-gray-700 p-2 rounded-lg focus:ring-2 focus:ring-violet-600 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <Button type="submit" className="w-full mt-4 bg-violet-600 hover:bg-violet-700 text-white font-medium py-2 rounded-lg transition-all">
+                            Assign Class
+                        </Button>
+                    </form>
+                </div>
+            </motion.div>
+
+            {/* RIGHT COLUMN: Class List */}
+            <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="lg:col-span-2 space-y-6">
+                
+                {/* Upcoming */}
+                <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-blue-400"/> Upcoming Sessions
+                    </h2>
+                    
+                    {loading ? (
+                        <div className="p-8 text-center text-gray-500 bg-white/5 rounded-xl animate-pulse">Loading classes...</div>
+                    ) : upcomingClasses.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500 bg-white/5 rounded-xl border border-dashed border-gray-700">
+                            {selectedStudentId ? "No classes scheduled for this student." : "Select a student to view their classes."}
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {upcomingClasses.map((cls) => (
+                                <div key={cls._id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-white/10 transition-colors">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white">{cls.title}</h3>
+                                        <p className="text-sm text-gray-400 flex items-center gap-2 mt-1">
+                                            <Calendar className="w-3 h-3"/> {formatClassTime(cls.classTime).date} 
+                                            <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
+                                            {formatClassTime(cls.classTime).time}
+                                        </p>
+                                        <p className="text-xs text-violet-400 mt-1 font-mono">Room: {cls.roomId}</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                                        <Button 
+                                            onClick={() => handleJoinClass(cls.roomId)} 
+                                            className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white gap-2 shadow-lg shadow-green-900/20"
+                                        >
+                                            <Video className="w-4 h-4" /> Start Class
+                                        </Button>
+                                        <button 
+                                            onClick={() => handleDelete(cls._id)}
+                                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+            </motion.div>
+        </div>
+      </motion.div>
     </div>
   );
 };
 
+export default CoachClasses;
