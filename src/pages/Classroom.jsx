@@ -1,144 +1,223 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
+import { useNavigate } from "react-router-dom";
 import VideoCall from "../components/VideoCall";
 
 export default function Classroom() {
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState("moves");
   const [boardWidth, setBoardWidth] = useState(550);
-
   const [game, setGame] = useState(new Chess());
   const [moves, setMoves] = useState([]);
+  const [allowIllegal, setAllowIllegal] = useState(false);
+  const [showCoords, setShowCoords] = useState(true);
 
-  const [allowIllegal, setAllowIllegal] = useState(false); // ⭐ Toggle State
+  const engineRef = useRef(null);
 
-  // Auto resize chessboard (debounced)
+  // ================= LOAD STOCKFISH SAFELY =================
   useEffect(() => {
-    const resizeBoard = () => {
-      const width = window.innerWidth;
-
-      if (width < 500) return setBoardWidth(width - 40);
-      if (width < 900) return setBoardWidth(400);
-      return setBoardWidth(550);
-    };
-
-    let resizeTimer;
-    const handleResize = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(resizeBoard, 150);
-    };
-
-    resizeBoard();
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
+    try {
+      engineRef.current = new Worker("/stockfish/stockfish.js");
+      engineRef.current.postMessage("uci");
+    } catch (e) {
+      console.warn(
+        "Stockfish not found yet. Add /public/stockfish/stockfish.js later."
+      );
+    }
+    return () => engineRef.current?.terminate();
   }, []);
 
-  // ⭐ CHESS MOVE HANDLER (With Illegal Toggle)
-  function onDrop(sourceSquare, targetSquare) {
-    // ---------- ILLEGAL MOVE MODE ----------
+  // ================= ENGINE MOVE =================
+  function playEngineMove() {
+    const engine = engineRef.current;
+    if (!engine) {
+      alert("⚠ Stockfish engine missing!\nAdd file: /public/stockfish/stockfish.js");
+      return;
+    }
+
+    engine.postMessage(`position fen ${game.fen()}`);
+    engine.postMessage("go depth 10");
+
+    engine.onmessage = (e) => {
+      if (typeof e.data === "string" && e.data.includes("bestmove")) {
+        const best = e.data.split("bestmove ")[1].split(" ")[0];
+        const from = best.slice(0, 2);
+        const to = best.slice(2, 4);
+
+        const newGame = new Chess(game.fen());
+        const mv = newGame.move({ from, to, promotion: "q" });
+        if (mv) {
+          setGame(newGame);
+          setMoves((prev) => [...prev, `Engine: ${mv.san}`]);
+        }
+      }
+    };
+  }
+
+  // ================= RESET BOARD =================
+  function resetBoard() {
+    const fresh = new Chess();
+    setGame(fresh);
+    setMoves([]);
+  }
+
+  // ================= EXIT CLASSROOM =================
+  const handleExit = () => {
+    const role = localStorage.getItem("role");
+    if (role === "coach") navigate("/coach-dashboard/classes");
+    else navigate("/student-dashboard/classes");
+  };
+
+  // ================= RESPONSIVE BOARD =================
+  useEffect(() => {
+    const resizeBoard = () => {
+      const w = window.innerWidth;
+      if (w < 500) setBoardWidth(w - 40);
+      else if (w < 900) setBoardWidth(400);
+      else setBoardWidth(550);
+    };
+    resizeBoard();
+    window.addEventListener("resize", resizeBoard);
+    return () => window.removeEventListener("resize", resizeBoard);
+  }, []);
+
+  // ================= CHESS HANDLER =================
+  function onDrop(source, target) {
     if (allowIllegal) {
       const newGame = new Chess(game.fen());
-
-      const piece = newGame.get(sourceSquare);
+      const piece = newGame.get(source);
       if (!piece) return false;
 
-      // Remove piece from old square
-      newGame.remove(sourceSquare);
-
-      // Place piece in ANY target square (illegal allowed)
-      newGame.put(piece, targetSquare);
-
+      newGame.remove(source);
+      newGame.put(piece, target);
       setGame(newGame);
-      setMoves((prev) => [
-        ...prev,
-        `ILLEGAL: ${sourceSquare}-${targetSquare}`,
-      ]);
-
+      setMoves((prev) => [...prev, `ILLEGAL: ${source}-${target}`]);
       return true;
     }
 
-    // ---------- NORMAL LEGAL CHESS MODE ----------
     const newGame = new Chess(game.fen());
-    const move = newGame.move({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: "q",
-    });
-
-    if (move === null) return false; // illegal attempt
+    const mv = newGame.move({ from: source, to: target, promotion: "q" });
+    if (!mv) return false;
 
     setGame(newGame);
-    setMoves((prev) => [...prev, move.san]);
+    setMoves((prev) => [...prev, mv.san]);
     return true;
   }
 
   return (
-    <div className="w-full h-screen flex flex-col bg-[#0D1628]">
-
-      {/* Header */}
-      <div className="w-full bg-[#0D1628] shadow flex items-center justify-between px-6 py-5 border-b border-gray-700">
-        <h2 className="text-2xl font-semibold text-white">Classroom</h2>
-
-        <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg">
+    <div className="w-full h-screen flex flex-col bg-[#0D1628] text-white">
+      {/* HEADER */}
+      <div className="w-full flex items-center justify-between px-6 py-5 border-b border-gray-700">
+        <h2 className="text-2xl font-semibold">Classroom</h2>
+        <button
+          onClick={handleExit}
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg"
+        >
           Exit Classroom
         </button>
       </div>
 
-      {/* Main Layout */}
+      {/* MAIN */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* LEFT SIDE */}
+        <div className="w-full md:w-[70%] flex flex-col items-center p-4 border-r border-gray-700">
+          {/* BUTTONS ABOVE BOARD */}
+          <div className="flex gap-3 mb-4 flex-wrap justify-center">
+            <button
+              onClick={playEngineMove}
+              className="px-4 py-2 rounded-xl font-semibold bg-green-400 hover:bg-green-500 text-black"
+            >
+              Play Engine Move
+            </button>
 
-        {/* LEFT — Chessboard */}
-        <div className="flex justify-center items-start w-full md:w-[70%] bg-[#0D1628] border-r border-gray-700">
-          <div className="p-4 md:p-6 w-full flex justify-center">
+            <button
+              onClick={() => setAllowIllegal((p) => !p)}
+              className={`px-4 py-2 rounded-xl font-semibold ${
+                allowIllegal ? "bg-red-600 text-white" : "bg-yellow-400 text-black"
+              }`}
+            >
+              {allowIllegal ? "Illegal Moves: ON" : "Illegal Moves: OFF"}
+            </button>
+
+            <button
+              onClick={() => setShowCoords((p) => !p)}
+              className="px-4 py-2 rounded-xl font-semibold bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              {showCoords ? "Hide Coordinates" : "Show Coordinates"}
+            </button>
+
+            {/* NEW: Reset Board */}
+            <button
+              onClick={resetBoard}
+              className="px-4 py-2 rounded-xl font-semibold bg-gray-300 hover:bg-gray-400 text-black"
+              title="Reset to starting position and clear moves"
+            >
+              Reset Board
+            </button>
+          </div>
+
+          {/* BOARD + COORDS */}
+          <div className="relative" style={{ width: boardWidth }}>
             <Chessboard
               position={game.fen()}
               onPieceDrop={onDrop}
               boardWidth={boardWidth}
             />
+
+            {showCoords && (
+              <>
+                {/* Left Ranks */}
+                {["8", "7", "6", "5", "4", "3", "2", "1"].map((r, i) => (
+                  <span
+                    key={r}
+                    style={{
+                      position: "absolute",
+                      left: -20,
+                      top: (boardWidth / 8) * i + 10,
+                      color: "white",
+                      fontSize: 14,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {r}
+                  </span>
+                ))}
+
+                {/* Bottom Files */}
+                {["a", "b", "c", "d", "e", "f", "g", "h"].map((f, i) => (
+                  <span
+                    key={f}
+                    style={{
+                      position: "absolute",
+                      top: boardWidth + 5,
+                      left: (boardWidth / 8) * i + boardWidth / 16,
+                      transform: "translateX(-50%)",
+                      color: "white",
+                      fontSize: 14,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {f}
+                  </span>
+                ))}
+              </>
+            )}
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
-        <div className="w-full md:w-[30%] bg-[#0D1628] p-4 flex flex-col">
-
-          {/* Start Video Call Button */}
-          <div className="flex justify-center mb-4">
-            <button
-              className="w-full md:w-auto text-black font-semibold px-5 py-3 rounded-xl 
-              bg-gradient-to-b from-[#FFD84F] via-[#FFC72C] to-[#A8791D]
-              shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:brightness-110"
-            >
-              Start Video Call
-            </button>
-          </div>
-
-          {/* ⭐ ILLEGAL MOVE TOGGLE BUTTON */}
-          <button
-            onClick={() => setAllowIllegal(!allowIllegal)}
-            className={`w-full md:w-auto px-5 py-3 rounded-xl font-semibold mt-2
-              ${
-                allowIllegal
-                  ? "bg-red-600 text-white shadow-lg"
-                  : "bg-gradient-to-b from-[#FFD84F] via-[#FFC72C] to-[#A8791D] text-black shadow-lg"
-              }`}
-          >
-            {allowIllegal ? "Illegal Moves: ON" : "Illegal Moves: OFF"}
-          </button>
-
-          {/* Video Call Component */}
+        {/* RIGHT SIDE */}
+        <div className="w-full md:w-[30%] p-4 flex flex-col">
           <VideoCall roomId="bwdfjbh" />
 
-          {/* Tabs */}
           <div className="mt-6 flex-1">
-
-            {/* Tab Buttons */}
-            <div className="flex border-b border-gray-600 text-white text-sm md:text-base">
+            <div className="flex border-b border-gray-600">
               <button
                 onClick={() => setActiveTab("moves")}
                 className={`px-4 py-2 ${
                   activeTab === "moves"
-                    ? "border-b-2 border-[#FFD84F] font-semibold"
+                    ? "border-b-2 border-yellow-400"
                     : "text-gray-400"
                 }`}
               >
@@ -149,7 +228,7 @@ export default function Classroom() {
                 onClick={() => setActiveTab("chat")}
                 className={`px-4 py-2 ml-4 ${
                   activeTab === "chat"
-                    ? "border-b-2 border-[#FFD84F] font-semibold"
+                    ? "border-b-2 border-yellow-400"
                     : "text-gray-400"
                 }`}
               >
@@ -157,47 +236,37 @@ export default function Classroom() {
               </button>
             </div>
 
-            {/* Moves Panel */}
             {activeTab === "moves" && (
-              <div className="h-[40vh] md:h-[55vh] overflow-y-auto 
-                  p-3 border border-gray-700 rounded mt-3 text-white text-sm md:text-base">
-                {moves.length === 0 ? (
-                  <p className="text-gray-400">Moves will appear here...</p>
-                ) : (
+              <div className="h-[55vh] overflow-y-auto border p-3 rounded mt-3">
+                {moves.length ? (
                   moves.map((m, i) => (
                     <p key={i} className="text-yellow-300">
                       {i + 1}. {m}
                     </p>
                   ))
+                ) : (
+                  <p className="text-gray-400">Moves will appear here...</p>
                 )}
               </div>
             )}
 
-            {/* Chat Panel */}
             {activeTab === "chat" && (
-              <div className="flex flex-col h-[40vh] md:h-[55vh] mt-3 text-white">
-
-                <div className="flex-1 overflow-y-auto border border-gray-700 p-3 rounded">
+              <div className="flex flex-col h-[55vh] mt-3">
+                <div className="flex-1 border p-3 rounded overflow-y-auto">
                   <p className="text-gray-400">Chat messages...</p>
                 </div>
 
                 <div className="flex mt-2">
                   <input
-                    className="w-full border border-gray-600 bg-[#0F1A2F] text-white px-3 py-2 rounded outline-none"
+                    className="w-full border bg-[#0F1A2F] text-white px-3 py-2 rounded"
                     placeholder="Type a message..."
                   />
-                  <button
-                    className="ml-2 px-4 py-2 rounded 
-                    bg-gradient-to-b from-[#FFD84F] via-[#FFC72C] to-[#A8791D] 
-                    text-black font-semibold shadow hover:brightness-110"
-                  >
+                  <button className="ml-2 px-4 py-2 rounded bg-yellow-400 text-black">
                     Send
                   </button>
                 </div>
-
               </div>
             )}
-
           </div>
         </div>
       </div>
