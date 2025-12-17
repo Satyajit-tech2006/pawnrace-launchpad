@@ -33,7 +33,7 @@ import CoachTournament from "../pages/dashboard/coach/CoachTournament.jsx";
 import CoachTestResults from "../pages/dashboard/coach/CoachTestResults.jsx";
 import CoachChat from "../pages/dashboard/coach/CoachChat.jsx";
 import MyStudents from "../pages/dashboard/coach/MyStudents.jsx";
-
+import CoachClassesNew from "../pages/dashboard/coach/CoachClassesNew.jsx";
 // Student Dashboard Pages
 import StudentDashboard from "../pages/dashboard/student/StudentDashboard.tsx";
 import StudentSchedule from "../pages/dashboard/student/StudentSchedule.tsx";
@@ -89,6 +89,7 @@ const AppRoutes = () => {
         <Route path="my-students" element={<MyStudents />} />
         <Route path="database" element={<ComingSoon />} />
         <Route path="settings" element={<ComingSoon />} />
+        <Route path="new-classes(coming-soon)" element={<CoachClassesNew />} />
       </Route>
 
       {/* --- Game Routes --- */}
