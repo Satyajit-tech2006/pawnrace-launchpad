@@ -16,7 +16,7 @@ const StudentChat = () => {
   useEffect(() => {
     if (!token) return;
 
-    socket.current = io(import.meta.env.VITE_SOCKET_URL, {
+    socket.current = io(import.meta.env.VITE_CHAT_SOCKET_URL, {
       auth: { token },
     });
 
