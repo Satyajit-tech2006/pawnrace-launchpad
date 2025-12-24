@@ -23,7 +23,6 @@ const CoachChat = () => {
 
     socket.current.on("receiveMessage", (message) => {
       setSelectedStudent((currentStudent) => {
-        // Only append message if it belongs to the currently open chat
         if (currentStudent && currentStudent._id === message.sender) {
           setMessages((prev) => [...prev, message]);
         }
@@ -81,13 +80,11 @@ const CoachChat = () => {
       return;
     }
 
-    // Emit Event
     socket.current.emit("sendMessage", {
       receiverId: selectedStudent._id,
       content: newMessage.trim(),
     });
 
-    // Optimistic UI Update
     setMessages((prev) => [
       ...prev,
       {
@@ -116,9 +113,9 @@ const CoachChat = () => {
           <button
             key={student._id}
             onClick={() => handleSelectStudent(student)}
-            className={`block w-full text-left p-3 rounded-lg mb-2 ${
+            className={`block w-full text-left p-3 rounded-lg mb-2 transition-colors ${
               selectedStudent?._id === student._id
-                ? "bg-blue-600"
+                ? "bg-blue-600 shadow-md"
                 : "hover:bg-white/10"
             }`}
           >
@@ -131,7 +128,13 @@ const CoachChat = () => {
       <div className="flex-1 flex flex-col p-6">
         {selectedStudent ? (
           <>
-            <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar">
+            {/* Header for selected student */}
+            <div className="mb-4 border-b border-white/10 pb-2">
+              <h2 className="text-lg font-semibold">{selectedStudent.fullname}</h2>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar pr-2">
               {messages.map((msg) => (
                 <div
                   key={msg._id}
@@ -140,13 +143,20 @@ const CoachChat = () => {
                   }`}
                 >
                   <div
-                    className={`px-4 py-2 rounded-2xl max-w-[70%] break-words ${
+                    className={`px-4 py-2 rounded-2xl max-w-[70%] break-words shadow-md ${
                       msg.sender === user._id
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-200"
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-gray-700 text-gray-200 rounded-bl-none"
                     }`}
                   >
                     {msg.content}
+                    {/* ✅ ADDED: Timestamp Logic */}
+                    <div className="text-[10px] opacity-70 mt-1 text-right">
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -166,12 +176,12 @@ const CoachChat = () => {
                   }
                 }}
                 placeholder="Type a message..."
-                className="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:border-blue-500"
+                className="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:border-blue-500 transition-colors"
               />
               <button
                 type="button"
                 onClick={handleSendMessage}
-                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition-colors shadow-lg active:scale-95 transform"
               >
                 Send
               </button>
