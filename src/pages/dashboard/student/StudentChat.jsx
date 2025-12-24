@@ -12,47 +12,52 @@ const StudentChat = () => {
   const socket = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // 1. Establish Authenticated Socket Connection
+  // 1. Socket Connection
   useEffect(() => {
     if (!token) return;
 
-    socket.current = io(import.meta.env.VITE_API_URL, {
-      auth: { token }
+    socket.current = io(import.meta.env.VITE_SOCKET_URL, {
+      auth: { token },
     });
 
-    // 4. Listen for incoming messages from the coach
-    socket.current.on('receiveMessage', (message) => {
-      setMessages(prevMessages => [...prevMessages, message]);
+    socket.current.on("receiveMessage", (message) => {
+      setMessages((prev) => [...prev, message]);
     });
 
-    // Cleanup function on unmount
     return () => {
       if (socket.current) {
-        socket.current.off('receiveMessage');
+        socket.current.off("receiveMessage");
         socket.current.disconnect();
       }
     };
   }, [token]);
 
-  // 2 & 3. Implement Chat History Loading
+  // 2. Fetch Coach & History
   useEffect(() => {
     if (!user?._id) return;
 
     const fetchCoachAndHistory = async () => {
       try {
-        // Assumption: The student's coach is determined by their first enrolled course.
-        const courseResponse = await apiClient.get(ENDPOINTS.COURSES.GET_STUDENT_COURSES);
-        const primaryCourse = courseResponse.data.data[0];
+        // Step A: Get the student's assigned coach via their course
+        // ✅ FIXED: Updated to match your endpoints.js file key
+        const courseResponse = await apiClient.get(
+          ENDPOINTS.COURSES.GET_MY_COURSES_AS_STUDENT
+        );
+        
+        const primaryCourse = courseResponse.data.data?.[0];
 
         if (!primaryCourse || !primaryCourse.coach) {
-          console.error("Student does not have an assigned coach.");
+          console.warn("No assigned coach found for this student.");
           return;
         }
+
         const coachInfo = primaryCourse.coach;
         setCoach(coachInfo);
-        
-        // Now that we have the coach's ID, fetch the chat history
-        const historyResponse = await apiClient.get(`${ENDPOINTS.CHATS.GET_CHAT_HISTORY}/${coachInfo._id}`);
+
+        // Step B: Fetch chat history
+        const historyResponse = await apiClient.get(
+          ENDPOINTS.CHATS.GET_CHAT_HISTORY(coachInfo._id)
+        );
         setMessages(historyResponse.data.data);
 
       } catch (err) {
@@ -63,65 +68,118 @@ const StudentChat = () => {
     fetchCoachAndHistory();
   }, [user]);
 
-  // 4. Wire up the "Send" Message Event
+  // 3. Send Handler
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !coach || !socket.current) return;
+    if (
+      !newMessage.trim() ||
+      !coach ||
+      !socket.current ||
+      !socket.current.connected
+    ) {
+      return;
+    }
 
-    const messagePayload = {
+    socket.current.emit("sendMessage", {
       receiverId: coach._id,
       content: newMessage.trim(),
-    };
+    });
 
-    socket.current.emit('sendMessage', messagePayload);
-    
-    // Optimistic UI update
-    const optimisticMessage = {
+    setMessages((prev) => [
+      ...prev,
+      {
         _id: Date.now().toString(),
         sender: user._id,
         receiver: coach._id,
         content: newMessage.trim(),
         createdAt: new Date().toISOString(),
-    };
-    setMessages(prevMessages => [...prevMessages, optimisticMessage]);
+      },
+    ]);
+
     setNewMessage("");
   };
-  
-  // Auto-scroll to the latest message
+
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] to-black text-white p-6 flex flex-col">
-      <h1 className="text-2xl font-bold mb-4">Chat with {coach ? coach.fullname : 'your Coach'}</h1>
-      <div className="flex-1 bg-black/20 rounded-xl p-4 overflow-y-auto mb-4">
-        {messages.map((msg) => (
-          <div key={msg._id} className={`mb-3 flex ${msg.sender === user._id ? "justify-end" : "justify-start"}`}>
-            <div className={`px-4 py-2 rounded-2xl max-w-lg shadow-md ${msg.sender === user._id ? "bg-blue-600 text-white rounded-br-none" : "bg-gray-700 text-white rounded-bl-none"}`}>
-              {msg.content}
-              <div className="text-xs text-gray-300 mt-1 text-right">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+    <div className="flex h-screen bg-gradient-to-br from-[#1a1a2e] to-black text-white">
+      <div className="flex-1 flex flex-col p-6 max-w-5xl mx-auto w-full">
+        <div className="mb-4 border-b border-white/10 pb-4">
+          <h1 className="text-2xl font-bold">
+            Chat with {coach ? coach.fullname : "your Coach"}
+          </h1>
+          {coach && (
+            <p className="text-sm text-gray-400">
+              Direct line to your instructor
+            </p>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar pr-2">
+          {coach ? (
+            <>
+              {messages.map((msg) => (
+                <div
+                  key={msg._id}
+                  className={`mb-3 flex ${
+                    msg.sender === user._id ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`px-4 py-2 rounded-2xl max-w-[70%] break-words shadow-md ${
+                      msg.sender === user._id
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-gray-700 text-gray-200 rounded-bl-none"
+                    }`}
+                  >
+                    {msg.content}
+                    <div className="text-[10px] opacity-70 mt-1 text-right">
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </>
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-500">
+              <p>Finding your coach...</p>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-      <div className="flex">
-        <input
-          type="text"
-          className="flex-1 p-3 rounded-l-lg bg-black/40 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Type a message..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-          disabled={!coach}
-        />
-        <button onClick={handleSendMessage} disabled={!coach} className="bg-green-600 hover:bg-green-700 px-6 font-semibold rounded-r-lg transition-colors disabled:bg-gray-500">
-          Send
-        </button>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            disabled={!coach}
+            placeholder={coach ? "Type a message..." : "Connecting..."}
+            className="flex-1 p-4 rounded-xl bg-white/10 border border-white/10 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={handleSendMessage}
+            disabled={!coach}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-8 py-3 rounded-xl font-bold transition-all transform active:scale-95"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default StudentChat;
-

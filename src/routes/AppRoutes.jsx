@@ -20,8 +20,6 @@ import { Layout } from "../components/Layout";
 import LiveGamePage from "../pages/LiveGamePage.jsx";
 import AboutUs from "../components/AboutUs.jsx";
 import GameLobby from '../pages/GameLobby';
-// Import Dashboard & Route Guards
-// import ProtectedRoute from "./ProtectedRoute.jsx"; // ProtectedRoute ko skip kar diya hai
 
 // Coach Dashboard Pages
 import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
@@ -152,7 +150,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* --- Dashboard Routes (Sab ab direct accessible hain) --- */}
+      {/* --- Dashboard Routes --- */}
       
       {/* Student Dashboard */}
       <Route path="/student-dashboard">
@@ -162,7 +160,10 @@ const AppRoutes = () => {
         <Route path="classes" element={<Classes />} />
         <Route path="tournaments" element={<StudentTournament />} />
         <Route path="test-results" element={<StudentTestResults />} />
-        <Route path="contact-coach" element={<StudentChat />} />
+        
+        {/* ✅ FIXED: Changed path from 'contact-coach' to 'chats' */}
+        <Route path="chats" element={<StudentChat />} />
+        
         <Route path="iqpuzzles" element={<ComingSoon />} />
       </Route>
 
@@ -181,11 +182,11 @@ const AppRoutes = () => {
         <Route path="settings" element={<ComingSoon />} />
       </Route>
 
-      {/* Live Game Route (Direct accessible) */}
+      {/* Live Game Route */}
       <Route path="/play" element={<GameLobby />} />
       <Route path="/play/:roomId" element={<LiveGamePage />} />
 
-      {/* Not Found Route (Sabse neeche) */}
+      {/* Not Found Route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
