@@ -5,7 +5,7 @@ import apiClient from "@/lib/api.js";
 import { ENDPOINTS } from "@/lib/endpoints.js";
 
 const CoachChat = () => {
-  const { user, token } = useAuth(); // We'll use the 'token' which is the accessToken
+  const { user, token } = useAuth();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -13,130 +13,184 @@ const CoachChat = () => {
   const socket = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // 1. Fix Connection & Authenticate Socket
+  // 1. Socket Connection
   useEffect(() => {
-    if (!token) return; // Don't connect until we have the auth token
+    if (!token) return;
 
-    // Connect to the correct backend URL and pass the accessToken for authentication
-    socket.current = io(import.meta.env.VITE_API_URL, {
-      auth: { token }
+    socket.current = io(import.meta.env.VITE_CHAT_SOCKET_URL, {
+      auth: { token },
     });
 
-    // 4. Set up the real-time event listener for incoming messages
-    socket.current.on('receiveMessage', (message) => {
-      // We need to check if the incoming message is from the currently selected student
-      setSelectedStudent(currentStudent => {
+    socket.current.on("receiveMessage", (message) => {
+      setSelectedStudent((currentStudent) => {
         if (currentStudent && currentStudent._id === message.sender) {
-          setMessages(prevMessages => [...prevMessages, message]);
+          setMessages((prev) => [...prev, message]);
         }
-        return currentStudent; // Return the state unchanged if the chat is not active
+        return currentStudent;
       });
     });
 
-    // Cleanup function to disconnect socket and remove listener on component unmount
     return () => {
       if (socket.current) {
-        socket.current.off('receiveMessage');
+        socket.current.off("receiveMessage");
         socket.current.disconnect();
       }
     };
   }, [token]);
 
-  // 2. Implement Coach's Student List Fetching
+  // 2. Fetch Students
   useEffect(() => {
     const fetchStudentsForCoach = async () => {
       try {
-        const response = await apiClient.get(ENDPOINTS.CHATS.GET_STUDENTS_FOR_COACH);
+        const response = await apiClient.get(
+          ENDPOINTS.CHATS.GET_STUDENTS_FOR_COACH
+        );
         setStudents(response.data.data);
       } catch (error) {
-        console.error("Failed to fetch students for chat:", error);
+        console.error("Failed to fetch students:", error);
       }
     };
     fetchStudentsForCoach();
   }, []);
 
-  // 3. Implement Chat History Loading
+  // 3. Load Chat History
   const handleSelectStudent = async (student) => {
-    if (selectedStudent?._id === student._id) return; // Don't re-fetch if already selected
+    if (selectedStudent?._id === student._id) return;
 
     setSelectedStudent(student);
     try {
-      const response = await apiClient.get(`${ENDPOINTS.CHATS.GET_CHAT_HISTORY}/${student._id}`);
+      const response = await apiClient.get(
+        ENDPOINTS.CHATS.GET_CHAT_HISTORY(student._id)
+      );
       setMessages(response.data.data);
-    } catch (error) {
-      console.error("Failed to fetch chat history:", error);
-      setMessages([]); // Clear messages on error or if there's no history
+    } catch (err) {
+      console.error("Error fetching history:", err);
+      setMessages([]);
     }
   };
 
-  // 4. Wire Up the "Send" Message Event
+  // 4. Send Handler
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedStudent || !socket.current) return;
+    if (
+      !newMessage.trim() ||
+      !selectedStudent ||
+      !socket.current ||
+      !socket.current.connected
+    ) {
+      return;
+    }
 
-    const messagePayload = {
+    socket.current.emit("sendMessage", {
       receiverId: selectedStudent._id,
       content: newMessage.trim(),
-    };
+    });
 
-    socket.current.emit('sendMessage', messagePayload);
-
-    // Optimistically update the UI for a better user experience
-    const optimisticMessage = {
-        _id: Date.now().toString(), // Use a temporary unique key
+    setMessages((prev) => [
+      ...prev,
+      {
+        _id: Date.now().toString(),
         sender: user._id,
         receiver: selectedStudent._id,
         content: newMessage.trim(),
         createdAt: new Date().toISOString(),
-    };
-    setMessages(prevMessages => [...prevMessages, optimisticMessage]);
+      },
+    ]);
+
     setNewMessage("");
   };
 
-  // Auto-scroll to the bottom of the chat when new messages are added
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-[#1a1a2e] to-black text-white">
-      {/* Sidebar with Student List */}
-      <div className="w-1/4 bg-white/5 p-4 flex flex-col border-r border-white/10">
+      {/* Sidebar: Student List */}
+      <div className="w-1/4 bg-white/5 p-4 border-r border-white/10">
         <h2 className="text-xl font-bold mb-4">My Students</h2>
-        <div className="overflow-y-auto">
-          {students.map((student) => (
-            <button
-              key={student._id}
-              onClick={() => handleSelectStudent(student)}
-              className={`block w-full text-left p-3 rounded-lg mb-2 transition-colors duration-200 ${selectedStudent?._id === student._id ? "bg-blue-600 text-white font-semibold" : "hover:bg-white/10 text-gray-300"}`}
-            >
-              {student.fullname}
-            </button>
-          ))}
-        </div>
+        {students.map((student) => (
+          <button
+            key={student._id}
+            onClick={() => handleSelectStudent(student)}
+            className={`block w-full text-left p-3 rounded-lg mb-2 transition-colors ${
+              selectedStudent?._id === student._id
+                ? "bg-blue-600 shadow-md"
+                : "hover:bg-white/10"
+            }`}
+          >
+            {student.fullname}
+          </button>
+        ))}
       </div>
-      {/* Chat Window */}
+
+      {/* Chat Area */}
       <div className="flex-1 flex flex-col p-6">
         {selectedStudent ? (
           <>
-            <h2 className="text-2xl font-bold mb-4 border-b border-white/10 pb-4">Chat with {selectedStudent.fullname}</h2>
-            <div className="flex-1 bg-black/20 rounded-xl p-4 overflow-y-auto mb-4">
+            {/* Header for selected student */}
+            <div className="mb-4 border-b border-white/10 pb-2">
+              <h2 className="text-lg font-semibold">{selectedStudent.fullname}</h2>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar pr-2">
               {messages.map((msg) => (
-                <div key={msg._id} className={`mb-3 flex ${msg.sender === user._id ? "justify-end" : "justify-start"}`}>
-                  <div className={`px-4 py-2 rounded-2xl max-w-lg shadow-md ${msg.sender === user._id ? "bg-green-600 text-white rounded-br-none" : "bg-gray-700 text-white rounded-bl-none"}`}>
+                <div
+                  key={msg._id}
+                  className={`mb-3 flex ${
+                    msg.sender === user._id ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`px-4 py-2 rounded-2xl max-w-[70%] break-words shadow-md ${
+                      msg.sender === user._id
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-gray-700 text-gray-200 rounded-bl-none"
+                    }`}
+                  >
                     {msg.content}
-                    <div className="text-xs text-gray-300 mt-1 text-right">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    {/* ✅ ADDED: Timestamp Logic */}
+                    <div className="text-[10px] opacity-70 mt-1 text-right">
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}
               <div ref={messagesEndRef} />
             </div>
-            <div className="flex">
-              <input type="text" className="flex-1 p-3 rounded-l-lg bg-black/40 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type a message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendMessage()} />
-              <button onClick={handleSendMessage} className="bg-blue-600 hover:bg-blue-700 px-6 font-semibold rounded-r-lg transition-colors">Send</button>
+
+            {/* Input Area */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder="Type a message..."
+                className="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={handleSendMessage}
+                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition-colors shadow-lg active:scale-95 transform"
+              >
+                Send
+              </button>
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full"><p className="text-gray-400 text-lg">Select a student to start chatting.</p></div>
+          <div className="flex-1 flex items-center justify-center text-gray-400">
+            <p>Select a student to start chatting</p>
+          </div>
         )}
       </div>
     </div>
@@ -144,4 +198,3 @@ const CoachChat = () => {
 };
 
 export default CoachChat;
-

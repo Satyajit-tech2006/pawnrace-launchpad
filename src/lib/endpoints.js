@@ -42,10 +42,10 @@ export const ENDPOINTS = {
     DELETE: (classId) => `/classes/${classId}`,
   },
   CHATS: {
-    GET_STUDENTS_FOR_COACH: '/chats/students',
-    GET_CHAT_HISTORY: (receiverId) => `/chats/history/${receiverId}`, 
+    GET_STUDENTS_FOR_COACH: '/chats/coach/students',
+    GET_CHAT_HISTORY: (receiverId) => `/chats/conversation/${receiverId}`,
   },
-  // ADDED: Endpoints for the new Test feature
+
   TESTS: {
     CREATE: (courseId) => `/tests/course/${courseId}`,
     GET_BY_COURSE: (courseId) => `/tests/course/${courseId}`,

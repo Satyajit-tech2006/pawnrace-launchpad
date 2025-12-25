@@ -72,7 +72,10 @@ const AppRoutes = () => {
         <Route path="classes" element={<Classes />} />
         <Route path="tournaments" element={<StudentTournament />} />
         <Route path="test-results" element={<StudentTestResults />} />
-        <Route path="contact-coach" element={<StudentChat />} />
+        
+        {/* ✅ FIXED: Changed path from 'contact-coach' to 'chats' */}
+        <Route path="chats" element={<StudentChat />} />
+        
         <Route path="iqpuzzles" element={<ComingSoon />} />
       </Route>
 

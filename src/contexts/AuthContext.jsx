@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import apiClient, { setAccessToken } from "../lib/api.js";
+import apiClient, { setAccessToken as setApiAccessToken } from "../lib/api.js"; // Renamed to avoid confusion
 import { ENDPOINTS } from "../lib/endpoints.js";
 
 const AuthContext = createContext(undefined);
@@ -14,19 +14,24 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null); // ✅ NEW: Store token in state
   const [loading, setLoading] = useState(true);
 
   const checkAuthStatus = useCallback(async () => {
     try {
       const response = await apiClient.post(ENDPOINTS.USERS.REFRESH_TOKEN);
       const { user: refreshedUser, accessToken } = response.data.data;
+      
       setUser(refreshedUser);
-      setAccessToken(accessToken);
+      setToken(accessToken); // ✅ Update state
+      setApiAccessToken(accessToken); // Update Axios instance
+      
       console.log("Session restored successfully.");
     } catch (error) {
       console.log("No active session found.");
       setUser(null);
-      setAccessToken('');
+      setToken(null);
+      setApiAccessToken('');
     } finally {
       setLoading(false);
     }
@@ -39,14 +44,14 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      // Your backend returns the user and accessToken inside a 'data' object
       const response = await apiClient.post(ENDPOINTS.USERS.LOGIN, { email, password });
       const { user: loggedInUser, accessToken } = response.data.data;
       
       setUser(loggedInUser);
-      setAccessToken(accessToken); // This stores the token in memory for our apiClient
+      setToken(accessToken); // ✅ Update state
+      setApiAccessToken(accessToken); // Update Axios instance
       
-      return loggedInUser; // Return the user object so the UI can redirect based on role
+      return loggedInUser;
     } catch (error) {
       console.error("Login failed:", error.response?.data?.message || error.message);
       throw new Error(error.response?.data?.message || "Invalid credentials");
@@ -55,11 +60,9 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Updated register function to match all fields from your backend controller
   const register = async (username, fullname, email, password, role, countryCode, number) => {
     setLoading(true);
     try {
-      // Your backend expects all these fields for registration
       const response = await apiClient.post(ENDPOINTS.USERS.REGISTER, { 
         username, 
         fullname, 
@@ -69,8 +72,6 @@ export function AuthProvider({ children }) {
         countryCode,
         number
       });
-      // Per your backend code, registration returns a success message but does not log the user in.
-      // We return the response so the UI can show "Registration successful, please log in."
       return response.data;
     } catch (error) {
       console.error("Registration failed:", error.response?.data?.message || error.message);
@@ -87,12 +88,14 @@ export function AuthProvider({ children }) {
       console.error("Server logout failed, clearing client session anyway:", error);
     } finally {
       setUser(null);
-      setAccessToken('');
+      setToken(null); // ✅ Clear state
+      setApiAccessToken('');
     }
   };
 
   const value = {
     user,
+    token, // ✅ Now exposed to CoachChat!
     isAuthenticated: !!user,
     loading,
     login,
@@ -106,4 +109,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
