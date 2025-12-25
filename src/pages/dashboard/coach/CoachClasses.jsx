@@ -185,4 +185,3 @@ export const CoachClasses = () => { // Using named export to match AppRoutes.jsx
     </div>
   );
 };
-

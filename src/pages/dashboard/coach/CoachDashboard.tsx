@@ -63,6 +63,11 @@ const coachMenuItems = [
     icon: Gamepad, // Aap icon change kar sakte hain
     color: "bg-gradient-to-br from-yellow-400 to-orange-500", // Alag color diya hai
   },
+  {
+    name: "New-Classes(Coming Soon)",
+    icon: Calendar,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
 ].map((item) => ({
   ...item,
   path: item.name.toLowerCase().replace(/\s+/g, "-"),
