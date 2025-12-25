@@ -16,12 +16,20 @@ const StudentChat = () => {
   useEffect(() => {
     if (!token) return;
 
+    // Use the specific Chat URL variable
     socket.current = io(import.meta.env.VITE_CHAT_SOCKET_URL, {
       auth: { token },
     });
 
     socket.current.on("receiveMessage", (message) => {
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => {
+        // 🛡️ DEDUPLICATION CHECK (The Fix)
+        // If a message with this ID already exists, do not add it again.
+        if (prev.some((msg) => msg._id === message._id)) {
+          return prev;
+        }
+        return [...prev, message];
+      });
     });
 
     return () => {
@@ -39,7 +47,6 @@ const StudentChat = () => {
     const fetchCoachAndHistory = async () => {
       try {
         // Step A: Get the student's assigned coach via their course
-        // ✅ FIXED: Updated to match your endpoints.js file key
         const courseResponse = await apiClient.get(
           ENDPOINTS.COURSES.GET_MY_COURSES_AS_STUDENT
         );
@@ -79,21 +86,15 @@ const StudentChat = () => {
       return;
     }
 
+    // Emit Event to Server
     socket.current.emit("sendMessage", {
       receiverId: coach._id,
       content: newMessage.trim(),
     });
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        _id: Date.now().toString(),
-        sender: user._id,
-        receiver: coach._id,
-        content: newMessage.trim(),
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    // ❌ REMOVED: Optimistic UI Update
+    // We rely entirely on the socket "receiveMessage" event to update the UI.
+    // The deduplication check above ensures no duplicates appear.
 
     setNewMessage("");
   };
@@ -106,6 +107,7 @@ const StudentChat = () => {
   return (
     <div className="flex h-screen bg-gradient-to-br from-[#1a1a2e] to-black text-white">
       <div className="flex-1 flex flex-col p-6 max-w-5xl mx-auto w-full">
+        {/* Header */}
         <div className="mb-4 border-b border-white/10 pb-4">
           <h1 className="text-2xl font-bold">
             Chat with {coach ? coach.fullname : "your Coach"}
@@ -117,6 +119,7 @@ const StudentChat = () => {
           )}
         </div>
 
+        {/* Messages Area */}
         <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar pr-2">
           {coach ? (
             <>
@@ -153,6 +156,7 @@ const StudentChat = () => {
           )}
         </div>
 
+        {/* Input Area */}
         <div className="flex gap-3">
           <input
             type="text"
