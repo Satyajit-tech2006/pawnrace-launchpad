@@ -9,7 +9,8 @@ import { toast } from 'sonner';
 // Import Components
 import AnalysisTools from './Classroom_features/AnalysisTools';
 import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
-import CoordinateOverlay from './Classroom_features/CoordinateOverlay'; // NEW IMPORT
+import CoordinateOverlay from './Classroom_features/CoordinateOverlay';
+import SetupPosition from './Classroom_features/SetupPosition'; // NEW IMPORT
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-backend-socket.onrender.com';
 
@@ -26,17 +27,18 @@ const VideoClassroom = () => {
     const [viewIndex, setViewIndex] = useState(-1);
     const [boardWidth, setBoardWidth] = useState(600);
     
-    // --- Annotation & UI State ---
+    // --- UI State ---
     const [rightClickedSquares, setRightClickedSquares] = useState({});
     const [boardKey, setBoardKey] = useState(0); 
     const [showTools, setShowTools] = useState(true);
     const [showCoordinates, setShowCoordinates] = useState(true);
+    const [showSetupModal, setShowSetupModal] = useState(false); // NEW STATE for Modal
 
     const [activeTab, setActiveTab] = useState('moves');
     const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
 
-    // --- 1. RESIZE HANDLER ---
+    // --- 1. RESIZE ---
     useEffect(() => {
         function handleResize() {
             const h = window.innerHeight;
@@ -58,7 +60,7 @@ const VideoClassroom = () => {
                 gameCopy.loadPgn(prevGame.pgn());
                 try {
                     if (moveData.from) gameCopy.move(moveData);
-                    else if (moveData.fen) return new Chess(moveData.fen);
+                    else if (moveData.fen) return new Chess(moveData.fen); // Sync custom position
                     
                     setHistory(gameCopy.history());
                     setViewIndex(-1);
@@ -71,10 +73,9 @@ const VideoClassroom = () => {
         return () => { if (socketRef.current) socketRef.current.disconnect(); };
     }, [roomId]);
 
-    // --- 3. CHESS ACTIONS ---
+    // --- 3. GAME ACTIONS ---
     function onDrop(sourceSquare, targetSquare) {
         if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
-        
         try {
             const tempGame = new Chess();
             tempGame.loadPgn(game.pgn());
@@ -100,15 +101,11 @@ const VideoClassroom = () => {
     const undoMove = () => {
         const tempGame = new Chess();
         tempGame.loadPgn(game.pgn()); 
-        const result = tempGame.undo(); 
-        
-        if (result) {
+        if (tempGame.undo()) {
             setGame(tempGame);
             setHistory(tempGame.history());
             setViewIndex(-1);
-            if (socketRef.current) {
-                socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
-            }
+            if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
         }
     };
 
@@ -136,7 +133,7 @@ const VideoClassroom = () => {
         toast.success("Annotations cleared");
     };
 
-    // --- 5. PGN HANDLING ---
+    // --- 5. PGN & SETUP HANDLERS ---
     const handleLoadPGN = (pgn) => {
         try {
             const newGame = new Chess();
@@ -147,6 +144,18 @@ const VideoClassroom = () => {
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
             toast.success("PGN Loaded");
         } catch (e) { toast.error("Invalid PGN"); }
+    };
+
+    // NEW: Handle Custom Position Load
+    const handleSetupLoad = (fen) => {
+        try {
+            const newGame = new Chess(fen);
+            setGame(newGame);
+            setHistory([]); // New position resets history
+            setViewIndex(-1);
+            if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
+            toast.success("Custom Position Loaded");
+        } catch (e) { toast.error("Failed to load position"); }
     };
 
     const handleDownloadPGN = () => {
@@ -188,8 +197,6 @@ const VideoClassroom = () => {
                 <div className="flex-1 bg-[#0a0a0a] relative flex flex-col justify-center items-center">
                     
                     <div className="relative shadow-2xl shadow-black/50" style={{ width: boardWidth, height: boardWidth }}>
-                        
-                        {/* THE BOARD */}
                         <Chessboard 
                             id="ClassroomBoard"
                             key={boardKey} 
@@ -199,23 +206,13 @@ const VideoClassroom = () => {
                             customDarkSquareStyle={{ backgroundColor: '#779954' }}
                             customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
                             animationDuration={200}
-                            
-                            // DISABLE DEFAULT NOTATION (We use our custom overlay)
                             showBoardNotation={false}
-                            
                             areArrowsAllowed={true}
                             customArrowColor="rgba(255, 0, 0, 0.9)"
                             onSquareRightClick={onSquareRightClick}
                             customSquareStyles={rightClickedSquares}
                         />
-
-                        {/* NEW COORDINATE OVERLAY */}
-                        <CoordinateOverlay 
-                            orientation={orientation} 
-                            showCoordinates={showCoordinates} 
-                            boardWidth={boardWidth} 
-                        />
-
+                        <CoordinateOverlay orientation={orientation} showCoordinates={showCoordinates} boardWidth={boardWidth} />
                     </div>
                     
                     <AnalysisTools 
@@ -226,6 +223,7 @@ const VideoClassroom = () => {
                         }}
                         onFlip={() => setOrientation(o => o === 'white' ? 'black' : 'white')}
                         onClear={clearAnnotations}
+                        onSetup={() => setShowSetupModal(true)} // Open Modal
                         showTools={showTools}
                         setShowTools={setShowTools}
                         showCoordinates={showCoordinates}
@@ -241,6 +239,14 @@ const VideoClassroom = () => {
                     cameraOn={cameraOn} setCameraOn={setCameraOn}
                 />
             </div>
+
+            {/* SETUP MODAL */}
+            <SetupPosition 
+                isOpen={showSetupModal} 
+                onClose={() => setShowSetupModal(false)}
+                currentFen={game.fen()}
+                onLoadPosition={handleSetupLoad}
+            />
         </div>
     );
 };

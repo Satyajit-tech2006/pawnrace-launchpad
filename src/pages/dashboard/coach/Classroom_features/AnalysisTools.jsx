@@ -1,8 +1,8 @@
 import React from 'react';
-import { RotateCcw, Repeat, Trash2, PenTool, Eye, EyeOff, MousePointer2, Undo2, Hash } from 'lucide-react';
+import { RotateCcw, Repeat, Trash2, PenTool, Eye, EyeOff, MousePointer2, Undo2, Hash, Settings2 } from 'lucide-react';
 
 const AnalysisTools = ({ 
-    onUndo, onReset, onFlip, onClear, 
+    onUndo, onReset, onFlip, onClear, onSetup, // Added onSetup
     showTools, setShowTools,
     showCoordinates, setShowCoordinates 
 }) => {
@@ -30,7 +30,14 @@ const AnalysisTools = ({
                 
                 {/* 1. Game Controls */}
                 <div className="flex items-center gap-2 border-r border-white/10 pr-6">
-                    {/* UNDO BUTTON */}
+                    {/* Setup Button (New) */}
+                    <button onClick={onSetup} className="flex flex-col items-center gap-1.5 p-2 hover:bg-white/5 rounded-lg group min-w-[55px] transition-all">
+                        <div className="p-2 bg-[#252525] rounded-full group-hover:bg-[#333]">
+                            <Settings2 className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                        </div>
+                        <span className="text-[9px] text-gray-500 group-hover:text-gray-300 uppercase font-bold tracking-wider">Setup</span>
+                    </button>
+
                     <button onClick={onUndo} className="flex flex-col items-center gap-1.5 p-2 hover:bg-white/5 rounded-lg group min-w-[55px] transition-all">
                         <div className="p-2 bg-[#252525] rounded-full group-hover:bg-[#333]">
                             <Undo2 className="w-4 h-4 text-gray-400 group-hover:text-white" />
@@ -55,21 +62,14 @@ const AnalysisTools = ({
 
                 {/* 2. Annotation Actions */}
                 <div className="flex items-center gap-2 pl-2">
-                    
-                    {/* Coords Toggle */}
-                    <button 
-                        onClick={() => setShowCoordinates(!showCoordinates)}
-                        className={`flex flex-col items-center gap-1.5 p-2 rounded-lg group min-w-[55px] transition-all ${
-                            showCoordinates ? 'hover:bg-white/5' : 'opacity-50 hover:opacity-100'
-                        }`}
-                    >
+                    {/* ... (Keep existing annotation buttons) ... */}
+                    <button onClick={() => setShowCoordinates(!showCoordinates)} className={`flex flex-col items-center gap-1.5 p-2 rounded-lg group min-w-[55px] transition-all ${showCoordinates ? 'hover:bg-white/5' : 'opacity-50 hover:opacity-100'}`}>
                         <div className={`p-2 rounded-full ${showCoordinates ? 'bg-[#252525] group-hover:bg-[#333]' : 'bg-transparent border border-gray-600'}`}>
                             <Hash className={`w-4 h-4 ${showCoordinates ? 'text-blue-400' : 'text-gray-500'}`} />
                         </div>
                         <span className="text-[9px] text-gray-500 group-hover:text-gray-300 uppercase font-bold tracking-wider">Coords</span>
                     </button>
 
-                    {/* Indicators */}
                     <div className="flex flex-col items-center gap-1.5 p-2 min-w-[55px] opacity-70" title="Right-Click + Drag to Draw">
                         <PenTool className="w-4 h-4 text-violet-400" />
                         <span className="text-[9px] text-violet-300 uppercase font-bold tracking-wider">Draw</span>
@@ -80,7 +80,6 @@ const AnalysisTools = ({
                         <span className="text-[9px] text-green-300 uppercase font-bold tracking-wider">Mark</span>
                     </div>
 
-                    {/* Clear Button */}
                     <button onClick={onClear} className="flex flex-col items-center gap-1.5 p-2 hover:bg-red-500/10 rounded-lg group min-w-[55px] transition-all">
                         <div className="p-2 bg-[#252525] rounded-full group-hover:bg-red-900/30">
                             <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-400" />
