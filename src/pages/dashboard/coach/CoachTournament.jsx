@@ -15,7 +15,7 @@ const CoachTournament = () => {
   const [completionData, setCompletionData] = useState({ winner: "", review: "" });
 
   // --- CONFIGURATION ---
-  const ALLOWED_COACH_IDS = ["68b9ea4597d09c8a268e8d38"]; 
+  const ALLOWED_COACH_IDS = ["68b9ea4597d09c8a268e8d38","68c5cf8d0127081a51b8c064"]; 
 
   const currentUser = JSON.parse(localStorage.getItem("user"));
   const currentUserId = currentUser?._id;
