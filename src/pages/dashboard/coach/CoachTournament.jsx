@@ -12,15 +12,22 @@ const CoachTournament = () => {
   });
 
   // --- CONFIGURATION ---
-  // Replace these strings with the actual _id strings from your MongoDB Users collection
+  // Replace with your specific Coach ID
   const ALLOWED_COACH_IDS = ["68b9ea4597d09c8a268e8d38"];
-
-  // Get current user from LocalStorage
+// Get current user from LocalStorage
   const currentUser = JSON.parse(localStorage.getItem("user"));
+  
+  // --- DEBUGGING LOGS 
+  // console.log("Full User Object:", currentUser);
+  // console.log("ID in LocalStorage:", currentUser?._id);
+  // console.log("Allowed IDs:", ALLOWED_COACH_IDS);
+  // console.log("Do they match?", ALLOWED_COACH_IDS.includes(currentUser?._id));
+  // -----------------------------------------------------
+
   const currentUserId = currentUser?._id;
   const isAllowedCoach = ALLOWED_COACH_IDS.includes(currentUserId);
 
-  const API_URL = "http://localhost:5000/api/tournaments";
+  const API_URL = `${import.meta.env.VITE_API_URL}/tournaments`;
 
   // Fetch Data
   useEffect(() => {
@@ -36,7 +43,7 @@ const CoachTournament = () => {
       }
     };
     fetchTournaments();
-  }, []);
+  }, [API_URL]);
 
   // Submit Handler
   const handleSubmit = async (e) => {
@@ -55,6 +62,8 @@ const CoachTournament = () => {
         setTournaments([...tournaments, data]);
         setNewTournament({ name: "", date: "", link: "" });
         alert("Tournament Created Successfully!");
+      } else {
+        console.error("Failed to create tournament");
       }
     } catch (error) {
       console.error("Error adding tournament:", error);
