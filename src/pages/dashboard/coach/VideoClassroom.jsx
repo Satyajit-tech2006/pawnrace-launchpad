@@ -6,8 +6,10 @@ import { io } from 'socket.io-client';
 import { PhoneOff } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Import Components
 import AnalysisTools from './Classroom_features/AnalysisTools';
 import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
+import CoordinateOverlay from './Classroom_features/CoordinateOverlay'; // NEW IMPORT
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-backend-socket.onrender.com';
 
@@ -95,30 +97,22 @@ const VideoClassroom = () => {
         } catch (error) { return false; }
     }
 
-    // --- 4. UNDO ACTION (NEW) ---
     const undoMove = () => {
         const tempGame = new Chess();
-        tempGame.loadPgn(game.pgn()); // Clone correctly
-        const result = tempGame.undo(); // Undo last move locally
+        tempGame.loadPgn(game.pgn()); 
+        const result = tempGame.undo(); 
         
         if (result) {
             setGame(tempGame);
             setHistory(tempGame.history());
             setViewIndex(-1);
-            setRightClickedSquares({}); // Clear annotations on undo
-            setBoardKey(prev => prev + 1); 
-
-            // Sync with student
             if (socketRef.current) {
-                socketRef.current.emit('make_move', {
-                    roomId,
-                    fen: tempGame.fen() // Sending FEN forces student board to this exact state
-                });
+                socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
             }
         }
     };
 
-    // --- 5. ANNOTATIONS ---
+    // --- 4. ANNOTATIONS ---
     function onSquareRightClick(square) {
         const red = "rgba(255, 0, 0, 0.6)";
         const orange = "rgba(255, 165, 0, 0.6)";
@@ -142,7 +136,7 @@ const VideoClassroom = () => {
         toast.success("Annotations cleared");
     };
 
-    // --- 6. PGN HANDLING ---
+    // --- 5. PGN HANDLING ---
     const handleLoadPGN = (pgn) => {
         try {
             const newGame = new Chess();
@@ -194,23 +188,34 @@ const VideoClassroom = () => {
                 <div className="flex-1 bg-[#0a0a0a] relative flex flex-col justify-center items-center">
                     
                     <div className="relative shadow-2xl shadow-black/50" style={{ width: boardWidth, height: boardWidth }}>
+                        
+                        {/* THE BOARD */}
                         <Chessboard 
                             id="ClassroomBoard"
                             key={boardKey} 
                             position={getBoardPosition()} 
                             onPieceDrop={onDrop}
                             boardOrientation={orientation}
-                            
                             customDarkSquareStyle={{ backgroundColor: '#779954' }}
                             customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
                             animationDuration={200}
-                            showBoardNotation={showCoordinates}
+                            
+                            // DISABLE DEFAULT NOTATION (We use our custom overlay)
+                            showBoardNotation={false}
                             
                             areArrowsAllowed={true}
                             customArrowColor="rgba(255, 0, 0, 0.9)"
                             onSquareRightClick={onSquareRightClick}
                             customSquareStyles={rightClickedSquares}
                         />
+
+                        {/* NEW COORDINATE OVERLAY */}
+                        <CoordinateOverlay 
+                            orientation={orientation} 
+                            showCoordinates={showCoordinates} 
+                            boardWidth={boardWidth} 
+                        />
+
                     </div>
                     
                     <AnalysisTools 
