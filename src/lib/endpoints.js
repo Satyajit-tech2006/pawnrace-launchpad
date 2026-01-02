@@ -51,4 +51,11 @@ export const ENDPOINTS = {
     GET_BY_COURSE: (courseId) => `/tests/course/${courseId}`,
     DELETE: (testId) => `/tests/${testId}`,
   },
+
+  TOURNAMENTS: {
+    GET_ALL: '/tournaments',
+    CREATE: '/tournaments',
+    DELETE: (id) => `/tournaments/${id}`,
+    COMPLETE: (id) => `/tournaments/${id}/complete`,
+  },
 };
