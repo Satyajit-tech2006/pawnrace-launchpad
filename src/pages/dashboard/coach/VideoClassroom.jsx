@@ -61,7 +61,6 @@ const VideoClassroom = () => {
                     
                     setHistory(gameCopy.history());
                     setViewIndex(-1);
-                    // Clear annotations on new move
                     setRightClickedSquares({}); 
                     setBoardKey(k => k + 1); 
                     return gameCopy;
@@ -84,7 +83,6 @@ const VideoClassroom = () => {
             setGame(tempGame);
             setHistory(tempGame.history());
             
-            // Clear local annotations on move
             setRightClickedSquares({});
             setBoardKey(prev => prev + 1);
 
@@ -99,8 +97,28 @@ const VideoClassroom = () => {
         } catch (error) { return false; }
     }
 
-    // --- 4. ANNOTATION LOGIC (Unified) ---
-    // Right Click = Mark Square. Right Drag = Draw Arrow (Native).
+    // --- 4. UNDO ACTION (NEW) ---
+    const undoMove = () => {
+        const tempGame = new Chess();
+        tempGame.loadPgn(game.pgn()); // Clone to preserve history structure
+        const result = tempGame.undo(); // Undo last move
+        
+        if (result) {
+            setGame(tempGame);
+            setHistory(tempGame.history());
+            setViewIndex(-1); // Ensure we are on live view
+            
+            // Sync with student
+            if (socketRef.current) {
+                socketRef.current.emit('make_move', {
+                    roomId,
+                    fen: tempGame.fen() // Sending FEN forces student board to this exact state
+                });
+            }
+        }
+    };
+
+    // --- 5. ANNOTATIONS ---
     function onSquareRightClick(square) {
         const red = "rgba(255, 0, 0, 0.6)";
         const orange = "rgba(255, 165, 0, 0.6)";
@@ -120,11 +138,11 @@ const VideoClassroom = () => {
 
     const clearAnnotations = () => {
         setRightClickedSquares({});
-        setBoardKey(prev => prev + 1); // Only clear arrows on explicit Clear button
+        setBoardKey(prev => prev + 1);
         toast.success("Annotations cleared");
     };
 
-    // --- 5. PGN HANDLING ---
+    // --- 6. PGN HANDLING ---
     const handleLoadPGN = (pgn) => {
         try {
             const newGame = new Chess();
@@ -157,8 +175,6 @@ const VideoClassroom = () => {
 
     return (
         <div className="h-screen bg-[#111] text-white flex flex-col overflow-hidden font-sans">
-            
-            {/* Header */}
             <header className="h-14 bg-[#161616] border-b border-white/10 flex items-center justify-between px-6 shrink-0 z-20">
                 <div className="flex items-center gap-4">
                     <div className="flex flex-col">
@@ -187,19 +203,15 @@ const VideoClassroom = () => {
                             customDarkSquareStyle={{ backgroundColor: '#779954' }}
                             customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
                             animationDuration={200}
-                            
-                            // *** UNIFIED ANNOTATION MODE ***
-                            // Always allow arrows (Right Drag)
                             areArrowsAllowed={true}
-                            customArrowColor="rgba(255, 0, 0, 0.9)" // Red Arrows
-                            
-                            // Always allow highlighting (Right Click)
+                            customArrowColor="rgba(255, 0, 0, 0.9)"
                             onSquareRightClick={onSquareRightClick}
                             customSquareStyles={rightClickedSquares}
                         />
                     </div>
                     
                     <AnalysisTools 
+                        onUndo={undoMove}
                         onReset={() => { 
                             const ng = new Chess(); 
                             setGame(ng); setHistory([]); setViewIndex(-1); clearAnnotations(); 
