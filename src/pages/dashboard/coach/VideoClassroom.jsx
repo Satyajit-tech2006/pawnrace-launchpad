@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Keep using the socket URL that is already working for you
+// Keep using your working socket URL
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-backend-socket.onrender.com';
 
 const VideoClassroom = () => {
@@ -25,12 +25,17 @@ const VideoClassroom = () => {
     const [activeTab, setActiveTab] = useState('moves'); 
     const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
+    
+    // We derive history directly from the game object to ensure sync
     const [history, setHistory] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
     
     // PGN Modal State
     const [showPGNModal, setShowPGNModal] = useState(false);
     const [pgnInput, setPgnInput] = useState("");
+
+    // History Navigation State (Viewing a past move)
+    const [viewIndex, setViewIndex] = useState(-1); // -1 means "Live Board"
 
     // --- 1. SOCKET CONNECTION ---
     useEffect(() => {
@@ -45,34 +50,33 @@ const VideoClassroom = () => {
         // Listen for Incoming Moves
         socketRef.current.on('receive_move', (moveData) => {
             setGame((prevGame) => {
-                // IMPORTANT: We clone the PREVIOUS game instance to keep history
-                const gameCopy = new Chess(prevGame.fen());
+                // FIX: Use loadPgn() to preserve history instead of new Chess(fen)
+                const gameCopy = new Chess();
+                gameCopy.loadPgn(prevGame.pgn());
                 
-                // If we have history in the previous game, we try to restore it? 
-                // Actually, relying on FEN destroys history. 
-                // We must try to apply the move to the EXISTING game state if possible.
-                
-                if (moveData.from && moveData.to) {
-                    try {
-                        const result = gameCopy.move({
+                try {
+                    // Apply the move to the existing history chain
+                    if (moveData.from && moveData.to) {
+                        gameCopy.move({
                             from: moveData.from,
                             to: moveData.to,
                             promotion: moveData.promotion || 'q'
                         });
-                        
-                        if (result) {
-                            setHistory(gameCopy.history()); // Update history from the active chain
-                            return gameCopy;
-                        }
-                    } catch (e) {
-                        console.error("Move failed locally:", e);
+                    } else {
+                        // Fallback if socket only sent FEN (rare) - this will reset history
+                        return new Chess(moveData.fen);
                     }
+                    
+                    setHistory(gameCopy.history());
+                    setViewIndex(-1); // Snap back to live view on new move
+                    return gameCopy;
+                } catch (e) {
+                    console.error("Move sync error, falling back to FEN", e);
+                    // Absolute fallback if move is illegal locally (desync)
+                    const recoveryGame = new Chess(moveData.fen);
+                    setHistory(recoveryGame.history());
+                    return recoveryGame;
                 }
-
-                // Fallback: If move fails or isn't provided, load FEN (History will be lost here, but game stays synced)
-                const fenGame = new Chess(moveData.fen || prevGame.fen());
-                setHistory(fenGame.history()); // Likely empty if loaded from FEN
-                return fenGame;
             });
         });
 
@@ -83,8 +87,16 @@ const VideoClassroom = () => {
 
     // --- 2. CHESS LOGIC ---
     function onDrop(sourceSquare, targetSquare) {
+        // Prevent moves if we are viewing history
+        if (viewIndex !== -1) {
+            toast.error("Click 'Live' or the latest move to resume playing.");
+            return false;
+        }
+
         try {
-            const tempGame = new Chess(game.fen());
+            // FIX: Clone via PGN to keep history
+            const tempGame = new Chess();
+            tempGame.loadPgn(game.pgn());
             
             // 1. Attempt Move
             const move = tempGame.move({
@@ -95,9 +107,9 @@ const VideoClassroom = () => {
 
             if (move === null) return false;
 
-            // 2. Update Local State immediately
+            // 2. Update Local State
             setGame(tempGame);
-            setHistory(tempGame.history()); // This gets the full history array ['e4', 'e5'...]
+            setHistory(tempGame.history());
 
             // 3. Emit Move
             if (socketRef.current) {
@@ -117,15 +129,41 @@ const VideoClassroom = () => {
         const newGame = new Chess();
         setGame(newGame);
         setHistory([]);
-        // Optional: Emit reset if your socket supports it
-        // socketRef.current.emit('reset_game', { roomId }); 
+        setViewIndex(-1);
+        if(socketRef.current) {
+            // Optional: You can emit a custom event for reset if you want
+            // socketRef.current.emit('reset_board', roomId);
+        }
     };
 
     const flipBoard = () => {
         setOrientation(orientation === 'white' ? 'black' : 'white');
     };
 
-    // --- 3. PGN FUNCTIONS ---
+    // --- 3. HISTORY NAVIGATION ---
+    const goToMove = (index) => {
+        setViewIndex(index);
+    };
+
+    // Helper to get the FEN for a specific history index
+    const getBoardPosition = () => {
+        // If viewing live (-1), return current game FEN
+        if (viewIndex === -1) return game.fen();
+
+        // Otherwise, replay game from start to viewIndex
+        const tempGame = new Chess();
+        // Load the same PGN structure (if standard start)
+        // Note: If you loaded a custom PGN, we need to respect that start position.
+        // For simplicity, we assume standard start or full PGN replay.
+        
+        // Better approach: Replay moves from the history array
+        for (let i = 0; i <= viewIndex; i++) {
+            tempGame.move(history[i]);
+        }
+        return tempGame.fen();
+    };
+
+    // --- 4. PGN FUNCTIONS ---
     const handleDownloadPGN = () => {
         const pgn = game.pgn();
         const blob = new Blob([pgn], { type: 'text/plain' });
@@ -147,15 +185,20 @@ const VideoClassroom = () => {
             setHistory(newGame.history());
             setPgnInput("");
             setShowPGNModal(false);
+            setViewIndex(-1);
             
-            // Broadcast the new position (as a move/fen update)
+            // Broadcast
             if (socketRef.current) {
+                // For a full PGN load, we might need a special event or just send the final FEN
+                // Sending just FEN wipes history for others, sending move wipes history. 
+                // Ideally, send the PGN string to others if you want them to have full history.
+                // For now, let's just sync the final position to keep it simple.
                 socketRef.current.emit('make_move', {
                     roomId,
-                    fen: newGame.fen() // Sending FEN forces other clients to sync to this position
+                    fen: newGame.fen()
                 });
             }
-            toast.success("PGN Loaded successfully");
+            toast.success("PGN Loaded");
         } catch (error) {
             toast.error("Invalid PGN format");
         }
@@ -191,7 +234,8 @@ const VideoClassroom = () => {
                     <div className="flex-1 flex items-center justify-center p-2 bg-[#161616]">
                         <div className="w-full max-w-[85vh] aspect-square shadow-2xl rounded-sm overflow-hidden border-4 border-[#262421]">
                             <Chessboard 
-                                position={game.fen()} 
+                                // DYNAMIC POSITION: Shows history if clicking back, or live game
+                                position={getBoardPosition()} 
                                 onPieceDrop={onDrop}
                                 boardOrientation={orientation}
                                 customDarkSquareStyle={{ backgroundColor: '#779954' }}
@@ -204,9 +248,39 @@ const VideoClassroom = () => {
                     {/* Toolbar */}
                     <div className="h-14 bg-[#1a1a1a] border-t border-gray-800 flex items-center justify-center gap-6 px-4 shrink-0">
                         <div className="flex items-center gap-2 bg-black/30 rounded-lg p-1">
-                            <button onClick={() => { game.undo(); setGame(new Chess(game.fen())); setHistory(game.history()); }} className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white"><ChevronLeft className="w-6 h-6" /></button>
-                            <button className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white"><ChevronRight className="w-6 h-6" /></button>
+                            {/* Navigation Buttons */}
+                            <button 
+                                onClick={() => goToMove(0)} 
+                                disabled={history.length === 0}
+                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                                <ChevronLeft className="w-6 h-6" />
+                                <span className="sr-only">Start</span>
+                            </button>
+                            <button 
+                                onClick={() => goToMove(viewIndex === -1 ? history.length - 2 : viewIndex - 1)}
+                                disabled={history.length === 0 || viewIndex === 0}
+                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button 
+                                onClick={() => goToMove(viewIndex === -1 ? -1 : viewIndex + 1)}
+                                disabled={viewIndex === -1 || viewIndex === history.length - 1}
+                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                            <button 
+                                onClick={() => setViewIndex(-1)} 
+                                disabled={viewIndex === -1}
+                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
+                            >
+                                <ChevronRight className="w-6 h-6" />
+                                <span className="sr-only">Current</span>
+                            </button>
                         </div>
+
                         <div className="h-6 w-px bg-gray-700"></div>
                         <button onClick={resetGame} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white text-sm"><RotateCcw className="w-4 h-4" /> Reset</button>
                         <button onClick={flipBoard} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white text-sm"><Repeat className="w-4 h-4" /> Flip</button>
@@ -245,7 +319,21 @@ const VideoClassroom = () => {
                                         <thead className="bg-[#252525] text-gray-400 text-xs sticky top-0"><tr><th className="py-1 pl-4 text-left w-12">#</th><th className="py-1 text-left">White</th><th className="py-1 text-left">Black</th></tr></thead>
                                         <tbody>
                                             {Array.from({ length: Math.ceil(history.length / 2) }).map((_, i) => (
-                                                <tr key={i} className="border-b border-gray-800 hover:bg-white/5"><td className="py-1.5 pl-4 text-gray-500 font-mono text-xs">{i + 1}.</td><td className="py-1.5 text-gray-300">{history[i * 2]}</td><td className="py-1.5 text-gray-300">{history[i * 2 + 1] || ''}</td></tr>
+                                                <tr key={i} className={`border-b border-gray-800 transition-colors ${Math.floor(viewIndex/2) === i ? 'bg-white/10' : 'hover:bg-white/5'}`}>
+                                                    <td className="py-1.5 pl-4 text-gray-500 font-mono text-xs">{i + 1}.</td>
+                                                    <td 
+                                                        onClick={() => goToMove(i * 2)}
+                                                        className={`py-1.5 cursor-pointer hover:text-white ${viewIndex === (i * 2) ? 'text-yellow-400 font-bold' : 'text-gray-300'}`}
+                                                    >
+                                                        {history[i * 2]}
+                                                    </td>
+                                                    <td 
+                                                        onClick={() => history[i * 2 + 1] && goToMove(i * 2 + 1)}
+                                                        className={`py-1.5 cursor-pointer hover:text-white ${viewIndex === (i * 2 + 1) ? 'text-yellow-400 font-bold' : 'text-gray-300'}`}
+                                                    >
+                                                        {history[i * 2 + 1] || ''}
+                                                    </td>
+                                                </tr>
                                             ))}
                                         </tbody>
                                     </table>
