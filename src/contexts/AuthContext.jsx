@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import apiClient, { setAccessToken as setApiAccessToken } from "../lib/api.js"; // Renamed to avoid confusion
+import apiClient, { setAccessToken as setApiAccessToken } from "../lib/api.js";
 import { ENDPOINTS } from "../lib/endpoints.js";
 
 const AuthContext = createContext(undefined);
@@ -14,7 +14,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null); // ✅ NEW: Store token in state
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const checkAuthStatus = useCallback(async () => {
@@ -23,8 +23,11 @@ export function AuthProvider({ children }) {
       const { user: refreshedUser, accessToken } = response.data.data;
       
       setUser(refreshedUser);
-      setToken(accessToken); // ✅ Update state
-      setApiAccessToken(accessToken); // Update Axios instance
+      setToken(accessToken);
+      setApiAccessToken(accessToken);
+
+      // 1. SAVE TO LOCAL STORAGE ON REFRESH (So it persists if you reload page)
+      localStorage.setItem("user", JSON.stringify(refreshedUser)); // <--- ⚠️ ADD THIS LINE
       
       console.log("Session restored successfully.");
     } catch (error) {
@@ -32,6 +35,7 @@ export function AuthProvider({ children }) {
       setUser(null);
       setToken(null);
       setApiAccessToken('');
+      localStorage.removeItem("user"); // Clean up if session is invalid
     } finally {
       setLoading(false);
     }
@@ -48,8 +52,11 @@ export function AuthProvider({ children }) {
       const { user: loggedInUser, accessToken } = response.data.data;
       
       setUser(loggedInUser);
-      setToken(accessToken); // ✅ Update state
-      setApiAccessToken(accessToken); // Update Axios instance
+      setToken(accessToken);
+      setApiAccessToken(accessToken);
+      
+      // 2. SAVE TO LOCAL STORAGE ON LOGIN (This fixes your CoachTournament issue)
+      localStorage.setItem("user", JSON.stringify(loggedInUser)); // <--- ⚠️ ADD THIS LINE
       
       return loggedInUser;
     } catch (error) {
@@ -88,14 +95,17 @@ export function AuthProvider({ children }) {
       console.error("Server logout failed, clearing client session anyway:", error);
     } finally {
       setUser(null);
-      setToken(null); // ✅ Clear state
+      setToken(null);
       setApiAccessToken('');
+
+      // 3. REMOVE FROM LOCAL STORAGE ON LOGOUT
+      localStorage.removeItem("user"); // <--- ⚠️ ADD THIS LINE
     }
   };
 
   const value = {
     user,
-    token, // ✅ Now exposed to CoachChat!
+    token,
     isAuthenticated: !!user,
     loading,
     login,
