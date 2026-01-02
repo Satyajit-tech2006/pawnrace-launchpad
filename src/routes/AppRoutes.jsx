@@ -17,14 +17,11 @@ import Coaches from "../components/Coaches.jsx";
 import ComingSoon from "../pages/ComingSoon.jsx";
 import Curriculum from "../components/Curriculum.jsx";
 import { Layout } from "../components/Layout";
-import LiveGamePage from "../pages/LiveGamePage.jsx";
 import AboutUs from "../components/AboutUs.jsx";
 import GameLobby from '../pages/GameLobby';
-import Classroom from "../pages/Classroom.jsx";
-
 
 // Coach Dashboard Pages
-import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
+import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx"; // Ensure extension matches
 import CoachSchedule from "../pages/dashboard/coach/CoachSchedule.tsx";
 import CoachStudents from "../pages/dashboard/coach/CoachStudents.tsx";
 import { CoachClasses } from "../pages/dashboard/coach/CoachClasses.jsx";
@@ -34,6 +31,7 @@ import CoachTestResults from "../pages/dashboard/coach/CoachTestResults.jsx";
 import CoachChat from "../pages/dashboard/coach/CoachChat.jsx";
 import MyStudents from "../pages/dashboard/coach/MyStudents.jsx";
 import CoachClassesNew from "../pages/dashboard/coach/CoachClassesNew.jsx";
+
 // Student Dashboard Pages
 import StudentDashboard from "../pages/dashboard/student/StudentDashboard.tsx";
 import StudentSchedule from "../pages/dashboard/student/StudentSchedule.tsx";
@@ -42,6 +40,10 @@ import StudentAssignment from "../pages/dashboard/student/StudentAssignments.jsx
 import StudentTournament from "../pages/dashboard/student/StudentTournament.jsx";
 import StudentTestResults from "../pages/dashboard/student/StudentTestResults.jsx";
 import StudentChat from "../pages/dashboard/student/StudentChat.jsx";
+
+// --- GAME & CLASSROOM PAGES ---
+import LiveGamePage from "../pages/LiveGamePage.jsx"; 
+import VideoClassroom from "../pages/dashboard/coach/VideoClassroom.jsx"; // Corrected path to classroom folder
 
 const AppRoutes = () => {
   return (
@@ -60,7 +62,6 @@ const AppRoutes = () => {
       <Route path="/coaches" element={<Layout><Coaches /></Layout>} />
       <Route path="/aboutus" element={<Layout><AboutUs /></Layout>} />
       <Route path="/curriculum" element={<Layout><Curriculum /></Layout>} />
-      <Route path="/class/:roomId" element={<Classroom />} />
 
       {/* --- Dashboard Routes --- */}
       
@@ -72,10 +73,7 @@ const AppRoutes = () => {
         <Route path="classes" element={<Classes />} />
         <Route path="tournaments" element={<StudentTournament />} />
         <Route path="test-results" element={<StudentTestResults />} />
-        
-        {/* ✅ FIXED: Changed path from 'contact-coach' to 'chats' */}
         <Route path="chats" element={<StudentChat />} />
-        
         <Route path="iqpuzzles" element={<ComingSoon />} />
       </Route>
 
@@ -84,7 +82,13 @@ const AppRoutes = () => {
         <Route index element={<CoachDashboard />} />
         <Route path="schedule" element={<CoachSchedule />} />
         <Route path="students" element={<CoachStudents />} />
+        
+        {/* 1. Main Classes Button */}
         <Route path="classes" element={<CoachClasses />} />
+        
+        {/* 2. New Classes Button (Now Enabled) */}
+        <Route path="new-classes(coming-soon)" element={<CoachClassesNew />} />
+
         <Route path="assignments" element={<CoachAssignment />} />
         <Route path="tournaments" element={<CoachTournament />} />
         <Route path="test-results" element={<CoachTestResults />} />
@@ -92,17 +96,17 @@ const AppRoutes = () => {
         <Route path="my-students" element={<MyStudents />} />
         <Route path="database" element={<ComingSoon />} />
         <Route path="settings" element={<ComingSoon />} />
-        <Route path="new-classes(coming-soon)" element={<CoachClassesNew />} />
       </Route>
 
-      {/* --- Game Routes --- */}
-      <Route path="/play" element={<GameLobby />} />
+      {/* --- GAME & CLASSROOM ROUTES --- */}
       
-      {/* Yeh hai normal play route */}
+      {/* 1. General Play (Tournaments/Casual) */}
+      <Route path="/play" element={<GameLobby />} />
       <Route path="/play/:roomId" element={<LiveGamePage />} />
 
-      {/* ✅ NEW: Yeh route add karo Classroom flow ke liye */}
-      <Route path="/classroom/:roomId" element={<LiveGamePage />} />
+      {/* 2. Coaching Video Classroom */}
+      {/* This handles the "Start Class" button from CoachClasses */}
+      <Route path="/classroom/:roomId" element={<VideoClassroom />} />
 
       {/* Not Found */}
       <Route path="*" element={<NotFound />} />

@@ -41,6 +41,12 @@ export const ENDPOINTS = {
     UPDATE: (classId) => `/classes/${classId}`,
     DELETE: (classId) => `/classes/${classId}`,
   },
+  NEW_CLASSES:{
+    SCHEDULE: (courseId) => `/newclasses/course/${courseId}`,
+    GET_BY_COURSE: (courseId) => `/newclasses/course/${courseId}`,
+    UPDATE: (classId) => `/newclasses/${classId}`,
+    DELETE: (classId) => `/newclasses/${classId}`,
+  },
   CHATS: {
     GET_STUDENTS_FOR_COACH: '/chats/coach/students',
     GET_CHAT_HISTORY: (receiverId) => `/chats/conversation/${receiverId}`,
