@@ -6,7 +6,6 @@ import { io } from 'socket.io-client';
 import { PhoneOff } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Import our new split components
 import AnalysisTools from './Classroom_features/AnalysisTools';
 import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
 
@@ -25,12 +24,12 @@ const VideoClassroom = () => {
     const [viewIndex, setViewIndex] = useState(-1);
     const [boardWidth, setBoardWidth] = useState(600);
     
-    // --- Annotation State ---
+    // --- Annotation & UI State ---
     const [rightClickedSquares, setRightClickedSquares] = useState({});
     const [boardKey, setBoardKey] = useState(0); 
     const [showTools, setShowTools] = useState(true);
-    
-    // --- UI State ---
+    const [showCoordinates, setShowCoordinates] = useState(true);
+
     const [activeTab, setActiveTab] = useState('moves');
     const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
@@ -82,7 +81,6 @@ const VideoClassroom = () => {
 
             setGame(tempGame);
             setHistory(tempGame.history());
-            
             setRightClickedSquares({});
             setBoardKey(prev => prev + 1);
 
@@ -100,14 +98,16 @@ const VideoClassroom = () => {
     // --- 4. UNDO ACTION (NEW) ---
     const undoMove = () => {
         const tempGame = new Chess();
-        tempGame.loadPgn(game.pgn()); // Clone to preserve history structure
-        const result = tempGame.undo(); // Undo last move
+        tempGame.loadPgn(game.pgn()); // Clone correctly
+        const result = tempGame.undo(); // Undo last move locally
         
         if (result) {
             setGame(tempGame);
             setHistory(tempGame.history());
-            setViewIndex(-1); // Ensure we are on live view
-            
+            setViewIndex(-1);
+            setRightClickedSquares({}); // Clear annotations on undo
+            setBoardKey(prev => prev + 1); 
+
             // Sync with student
             if (socketRef.current) {
                 socketRef.current.emit('make_move', {
@@ -200,9 +200,12 @@ const VideoClassroom = () => {
                             position={getBoardPosition()} 
                             onPieceDrop={onDrop}
                             boardOrientation={orientation}
+                            
                             customDarkSquareStyle={{ backgroundColor: '#779954' }}
                             customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
                             animationDuration={200}
+                            showBoardNotation={showCoordinates}
+                            
                             areArrowsAllowed={true}
                             customArrowColor="rgba(255, 0, 0, 0.9)"
                             onSquareRightClick={onSquareRightClick}
@@ -220,6 +223,8 @@ const VideoClassroom = () => {
                         onClear={clearAnnotations}
                         showTools={showTools}
                         setShowTools={setShowTools}
+                        showCoordinates={showCoordinates}
+                        setShowCoordinates={setShowCoordinates}
                     />
                 </div>
 
