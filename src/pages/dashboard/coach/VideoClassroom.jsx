@@ -3,15 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { io } from 'socket.io-client';
-import { 
-    Mic, MicOff, Video, VideoOff, PhoneOff, 
-    RotateCcw, ChevronLeft, ChevronRight, 
-    MessageSquare, Users, List, Repeat, MonitorUp,
-    Download, Clipboard, X
-} from 'lucide-react';
+import { PhoneOff } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Keep using your working socket URL
+// Import our new split components
+import AnalysisTools from './Classroom_features/AnalysisTools';
+import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
+
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-backend-socket.onrender.com';
 
 const VideoClassroom = () => {
@@ -22,151 +20,125 @@ const VideoClassroom = () => {
     // --- State ---
     const [game, setGame] = useState(new Chess());
     const [orientation, setOrientation] = useState('white');
-    const [activeTab, setActiveTab] = useState('moves'); 
-    const [micOn, setMicOn] = useState(true);
-    const [cameraOn, setCameraOn] = useState(true);
-    
-    // We derive history directly from the game object to ensure sync
     const [history, setHistory] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
+    const [viewIndex, setViewIndex] = useState(-1);
+    const [boardWidth, setBoardWidth] = useState(600);
     
-    // PGN Modal State
-    const [showPGNModal, setShowPGNModal] = useState(false);
-    const [pgnInput, setPgnInput] = useState("");
+    // --- Annotation State ---
+    const [rightClickedSquares, setRightClickedSquares] = useState({});
+    const [boardKey, setBoardKey] = useState(0); 
+    const [showTools, setShowTools] = useState(true);
+    
+    // --- UI State ---
+    const [activeTab, setActiveTab] = useState('moves');
+    const [micOn, setMicOn] = useState(true);
+    const [cameraOn, setCameraOn] = useState(true);
 
-    // History Navigation State (Viewing a past move)
-    const [viewIndex, setViewIndex] = useState(-1); // -1 means "Live Board"
+    // --- 1. RESIZE HANDLER ---
+    useEffect(() => {
+        function handleResize() {
+            const h = window.innerHeight;
+            setBoardWidth(Math.min(h * 0.70, 600)); 
+        }
+        window.addEventListener('resize', handleResize);
+        handleResize(); 
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
-    // --- 1. SOCKET CONNECTION ---
+    // --- 2. SOCKETS ---
     useEffect(() => {
         socketRef.current = io(SOCKET_URL);
-
-        socketRef.current.on('connect', () => {
-            console.log("Connected to Classroom Socket:", socketRef.current.id);
-            setIsConnected(true);
-            socketRef.current.emit('join_room', roomId);
-        });
-
-        // Listen for Incoming Moves
+        socketRef.current.on('connect', () => { setIsConnected(true); socketRef.current.emit('join_room', roomId); });
+        
         socketRef.current.on('receive_move', (moveData) => {
             setGame((prevGame) => {
-                // FIX: Use loadPgn() to preserve history instead of new Chess(fen)
                 const gameCopy = new Chess();
                 gameCopy.loadPgn(prevGame.pgn());
-                
                 try {
-                    // Apply the move to the existing history chain
-                    if (moveData.from && moveData.to) {
-                        gameCopy.move({
-                            from: moveData.from,
-                            to: moveData.to,
-                            promotion: moveData.promotion || 'q'
-                        });
-                    } else {
-                        // Fallback if socket only sent FEN (rare) - this will reset history
-                        return new Chess(moveData.fen);
-                    }
+                    if (moveData.from) gameCopy.move(moveData);
+                    else if (moveData.fen) return new Chess(moveData.fen);
                     
                     setHistory(gameCopy.history());
-                    setViewIndex(-1); // Snap back to live view on new move
+                    setViewIndex(-1);
+                    // Clear annotations on new move
+                    setRightClickedSquares({}); 
+                    setBoardKey(k => k + 1); 
                     return gameCopy;
-                } catch (e) {
-                    console.error("Move sync error, falling back to FEN", e);
-                    // Absolute fallback if move is illegal locally (desync)
-                    const recoveryGame = new Chess(moveData.fen);
-                    setHistory(recoveryGame.history());
-                    return recoveryGame;
-                }
+                } catch (e) { return new Chess(moveData.fen); }
             });
         });
-
-        return () => {
-            if (socketRef.current) socketRef.current.disconnect();
-        };
+        return () => { if (socketRef.current) socketRef.current.disconnect(); };
     }, [roomId]);
 
-    // --- 2. CHESS LOGIC ---
+    // --- 3. CHESS ACTIONS ---
     function onDrop(sourceSquare, targetSquare) {
-        // Prevent moves if we are viewing history
-        if (viewIndex !== -1) {
-            toast.error("Click 'Live' or the latest move to resume playing.");
-            return false;
-        }
-
+        if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
+        
         try {
-            // FIX: Clone via PGN to keep history
             const tempGame = new Chess();
             tempGame.loadPgn(game.pgn());
-            
-            // 1. Attempt Move
-            const move = tempGame.move({
-                from: sourceSquare,
-                to: targetSquare,
-                promotion: 'q',
-            });
+            const move = tempGame.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
+            if (!move) return false;
 
-            if (move === null) return false;
-
-            // 2. Update Local State
             setGame(tempGame);
             setHistory(tempGame.history());
+            
+            // Clear local annotations on move
+            setRightClickedSquares({});
+            setBoardKey(prev => prev + 1);
 
-            // 3. Emit Move
             if (socketRef.current) {
                 socketRef.current.emit('make_move', {
                     roomId,
-                    move: { from: sourceSquare, to: targetSquare, promotion: 'q' },
+                    from: sourceSquare, to: targetSquare, promotion: 'q',
                     fen: tempGame.fen()
                 });
             }
             return true;
-        } catch (error) {
-            return false;
-        }
+        } catch (error) { return false; }
     }
 
-    const resetGame = () => {
-        const newGame = new Chess();
-        setGame(newGame);
-        setHistory([]);
-        setViewIndex(-1);
-        if(socketRef.current) {
-            // Optional: You can emit a custom event for reset if you want
-            // socketRef.current.emit('reset_board', roomId);
-        }
+    // --- 4. ANNOTATION LOGIC (Unified) ---
+    // Right Click = Mark Square. Right Drag = Draw Arrow (Native).
+    function onSquareRightClick(square) {
+        const red = "rgba(255, 0, 0, 0.6)";
+        const orange = "rgba(255, 165, 0, 0.6)";
+        const green = "rgba(0, 255, 0, 0.6)";
+        const blue = "rgba(0, 0, 255, 0.6)";
+
+        setRightClickedSquares((prev) => {
+            const current = prev[square];
+            let nextColor = undefined;
+            if (!current) nextColor = { backgroundColor: red };
+            else if (current.backgroundColor === red) nextColor = { backgroundColor: orange };
+            else if (current.backgroundColor === orange) nextColor = { backgroundColor: green };
+            else if (current.backgroundColor === green) nextColor = { backgroundColor: blue };
+            return { ...prev, [square]: nextColor };
+        });
+    }
+
+    const clearAnnotations = () => {
+        setRightClickedSquares({});
+        setBoardKey(prev => prev + 1); // Only clear arrows on explicit Clear button
+        toast.success("Annotations cleared");
     };
 
-    const flipBoard = () => {
-        setOrientation(orientation === 'white' ? 'black' : 'white');
+    // --- 5. PGN HANDLING ---
+    const handleLoadPGN = (pgn) => {
+        try {
+            const newGame = new Chess();
+            newGame.loadPgn(pgn);
+            setGame(newGame);
+            setHistory(newGame.history());
+            setViewIndex(-1);
+            if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
+            toast.success("PGN Loaded");
+        } catch (e) { toast.error("Invalid PGN"); }
     };
 
-    // --- 3. HISTORY NAVIGATION ---
-    const goToMove = (index) => {
-        setViewIndex(index);
-    };
-
-    // Helper to get the FEN for a specific history index
-    const getBoardPosition = () => {
-        // If viewing live (-1), return current game FEN
-        if (viewIndex === -1) return game.fen();
-
-        // Otherwise, replay game from start to viewIndex
-        const tempGame = new Chess();
-        // Load the same PGN structure (if standard start)
-        // Note: If you loaded a custom PGN, we need to respect that start position.
-        // For simplicity, we assume standard start or full PGN replay.
-        
-        // Better approach: Replay moves from the history array
-        for (let i = 0; i <= viewIndex; i++) {
-            tempGame.move(history[i]);
-        }
-        return tempGame.fen();
-    };
-
-    // --- 4. PGN FUNCTIONS ---
     const handleDownloadPGN = () => {
-        const pgn = game.pgn();
-        const blob = new Blob([pgn], { type: 'text/plain' });
+        const blob = new Blob([game.pgn()], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -174,212 +146,79 @@ const VideoClassroom = () => {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        toast.success("PGN Downloaded");
     };
 
-    const handleLoadPGN = () => {
-        try {
-            const newGame = new Chess();
-            newGame.loadPgn(pgnInput);
-            setGame(newGame);
-            setHistory(newGame.history());
-            setPgnInput("");
-            setShowPGNModal(false);
-            setViewIndex(-1);
-            
-            // Broadcast
-            if (socketRef.current) {
-                // For a full PGN load, we might need a special event or just send the final FEN
-                // Sending just FEN wipes history for others, sending move wipes history. 
-                // Ideally, send the PGN string to others if you want them to have full history.
-                // For now, let's just sync the final position to keep it simple.
-                socketRef.current.emit('make_move', {
-                    roomId,
-                    fen: newGame.fen()
-                });
-            }
-            toast.success("PGN Loaded");
-        } catch (error) {
-            toast.error("Invalid PGN format");
-        }
+    const getBoardPosition = () => {
+        if (viewIndex === -1) return game.fen();
+        const tempGame = new Chess();
+        for (let i = 0; i <= viewIndex; i++) tempGame.move(history[i]);
+        return tempGame.fen();
     };
 
     return (
-        <div className="h-screen bg-[#111] text-white flex flex-col overflow-hidden">
+        <div className="h-screen bg-[#111] text-white flex flex-col overflow-hidden font-sans">
             
-            {/* HEADER */}
-            <header className="h-14 bg-[#1a1a1a] border-b border-gray-800 flex items-center justify-between px-4 shrink-0">
+            {/* Header */}
+            <header className="h-14 bg-[#161616] border-b border-white/10 flex items-center justify-between px-6 shrink-0 z-20">
                 <div className="flex items-center gap-4">
                     <div className="flex flex-col">
-                        <span className="font-bold text-gray-200 text-sm">Classroom Session</span>
-                        <span className="text-xs text-gray-500 font-mono">ID: {roomId}</span>
+                        <span className="font-bold text-gray-200 text-sm tracking-wide">Classroom</span>
+                        <span className="text-[10px] text-gray-500 font-mono uppercase">ID: {roomId.slice(0,8)}...</span>
                     </div>
-                    <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${isConnected ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
-                        {isConnected ? 'Live' : 'Connecting...'}
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${isConnected ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                        {isConnected ? 'Live' : 'Offline'}
                     </span>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition-colors shadow-lg shadow-red-900/20">
-                        <PhoneOff className="w-4 h-4" /> Exit Class
-                    </button>
-                </div>
+                <button onClick={() => navigate(-1)} className="bg-red-600/90 hover:bg-red-600 text-white px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all">
+                    <PhoneOff className="w-3 h-3" /> Exit
+                </button>
             </header>
 
-            {/* MAIN CONTENT */}
             <div className="flex-1 flex overflow-hidden">
-                
-                {/* LEFT: CHESS BOARD */}
-                <div className="flex-1 bg-[#0f0f0f] relative flex flex-col">
-                    <div className="flex-1 flex items-center justify-center p-2 bg-[#161616]">
-                        <div className="w-full max-w-[85vh] aspect-square shadow-2xl rounded-sm overflow-hidden border-4 border-[#262421]">
-                            <Chessboard 
-                                // DYNAMIC POSITION: Shows history if clicking back, or live game
-                                position={getBoardPosition()} 
-                                onPieceDrop={onDrop}
-                                boardOrientation={orientation}
-                                customDarkSquareStyle={{ backgroundColor: '#779954' }}
-                                customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
-                                animationDuration={200}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Toolbar */}
-                    <div className="h-14 bg-[#1a1a1a] border-t border-gray-800 flex items-center justify-center gap-6 px-4 shrink-0">
-                        <div className="flex items-center gap-2 bg-black/30 rounded-lg p-1">
-                            {/* Navigation Buttons */}
-                            <button 
-                                onClick={() => goToMove(0)} 
-                                disabled={history.length === 0}
-                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
-                            >
-                                <ChevronLeft className="w-6 h-6" />
-                                <span className="sr-only">Start</span>
-                            </button>
-                            <button 
-                                onClick={() => goToMove(viewIndex === -1 ? history.length - 2 : viewIndex - 1)}
-                                disabled={history.length === 0 || viewIndex === 0}
-                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <button 
-                                onClick={() => goToMove(viewIndex === -1 ? -1 : viewIndex + 1)}
-                                disabled={viewIndex === -1 || viewIndex === history.length - 1}
-                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                            <button 
-                                onClick={() => setViewIndex(-1)} 
-                                disabled={viewIndex === -1}
-                                className="p-2 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white disabled:opacity-30"
-                            >
-                                <ChevronRight className="w-6 h-6" />
-                                <span className="sr-only">Current</span>
-                            </button>
-                        </div>
-
-                        <div className="h-6 w-px bg-gray-700"></div>
-                        <button onClick={resetGame} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white text-sm"><RotateCcw className="w-4 h-4" /> Reset</button>
-                        <button onClick={flipBoard} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-700 rounded-md text-gray-400 hover:text-white text-sm"><Repeat className="w-4 h-4" /> Flip</button>
-                    </div>
-                </div>
-
-                {/* RIGHT: SIDEBAR */}
-                <div className="w-[350px] bg-[#1a1a1a] border-l border-gray-800 flex flex-col shrink-0">
+                <div className="flex-1 bg-[#0a0a0a] relative flex flex-col justify-center items-center">
                     
-                    {/* Video Placeholder */}
-                    <div className="w-full aspect-video bg-black relative group border-b border-gray-800 flex items-center justify-center text-gray-600">
-                        <div className="text-center">
-                            <MonitorUp className="w-8 h-8 mx-auto mb-2 opacity-50"/>
-                            <span className="text-sm">Video Feed Ready</span>
-                        </div>
-                        <div className="absolute bottom-4 flex gap-3">
-                             <button onClick={() => setMicOn(!micOn)} className={`p-2 rounded-full ${micOn ? 'bg-gray-800' : 'bg-red-600'}`}>{micOn ? <Mic className="w-4 h-4"/> : <MicOff className="w-4 h-4"/>}</button>
-                             <button onClick={() => setCameraOn(!cameraOn)} className={`p-2 rounded-full ${cameraOn ? 'bg-gray-800' : 'bg-red-600'}`}>{cameraOn ? <Video className="w-4 h-4"/> : <VideoOff className="w-4 h-4"/>}</button>
-                        </div>
+                    <div className="relative shadow-2xl shadow-black/50" style={{ width: boardWidth, height: boardWidth }}>
+                        <Chessboard 
+                            id="ClassroomBoard"
+                            key={boardKey} 
+                            position={getBoardPosition()} 
+                            onPieceDrop={onDrop}
+                            boardOrientation={orientation}
+                            customDarkSquareStyle={{ backgroundColor: '#779954' }}
+                            customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
+                            animationDuration={200}
+                            
+                            // *** UNIFIED ANNOTATION MODE ***
+                            // Always allow arrows (Right Drag)
+                            areArrowsAllowed={true}
+                            customArrowColor="rgba(255, 0, 0, 0.9)" // Red Arrows
+                            
+                            // Always allow highlighting (Right Click)
+                            onSquareRightClick={onSquareRightClick}
+                            customSquareStyles={rightClickedSquares}
+                        />
                     </div>
-
-                    {/* Navigation Tabs */}
-                    <div className="flex border-b border-gray-800 bg-[#202020]">
-                        <button onClick={() => setActiveTab('moves')} className={`flex-1 py-3 text-xs font-bold uppercase ${activeTab === 'moves' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-gray-500'}`}><List className="w-4 h-4 inline mr-1"/> Moves</button>
-                        <button onClick={() => setActiveTab('chat')} className={`flex-1 py-3 text-xs font-bold uppercase ${activeTab === 'chat' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-gray-500'}`}><MessageSquare className="w-4 h-4 inline mr-1"/> Chat</button>
-                        <button onClick={() => setActiveTab('students')} className={`flex-1 py-3 text-xs font-bold uppercase ${activeTab === 'students' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-gray-500'}`}><Users className="w-4 h-4 inline mr-1"/> Users</button>
-                    </div>
-
-                    {/* Tab Content */}
-                    <div className="flex-1 bg-[#1a1a1a] overflow-hidden flex flex-col relative">
-                        {activeTab === 'moves' && (
-                             <div className="absolute inset-0 overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-gray-700 flex flex-col">
-                                {/* Moves Table */}
-                                <div className="flex-1">
-                                    <table className="w-full text-sm border-collapse">
-                                        <thead className="bg-[#252525] text-gray-400 text-xs sticky top-0"><tr><th className="py-1 pl-4 text-left w-12">#</th><th className="py-1 text-left">White</th><th className="py-1 text-left">Black</th></tr></thead>
-                                        <tbody>
-                                            {Array.from({ length: Math.ceil(history.length / 2) }).map((_, i) => (
-                                                <tr key={i} className={`border-b border-gray-800 transition-colors ${Math.floor(viewIndex/2) === i ? 'bg-white/10' : 'hover:bg-white/5'}`}>
-                                                    <td className="py-1.5 pl-4 text-gray-500 font-mono text-xs">{i + 1}.</td>
-                                                    <td 
-                                                        onClick={() => goToMove(i * 2)}
-                                                        className={`py-1.5 cursor-pointer hover:text-white ${viewIndex === (i * 2) ? 'text-yellow-400 font-bold' : 'text-gray-300'}`}
-                                                    >
-                                                        {history[i * 2]}
-                                                    </td>
-                                                    <td 
-                                                        onClick={() => history[i * 2 + 1] && goToMove(i * 2 + 1)}
-                                                        className={`py-1.5 cursor-pointer hover:text-white ${viewIndex === (i * 2 + 1) ? 'text-yellow-400 font-bold' : 'text-gray-300'}`}
-                                                    >
-                                                        {history[i * 2 + 1] || ''}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                {/* PGN Controls */}
-                                <div className="p-3 bg-[#202020] border-t border-gray-700 grid grid-cols-2 gap-2">
-                                    <button 
-                                        onClick={() => setShowPGNModal(true)} 
-                                        className="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 py-2 rounded text-xs font-bold"
-                                    >
-                                        <Clipboard className="w-3 h-3"/> Paste PGN
-                                    </button>
-                                    <button 
-                                        onClick={handleDownloadPGN} 
-                                        className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 py-2 rounded text-xs font-bold"
-                                    >
-                                        <Download className="w-3 h-3"/> Download
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                        {activeTab === 'chat' && <div className="p-4 text-gray-500 text-center text-sm">Chat connecting...</div>}
-                    </div>
+                    
+                    <AnalysisTools 
+                        onReset={() => { 
+                            const ng = new Chess(); 
+                            setGame(ng); setHistory([]); setViewIndex(-1); clearAnnotations(); 
+                        }}
+                        onFlip={() => setOrientation(o => o === 'white' ? 'black' : 'white')}
+                        onClear={clearAnnotations}
+                        showTools={showTools}
+                        setShowTools={setShowTools}
+                    />
                 </div>
+
+                <ClassroomSidebar 
+                    activeTab={activeTab} setActiveTab={setActiveTab}
+                    history={history} viewIndex={viewIndex} goToMove={setViewIndex}
+                    onLoadPGN={handleLoadPGN} onDownloadPGN={handleDownloadPGN}
+                    micOn={micOn} setMicOn={setMicOn}
+                    cameraOn={cameraOn} setCameraOn={setCameraOn}
+                />
             </div>
-
-            {/* PGN MODAL */}
-            {showPGNModal && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1e1e1e] border border-gray-700 rounded-xl p-6 w-full max-w-lg relative">
-                        <button onClick={() => setShowPGNModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
-                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Clipboard className="w-5 h-5 text-violet-400"/> Load Game from PGN</h2>
-                        <textarea 
-                            value={pgnInput}
-                            onChange={(e) => setPgnInput(e.target.value)}
-                            placeholder="Paste your PGN string here..."
-                            className="w-full h-40 bg-black/50 border border-gray-600 rounded-lg p-3 text-sm font-mono text-gray-300 focus:outline-none focus:border-violet-500 mb-4 resize-none"
-                        ></textarea>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowPGNModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
-                            <button onClick={handleLoadPGN} className="px-6 py-2 bg-violet-600 hover:bg-violet-700 rounded text-sm font-bold text-white">Load Game</button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
