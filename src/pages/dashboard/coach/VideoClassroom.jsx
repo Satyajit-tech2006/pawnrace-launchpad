@@ -13,7 +13,7 @@ import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from './Classroom_features/CoordinateOverlay';
 import SetupPosition from './Classroom_features/SetupPosition';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-backend-socket.onrender.com';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-game-socket-backend.vercel.app/';
 
 const VideoClassroom = () => {
     const { roomId } = useParams();
@@ -22,6 +22,7 @@ const VideoClassroom = () => {
     const { user } = useAuth();
 
     // --- State ---
+    const [connectedUsers, setConnectedUsers] = useState([]);
     const [game, setGame] = useState(new Chess());
     const [orientation, setOrientation] = useState('white');
     const [history, setHistory] = useState([]);
@@ -53,7 +54,25 @@ const VideoClassroom = () => {
     // --- 2. SOCKETS ---
     useEffect(() => {
         socketRef.current = io(SOCKET_URL);
-        socketRef.current.on('connect', () => { setIsConnected(true); socketRef.current.emit('join_room', roomId); });
+        
+        socketRef.current.on('connect', () => { 
+            setIsConnected(true); 
+            
+            // Define User Info
+            const userInfo = {
+                name: user?.name || user?.username || "Coach", // Uses Auth data
+                role: "Coach",
+                _id: user?._id
+            };
+
+            // Send Object instead of just roomId
+            socketRef.current.emit('join_room', { roomId, user: userInfo }); 
+        });
+        
+        // --- 2. ADD THIS LISTENER ---
+        socketRef.current.on('update_user_list', (users) => {
+            setConnectedUsers(users); // Updates the Sidebar list
+        });
         
         // MOVES
         socketRef.current.on('receive_move', (moveData) => {
@@ -64,10 +83,6 @@ const VideoClassroom = () => {
                     if (moveData.from) gameCopy.move(moveData);
                     else if (moveData.fen) return new Chess(moveData.fen);
                     setHistory(gameCopy.history()); setViewIndex(-1); 
-                    
-                    // Optional: Clear annotations on opponent move
-                    // drawing.clearAnnotations(); 
-                    
                     return gameCopy;
                 } catch (e) { return new Chess(moveData.fen); }
             });
@@ -219,7 +234,22 @@ const VideoClassroom = () => {
                         showTools={showTools} setShowTools={setShowTools} showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
                     />
                 </div>
-                <ClassroomSidebar activeTab={activeTab} setActiveTab={setActiveTab} history={history} viewIndex={viewIndex} goToMove={setViewIndex} onLoadPGN={handleLoadPGN} onDownloadPGN={handleDownloadPGN} micOn={micOn} setMicOn={setMicOn} cameraOn={cameraOn} setCameraOn={setCameraOn} chatMessages={chatMessages} onSendMessage={handleSendMessage} />
+                <ClassroomSidebar 
+                    activeTab={activeTab} 
+                    setActiveTab={setActiveTab} 
+                    history={history} 
+                    viewIndex={viewIndex} 
+                    goToMove={setViewIndex} 
+                    onLoadPGN={handleLoadPGN} 
+                    onDownloadPGN={handleDownloadPGN} 
+                    micOn={micOn} 
+                    setMicOn={setMicOn} 
+                    cameraOn={cameraOn} 
+                    setCameraOn={setCameraOn} 
+                    chatMessages={chatMessages} 
+                    onSendMessage={handleSendMessage} 
+                    connectedUsers={connectedUsers} // <--- ADDED THIS PROP
+                />
             </div>
             <SetupPosition isOpen={showSetupModal} onClose={() => setShowSetupModal(false)} currentFen={game.fen()} onLoadPosition={handleSetupLoad} />
         </div>

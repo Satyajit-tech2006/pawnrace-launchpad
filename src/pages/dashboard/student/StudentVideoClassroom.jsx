@@ -11,7 +11,7 @@ import { useBoardDrawing } from '../../../hooks/useBoardDrawing'; // Hook Import
 import ClassroomSidebar from '../coach/Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from '../coach/Classroom_features/CoordinateOverlay';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-backend-socket.onrender.com';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-game-socket-backend.vercel.app/';
 
 const StudentVideoClassroom = () => {
     const { roomId } = useParams();
@@ -20,6 +20,7 @@ const StudentVideoClassroom = () => {
     const { user } = useAuth();
 
     // --- State ---
+    const [connectedUsers, setConnectedUsers] = useState([]); // <--- State for Sidebar List
     const [game, setGame] = useState(new Chess());
     const [orientation, setOrientation] = useState('black'); 
     const [history, setHistory] = useState([]);
@@ -47,7 +48,25 @@ const StudentVideoClassroom = () => {
     // --- 2. SOCKET CONNECTION ---
     useEffect(() => {
         socketRef.current = io(SOCKET_URL);
-        socketRef.current.on('connect', () => { setIsConnected(true); socketRef.current.emit('join_room', roomId); toast.success("Connected to Class"); });
+        
+        socketRef.current.on('connect', () => { 
+            setIsConnected(true); 
+            
+            // Define User Info
+            const userInfo = {
+                name: user?.name || user?.username || "Student", 
+                role: "Student",
+                _id: user?._id
+            };
+
+            // Send Object to join room
+            socketRef.current.emit('join_room', { roomId, user: userInfo }); 
+        });
+        
+        // Listen for User List Updates
+        socketRef.current.on('update_user_list', (users) => {
+            setConnectedUsers(users); 
+        });
         
         // MOVES
         socketRef.current.on('receive_move', (moveData) => {
@@ -59,9 +78,6 @@ const StudentVideoClassroom = () => {
                     else if (moveData.fen) return new Chess(moveData.fen);
                     setHistory(gameCopy.history()); setViewIndex(-1); 
                     
-                    // Optional: Clear annotations on move
-                    // drawing.clearAnnotations();
-
                     return gameCopy;
                 } catch (e) { return new Chess(moveData.fen); }
             });
@@ -79,7 +95,7 @@ const StudentVideoClassroom = () => {
         });
 
         return () => { if (socketRef.current) socketRef.current.disconnect(); };
-    }, [roomId]);
+    }, [roomId, user]);
 
     // --- Helper to Emit Drawing Changes (If student draws) ---
     const handleMouseUpWrapper = (e) => {
@@ -191,6 +207,7 @@ const StudentVideoClassroom = () => {
                     cameraOn={cameraOn} setCameraOn={setCameraOn}
                     chatMessages={chatMessages}
                     onSendMessage={handleSendMessage}
+                    connectedUsers={connectedUsers} // <--- Pass the list here
                 />
             </div>
         </div>

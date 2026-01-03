@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Mic, MicOff, Video, VideoOff, MonitorUp, Clipboard, Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import ClassroomChat from './ClassroomChat'; // <--- 1. IMPORT ADDED
+import { Mic, MicOff, Video, VideoOff, MonitorUp, Clipboard, Download, X, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import ClassroomChat from './ClassroomChat';
 
 const ClassroomSidebar = ({ 
     activeTab, setActiveTab, history, viewIndex, goToMove, 
     onLoadPGN, onDownloadPGN, 
     micOn, setMicOn, cameraOn, setCameraOn,
-    chatMessages, onSendMessage // <--- 2. PROPS ADDED
+    chatMessages, onSendMessage,
+    connectedUsers = [] // <--- FIXED: Default value is empty array
 }) => {
     const [showPGNModal, setShowPGNModal] = useState(false);
     const [pgnInput, setPgnInput] = useState("");
@@ -20,7 +21,7 @@ const ClassroomSidebar = ({
     return (
         <div className="w-[350px] bg-[#111] border-l border-white/10 flex flex-col shrink-0 z-10 h-full">
             
-            {/* Video Feed Placeholder */}
+            {/* Video Placeholder */}
             <div className="w-full aspect-video bg-black/50 relative group border-b border-white/5 flex items-center justify-center text-gray-600">
                 <div className="text-center">
                     <MonitorUp className="w-8 h-8 mx-auto mb-2 opacity-30"/>
@@ -41,12 +42,11 @@ const ClassroomSidebar = ({
                 ))}
             </div>
 
-            {/* Tab Content */}
             <div className="flex-1 bg-[#111] overflow-hidden flex flex-col relative">
                 
                 {/* 1. MOVES TAB */}
                 {activeTab === 'moves' && (
-                        <div className="absolute inset-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex flex-col">
+                    <div className="absolute inset-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex flex-col">
                         <div className="flex-1 p-2">
                             <table className="w-full text-xs border-collapse">
                                 <thead className="bg-[#1a1a1a] text-gray-500 sticky top-0 font-mono"><tr><th className="py-2 pl-4 text-left w-10">#</th><th className="py-2 text-left">White</th><th className="py-2 text-left">Black</th></tr></thead>
@@ -61,16 +61,12 @@ const ClassroomSidebar = ({
                                 </tbody>
                             </table>
                         </div>
-                        
-                        {/* Navigation Buttons */}
                         <div className="p-2 border-t border-white/10 flex justify-center gap-2 bg-[#161616]">
                              <button onClick={() => goToMove(0)} disabled={history.length === 0} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronLeft className="w-4 h-4"/><span className="sr-only">Start</span></button>
                              <button onClick={() => goToMove(viewIndex === -1 ? history.length - 2 : viewIndex - 1)} disabled={history.length === 0 || viewIndex === 0} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronLeft className="w-3 h-3"/></button>
                              <button onClick={() => goToMove(viewIndex === -1 ? -1 : viewIndex + 1)} disabled={viewIndex === -1 || viewIndex === history.length - 1} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronRight className="w-3 h-3"/></button>
                              <button onClick={() => goToMove(-1)} disabled={viewIndex === -1} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronRight className="w-4 h-4"/></button>
                         </div>
-
-                        {/* PGN Buttons */}
                         <div className="p-3 border-t border-white/10 grid grid-cols-2 gap-2 bg-[#161616]">
                             <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 py-2 rounded text-[10px] font-bold uppercase tracking-wider text-gray-300 transition-colors"><Clipboard className="w-3 h-3"/> Paste PGN</button>
                             <button onClick={onDownloadPGN} className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 py-2 rounded text-[10px] font-bold uppercase tracking-wider text-white transition-colors"><Download className="w-3 h-3"/> Download</button>
@@ -78,16 +74,34 @@ const ClassroomSidebar = ({
                     </div>
                 )}
                 
-                {/* 2. CHAT TAB - FIXED! */}
+                {/* 2. CHAT TAB */}
                 {activeTab === 'chat' && (
-                    <ClassroomChat 
-                        messages={chatMessages || []} 
-                        onSendMessage={onSendMessage} 
-                    />
+                    <ClassroomChat messages={chatMessages || []} onSendMessage={onSendMessage} />
                 )}
 
-                {/* 3. STUDENTS TAB */}
-                {activeTab === 'students' && <div className="p-8 text-center text-gray-600 text-xs uppercase tracking-widest">Students List Coming Soon</div>}
+                {/* 3. STUDENTS TAB (UPDATED) */}
+                {activeTab === 'students' && (
+                    <div className="absolute inset-0 overflow-y-auto p-4 space-y-2">
+                         <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Online Now ({connectedUsers.length})</h3>
+                         {connectedUsers.map((u, i) => (
+                             <div key={i} className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
+                                 <div className="relative">
+                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-bold text-white">
+                                         {u.name.charAt(0).toUpperCase()}
+                                     </div>
+                                     <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-[#1a1a1a] rounded-full"></div>
+                                 </div>
+                                 <div>
+                                     <p className="text-sm font-bold text-gray-200">{u.name}</p>
+                                     <p className="text-[10px] text-gray-500 uppercase tracking-wide">{u.role}</p>
+                                 </div>
+                             </div>
+                         ))}
+                         {connectedUsers.length === 0 && (
+                             <div className="text-center text-gray-500 text-xs py-10">No users connected</div>
+                         )}
+                    </div>
+                )}
             </div>
 
             {/* Modal */}
