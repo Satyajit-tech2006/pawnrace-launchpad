@@ -15,40 +15,22 @@ import {
   MessageSquare,
   LucideIcon,
   Brain,
+  Calendar, // Imported Calendar for the new icon
 } from "lucide-react";
 
 // --- BACKGROUND ANIMATION COMPONENTS ---
-// ... (Yahan koi change nahi hai ... KingIcon, QueenIcon, RookIcon, etc.)
-const KingIcon = ({ className }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1"
-  >
+const KingIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
     <path d="M5 16L3 20h18l-2-4m-2-4H7l-1 4m12-4a4 4 0 00-8 0m4-5V3m-2 2h4" />
   </svg>
 );
-const QueenIcon = ({ className }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1"
-  >
+const QueenIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
     <path d="M5 16L3 20h18l-2-4m-2-4H7l-1 4m12-4a4 4 0 10-8 0m4-5a2 2 0 110-4 2 2 0 010 4z" />
   </svg>
 );
-const RookIcon = ({ className }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1"
-  >
+const RookIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
     <path d="M5 16L3 20h18l-2-4H7l-2 4m14-4V5H5v7m0-7h14v3H5V5z" />
   </svg>
 );
@@ -146,15 +128,19 @@ const menuItems = [
     icon: Brain,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
-  // Naya "Play Game" button yahan add kiya hai
   {
     name: "Play Game",
-    icon: Gamepad, // Yahan Trophy icon use kar lete hain (ya Brain bhi kar sakte hain)
-    color: "bg-gradient-to-br from-yellow-400 to-orange-500", // Alag color
+    icon: Gamepad, 
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  // ✅ NEW CLASSES BUTTON ADDED HERE
+  {
+    name: "New-Classes(Coming Soon)",
+    icon: Calendar,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
 ].map((item) => ({ ...item, path: item.name.toLowerCase().replace(" ", "-") }));
 
-// MenuCard Component (Ismein koi change nahi)
 interface MenuCardProps {
   name: string;
   icon: LucideIcon;
@@ -194,34 +180,27 @@ const MenuCard: React.FC<MenuCardProps> = ({
   );
 };
 
-// StudentDashboard Component
 const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
 
-  // ***** YAHAN BADLAAV KIYA GAYA HAI *****
   const handleMenuClick = (path: string) => {
     if (path === "play-game") {
-      // Jab "Play Game" par click ho, toh lobby page par jao
       navigate(`/play`);
     } else {
-      // Baaki buttons pehle jaise hi kaam karenge
+      // Handles 'new-classes(coming-soon)' automatically too
       navigate(`/student-dashboard/${path}`);
     }
   };
-  // ****************************************
 
   return (
     <div className="min-h-screen bg-gray-900 text-white relative">
-      {/* Background Layer */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#111827] via-[#1a173d] to-black"></div>
       <BackgroundAnimation />
 
-      {/* Foreground Layer */}
       <div className="relative z-10">
         <DashboardNavbar />
         <main className="pt-24 md:pt-28 px-4 sm:px-6 lg:px-8 pb-16">
           <div className="max-w-7xl mx-auto">
-            {/* Welcome Section */}
             <div className="text-center mb-12">
               <h1 className="text-2xl md:text-3xl font-bold">
                 Welcome back!
@@ -231,7 +210,6 @@ const StudentDashboard: React.FC = () => {
               </p>
             </div>
 
-            {/* Menu Grid (Ismein koi change nahi) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

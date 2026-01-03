@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import AnalysisTools from './Classroom_features/AnalysisTools';
 import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from './Classroom_features/CoordinateOverlay';
-import SetupPosition from './Classroom_features/SetupPosition'; // NEW IMPORT
+import SetupPosition from './Classroom_features/SetupPosition';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-backend-socket.onrender.com';
 
@@ -32,11 +32,14 @@ const VideoClassroom = () => {
     const [boardKey, setBoardKey] = useState(0); 
     const [showTools, setShowTools] = useState(true);
     const [showCoordinates, setShowCoordinates] = useState(true);
-    const [showSetupModal, setShowSetupModal] = useState(false); // NEW STATE for Modal
+    const [showSetupModal, setShowSetupModal] = useState(false);
 
     const [activeTab, setActiveTab] = useState('moves');
     const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
+
+    // --- CHAT STATE (Added Back) ---
+    const [chatMessages, setChatMessages] = useState([]);
 
     // --- 1. RESIZE ---
     useEffect(() => {
@@ -54,14 +57,14 @@ const VideoClassroom = () => {
         socketRef.current = io(SOCKET_URL);
         socketRef.current.on('connect', () => { setIsConnected(true); socketRef.current.emit('join_room', roomId); });
         
+        // MOVES
         socketRef.current.on('receive_move', (moveData) => {
             setGame((prevGame) => {
                 const gameCopy = new Chess();
                 gameCopy.loadPgn(prevGame.pgn());
                 try {
                     if (moveData.from) gameCopy.move(moveData);
-                    else if (moveData.fen) return new Chess(moveData.fen); // Sync custom position
-                    
+                    else if (moveData.fen) return new Chess(moveData.fen);
                     setHistory(gameCopy.history());
                     setViewIndex(-1);
                     setRightClickedSquares({}); 
@@ -70,10 +73,30 @@ const VideoClassroom = () => {
                 } catch (e) { return new Chess(moveData.fen); }
             });
         });
+
+        // CHAT (Added Back)
+        socketRef.current.on('receive_message', (data) => {
+            setChatMessages(prev => [...prev, { ...data, isMe: false }]);
+        });
+
         return () => { if (socketRef.current) socketRef.current.disconnect(); };
     }, [roomId]);
 
-    // --- 3. GAME ACTIONS ---
+    // --- 3. CHAT HANDLER (Added Back) ---
+    const handleSendMessage = (text) => {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const messageData = { text, time, sender: 'Coach' };
+
+        // Update locally
+        setChatMessages(prev => [...prev, { ...messageData, isMe: true }]);
+
+        // Send to Socket
+        if (socketRef.current) {
+            socketRef.current.emit('send_message', { roomId, ...messageData });
+        }
+    };
+
+    // --- 4. GAME ACTIONS ---
     function onDrop(sourceSquare, targetSquare) {
         if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
         try {
@@ -88,11 +111,7 @@ const VideoClassroom = () => {
             setBoardKey(prev => prev + 1);
 
             if (socketRef.current) {
-                socketRef.current.emit('make_move', {
-                    roomId,
-                    from: sourceSquare, to: targetSquare, promotion: 'q',
-                    fen: tempGame.fen()
-                });
+                socketRef.current.emit('make_move', { roomId, from: sourceSquare, to: targetSquare, promotion: 'q', fen: tempGame.fen() });
             }
             return true;
         } catch (error) { return false; }
@@ -102,14 +121,12 @@ const VideoClassroom = () => {
         const tempGame = new Chess();
         tempGame.loadPgn(game.pgn()); 
         if (tempGame.undo()) {
-            setGame(tempGame);
-            setHistory(tempGame.history());
-            setViewIndex(-1);
+            setGame(tempGame); setHistory(tempGame.history()); setViewIndex(-1);
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
         }
     };
 
-    // --- 4. ANNOTATIONS ---
+    // --- 5. ANNOTATIONS ---
     function onSquareRightClick(square) {
         const red = "rgba(255, 0, 0, 0.6)";
         const orange = "rgba(255, 165, 0, 0.6)";
@@ -133,26 +150,20 @@ const VideoClassroom = () => {
         toast.success("Annotations cleared");
     };
 
-    // --- 5. PGN & SETUP HANDLERS ---
+    // --- 6. PGN / SETUP ---
     const handleLoadPGN = (pgn) => {
         try {
-            const newGame = new Chess();
-            newGame.loadPgn(pgn);
-            setGame(newGame);
-            setHistory(newGame.history());
-            setViewIndex(-1);
+            const newGame = new Chess(); newGame.loadPgn(pgn);
+            setGame(newGame); setHistory(newGame.history()); setViewIndex(-1);
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
             toast.success("PGN Loaded");
         } catch (e) { toast.error("Invalid PGN"); }
     };
 
-    // NEW: Handle Custom Position Load
     const handleSetupLoad = (fen) => {
         try {
             const newGame = new Chess(fen);
-            setGame(newGame);
-            setHistory([]); // New position resets history
-            setViewIndex(-1);
+            setGame(newGame); setHistory([]); setViewIndex(-1);
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
             toast.success("Custom Position Loaded");
         } catch (e) { toast.error("Failed to load position"); }
@@ -162,11 +173,7 @@ const VideoClassroom = () => {
         const blob = new Blob([game.pgn()], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `game_${roomId}.pgn`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        a.href = url; a.download = `game_${roomId}.pgn`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
     const getBoardPosition = () => {
@@ -217,17 +224,12 @@ const VideoClassroom = () => {
                     
                     <AnalysisTools 
                         onUndo={undoMove}
-                        onReset={() => { 
-                            const ng = new Chess(); 
-                            setGame(ng); setHistory([]); setViewIndex(-1); clearAnnotations(); 
-                        }}
+                        onReset={() => { const ng = new Chess(); setGame(ng); setHistory([]); setViewIndex(-1); clearAnnotations(); }}
                         onFlip={() => setOrientation(o => o === 'white' ? 'black' : 'white')}
                         onClear={clearAnnotations}
-                        onSetup={() => setShowSetupModal(true)} // Open Modal
-                        showTools={showTools}
-                        setShowTools={setShowTools}
-                        showCoordinates={showCoordinates}
-                        setShowCoordinates={setShowCoordinates}
+                        onSetup={() => setShowSetupModal(true)}
+                        showTools={showTools} setShowTools={setShowTools}
+                        showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
                     />
                 </div>
 
@@ -237,10 +239,12 @@ const VideoClassroom = () => {
                     onLoadPGN={handleLoadPGN} onDownloadPGN={handleDownloadPGN}
                     micOn={micOn} setMicOn={setMicOn}
                     cameraOn={cameraOn} setCameraOn={setCameraOn}
+                    // ✅ PASSED CHAT PROPS HERE
+                    chatMessages={chatMessages}
+                    onSendMessage={handleSendMessage}
                 />
             </div>
 
-            {/* SETUP MODAL */}
             <SetupPosition 
                 isOpen={showSetupModal} 
                 onClose={() => setShowSetupModal(false)}

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Mic, MicOff, Video, VideoOff, MonitorUp, List, MessageSquare, Users, Clipboard, Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, MonitorUp, Clipboard, Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import ClassroomChat from './ClassroomChat'; // <--- 1. IMPORT ADDED
 
 const ClassroomSidebar = ({ 
     activeTab, setActiveTab, history, viewIndex, goToMove, 
     onLoadPGN, onDownloadPGN, 
-    micOn, setMicOn, cameraOn, setCameraOn 
+    micOn, setMicOn, cameraOn, setCameraOn,
+    chatMessages, onSendMessage // <--- 2. PROPS ADDED
 }) => {
     const [showPGNModal, setShowPGNModal] = useState(false);
     const [pgnInput, setPgnInput] = useState("");
@@ -41,6 +43,8 @@ const ClassroomSidebar = ({
 
             {/* Tab Content */}
             <div className="flex-1 bg-[#111] overflow-hidden flex flex-col relative">
+                
+                {/* 1. MOVES TAB */}
                 {activeTab === 'moves' && (
                         <div className="absolute inset-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex flex-col">
                         <div className="flex-1 p-2">
@@ -73,7 +77,17 @@ const ClassroomSidebar = ({
                         </div>
                     </div>
                 )}
-                {activeTab !== 'moves' && <div className="p-8 text-center text-gray-600 text-xs uppercase tracking-widest">Feature Coming Soon</div>}
+                
+                {/* 2. CHAT TAB - FIXED! */}
+                {activeTab === 'chat' && (
+                    <ClassroomChat 
+                        messages={chatMessages || []} 
+                        onSendMessage={onSendMessage} 
+                    />
+                )}
+
+                {/* 3. STUDENTS TAB */}
+                {activeTab === 'students' && <div className="p-8 text-center text-gray-600 text-xs uppercase tracking-widest">Students List Coming Soon</div>}
             </div>
 
             {/* Modal */}
