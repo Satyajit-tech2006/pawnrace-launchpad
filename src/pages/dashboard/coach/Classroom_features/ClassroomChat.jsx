@@ -5,7 +5,6 @@ const ClassroomChat = ({ messages, onSendMessage }) => {
     const [inputText, setInputText] = useState("");
     const messagesEndRef = useRef(null);
 
-    // Auto-scroll to bottom
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -17,7 +16,6 @@ const ClassroomChat = ({ messages, onSendMessage }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!inputText.trim()) return;
-        
         onSendMessage(inputText);
         setInputText("");
     };
@@ -37,14 +35,20 @@ const ClassroomChat = ({ messages, onSendMessage }) => {
                         const isMe = msg.isMe;
                         return (
                             <div key={index} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                                
+                                {/* SENDER NAME (New Feature) */}
+                                <span className={`text-[9px] font-bold mb-1 ${isMe ? 'text-violet-400 mr-1' : 'text-gray-400 ml-1'}`}>
+                                    {isMe ? 'You' : msg.sender}
+                                </span>
+
+                                <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
                                     isMe 
                                     ? 'bg-violet-600 text-white rounded-br-none' 
-                                    : 'bg-[#252525] text-gray-200 rounded-bl-none'
+                                    : 'bg-[#252525] text-gray-200 rounded-bl-none border border-white/5'
                                 }`}>
                                     {msg.text}
                                 </div>
-                                <span className="text-[9px] text-gray-600 mt-1 font-mono">
+                                <span className="text-[9px] text-gray-600 mt-1 font-mono opacity-70">
                                     {msg.time}
                                 </span>
                             </div>
