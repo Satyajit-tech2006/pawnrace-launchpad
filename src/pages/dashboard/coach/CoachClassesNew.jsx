@@ -5,7 +5,7 @@ import { useAuth } from "../../../contexts/AuthContext.jsx";
 import apiClient from "../../../lib/api.js";
 import { ENDPOINTS } from "../../../lib/endpoints.js";
 import { toast } from "sonner";
-import { Trash2, Video, User, Calendar, Clock, CheckCircle } from "lucide-react";
+import { Trash2, Video, Calendar, Clock, CheckCircle } from "lucide-react";
 import { Button } from "../../../components/ui/button.tsx";
 
 // Helper: Format Date
@@ -38,11 +38,10 @@ const CoachClassesNew = () => {
   // --- Form State ---
   const [newClass, setNewClass] = useState({ title: "", date: "", time: "" });
 
-  // 1. Fetch Students (Same as old system, uses Courses)
+  // 1. Fetch Students
   useEffect(() => {
     const fetchStudents = async () => {
         try {
-            // We still use the old COURES endpoint to get the list of students/courses
             const response = await apiClient.get(ENDPOINTS.COURSES.GET_MY_COURSES_AS_COACH); 
             setStudents(response.data.data || []); 
         } catch (err) {
@@ -53,7 +52,7 @@ const CoachClassesNew = () => {
     if (user) fetchStudents();
   }, [user]);
 
-  // 2. Fetch Classes (USES NEW ENDPOINT)
+  // 2. Fetch Classes
   const fetchClasses = async () => {
     if (!selectedStudentId) {
         setUpcomingClasses([]);
@@ -63,7 +62,6 @@ const CoachClassesNew = () => {
 
     try {
         setLoading(true);
-        // !!! USING NEW ENDPOINT !!!
         const response = await apiClient.get(ENDPOINTS.NEW_CLASSES.GET_BY_COURSE(selectedStudentId));
         const allClasses = response.data.data || [];
 
@@ -71,7 +69,6 @@ const CoachClassesNew = () => {
         setCompletedClasses(allClasses.filter(c => c.status === 'completed'));
     } catch (err) {
         console.error("Error fetching classes:", err);
-        // toast.error("Failed to load schedule.");
     } finally {
         setLoading(false);
     }
@@ -81,7 +78,7 @@ const CoachClassesNew = () => {
     fetchClasses();
   }, [selectedStudentId]);
 
-  // 3. Schedule Class (USES NEW ENDPOINT)
+  // 3. Schedule Class
   const handleAddClass = async (e) => {
     e.preventDefault();
     if (!selectedStudentId) {
@@ -93,7 +90,6 @@ const CoachClassesNew = () => {
       const classTime = new Date(`${newClass.date}T${newClass.time}`).toISOString();
       const roomId = generateRoomId(); 
 
-      // !!! USING NEW ENDPOINT !!!
       await apiClient.post(ENDPOINTS.NEW_CLASSES.SCHEDULE(selectedStudentId), {
         title: newClass.title,
         classTime,
@@ -116,13 +112,28 @@ const CoachClassesNew = () => {
       navigate(`/classroom/${roomId}`);
   };
 
-  // 5. Delete Class (USES NEW ENDPOINT)
+  // 5. Mark Class as Completed (NEW FUNCTION)
+  const handleMarkCompleted = async (classId) => {
+    if(!window.confirm("Mark this class as completed?")) return;
+
+    try {
+        // We assume a standard PATCH endpoint exists. 
+        // If your ENDPOINTS file has a specific UPDATE method, use ENDPOINTS.NEW_CLASSES.UPDATE(classId)
+        await apiClient.patch(ENDPOINTS.NEW_CLASSES.UPDATE(classId), { status: 'completed' });        
+        toast.success("Class marked as completed.");
+        fetchClasses(); // Refresh lists
+    } catch (err) {
+        console.error(err);
+        toast.error("Failed to update status.");
+    }
+  };
+
+  // 6. Delete Class
   const handleDelete = async (classId) => {
-      if(window.confirm("Cancel this class?")) {
+      if(window.confirm("Delete this class record?")) {
           try {
-              // !!! USING NEW ENDPOINT !!!
               await apiClient.delete(ENDPOINTS.NEW_CLASSES.DELETE(classId));
-              toast.success("Class cancelled.");
+              toast.success("Class deleted.");
               fetchClasses();
           } catch (err) {
               toast.error("Failed to delete class.");
@@ -242,11 +253,22 @@ const CoachClassesNew = () => {
                                             onClick={() => handleStartClass(cls.roomId)} 
                                             className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white gap-2 shadow-lg shadow-green-900/20"
                                         >
-                                            <Video className="w-4 h-4" /> Start Class
+                                            <Video className="w-4 h-4" /> Start
                                         </Button>
+
+                                        {/* Mark Completed Button */}
+                                        <button 
+                                            onClick={() => handleMarkCompleted(cls._id)}
+                                            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                            title="Mark as Completed"
+                                        >
+                                            <CheckCircle className="w-5 h-5" />
+                                        </button>
+
                                         <button 
                                             onClick={() => handleDelete(cls._id)}
                                             className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            title="Cancel Class"
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
