@@ -3,33 +3,43 @@ import React from 'react';
 const CoordinateOverlay = ({ orientation, showCoordinates, boardWidth }) => {
     if (!showCoordinates) return null;
 
-    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+    // Generate Ranks and Files based on orientation
+    const ranks = orientation === 'white' ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
+    const files = orientation === 'white' ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
-    // If board is flipped (Black side), reverse the arrays so h1 is top-left
-    const displayFiles = orientation === 'white' ? files : [...files].reverse();
-    const displayRanks = orientation === 'white' ? ranks : [...ranks].reverse();
+    // Calculate a responsive font size
+    const fontSize = Math.max(12, boardWidth / 45);
 
     return (
-        <div 
-            className="absolute inset-0 pointer-events-none z-10 grid grid-cols-8 grid-rows-8"
-            style={{ width: boardWidth, height: boardWidth }}
-        >
-            {displayRanks.map((rank, rIndex) => (
-                displayFiles.map((file, fIndex) => {
-                    const isDark = (rIndex + fIndex) % 2 === 1;
-                    const squareColor = isDark ? "text-[#e9edcc]/50" : "text-[#779954]/80"; // Contrast text color
-                    
-                    return (
-                        <div 
-                            key={`${file}${rank}`} 
-                            className={`flex items-start justify-start p-0.5 text-[10px] font-bold font-mono leading-none ${squareColor}`}
-                        >
-                            {file}{rank}
-                        </div>
-                    );
-                })
-            ))}
+        <div className="absolute inset-0 pointer-events-none select-none">
+            
+            {/* 1. RANKS (Numbers) - Left Side Outside */}
+            {/* We position it -25px to the left */}
+            <div className="absolute -left-8 top-0 h-full flex flex-col w-8">
+                {ranks.map((rank) => (
+                    <div 
+                        key={rank} 
+                        className="flex-1 flex items-center justify-end pr-2 text-gray-300 font-bold font-mono" 
+                        style={{ fontSize }}
+                    >
+                        {rank}
+                    </div>
+                ))}
+            </div>
+
+            {/* 2. FILES (Letters) - Bottom Side Outside */}
+            {/* We position it -25px to the bottom */}
+            <div className="absolute left-0 -bottom-8 w-full flex h-8">
+                {files.map((file) => (
+                    <div 
+                        key={file} 
+                        className="flex-1 flex items-start justify-center pt-1 text-gray-300 font-bold font-mono" 
+                        style={{ fontSize }}
+                    >
+                        {file}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };
