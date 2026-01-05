@@ -32,6 +32,8 @@ import CoachChat from "../pages/dashboard/coach/CoachChat.jsx";
 import MyStudents from "../pages/dashboard/coach/MyStudents.jsx";
 import CoachClassesNew from "../pages/dashboard/coach/CoachClassesNew.jsx";
 import VideoClassroom from "../pages/dashboard/coach/VideoClassroom.jsx";
+// --- IMPORT THE NEW DATABASE COMPONENT HERE ---
+import CoachDatabase from "../pages/dashboard/coach/CoachDatabase.jsx"; 
 
 // Student Dashboard Pages
 import StudentDashboard from "../pages/dashboard/student/StudentDashboard.tsx";
@@ -41,8 +43,8 @@ import StudentAssignment from "../pages/dashboard/student/StudentAssignments.jsx
 import StudentTournament from "../pages/dashboard/student/StudentTournament.jsx";
 import StudentTestResults from "../pages/dashboard/student/StudentTestResults.jsx";
 import StudentChat from "../pages/dashboard/student/StudentChat.jsx";
-import StudentClassesNew from "../pages/dashboard/student/StudentClassesNew.jsx"; // <--- IMPORT THIS
-import StudentVideoClassroom from "../pages/dashboard/student/StudentVideoClassroom.jsx"; // <--- IMPORT THIS
+import StudentClassesNew from "../pages/dashboard/student/StudentClassesNew.jsx"; 
+import StudentVideoClassroom from "../pages/dashboard/student/StudentVideoClassroom.jsx"; 
 
 // --- GAME & CLASSROOM PAGES ---
 import LiveGamePage from "../pages/LiveGamePage.jsx"; 
@@ -77,8 +79,6 @@ const AppRoutes = () => {
         <Route path="test-results" element={<StudentTestResults />} />
         <Route path="chats" element={<StudentChat />} />
         <Route path="iqpuzzles" element={<ComingSoon />} />
-        
-        {/* ✅ This was missing! It enables the "New Classes" button */}
         <Route path="new-classes(coming-soon)" element={<StudentClassesNew />} />
       </Route>
 
@@ -94,21 +94,18 @@ const AppRoutes = () => {
         <Route path="test-results" element={<CoachTestResults />} />
         <Route path="chats" element={<CoachChat />} />
         <Route path="my-students" element={<MyStudents />} />
-        <Route path="database" element={<ComingSoon />} />
+        
+        {/* --- FIXED THIS LINE BELOW --- */}
+        <Route path="database" element={<CoachDatabase />} />
+        
         <Route path="settings" element={<ComingSoon />} />
       </Route>
 
       {/* --- GAME & CLASSROOM ROUTES --- */}
-      
-      {/* 1. General Play */}
       <Route path="/play" element={<GameLobby />} />
       <Route path="/play/:roomId" element={<LiveGamePage />} />
 
-      {/* 2. Coaching Video Classroom */}
-      {/* Coach View */}
       <Route path="/classroom/:roomId" element={<VideoClassroom />} />
-      
-      {/* Student View */}
       <Route path="/student/classroom/:roomId" element={<StudentVideoClassroom />} />
 
       {/* Not Found */}

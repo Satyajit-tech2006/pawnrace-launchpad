@@ -57,7 +57,14 @@ export const ENDPOINTS = {
     GET_BY_COURSE: (courseId) => `/tests/course/${courseId}`,
     DELETE: (testId) => `/tests/${testId}`,
   },
-
+  SYLLABUS: {
+    GET_BY_LEVEL: (level) => `/syllabus/${level}`,
+    ADD: '/syllabus/add',
+    UPDATE: '/syllabus/update',
+    DELETE: '/syllabus/delete',
+    TOGGLE_COMPLETE: '/syllabus/complete',
+    GET_ALL: '/syllabus/all'
+  },
   TOURNAMENTS: {
     GET_ALL: '/tournaments',
     CREATE: '/tournaments',
