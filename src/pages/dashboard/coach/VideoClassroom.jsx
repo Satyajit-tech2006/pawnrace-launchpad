@@ -3,16 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { io } from 'socket.io-client';
-import { PhoneOff } from 'lucide-react';
+import { PhoneOff, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from "../../../contexts/AuthContext";
-import { useBoardDrawing } from '../../../hooks/useBoardDrawing'; // Hook Import
+import { useBoardDrawing } from '../../../hooks/useBoardDrawing'; 
 
 import AnalysisTools from './Classroom_features/AnalysisTools';
 import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from './Classroom_features/CoordinateOverlay';
 import SetupPosition from './Classroom_features/SetupPosition';
-import Syllabus from './Classroom_features/Syllabus';
+import Syllabus from './Classroom_features/Syllabus'; // Ensure this path is correct
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-game-socket-backend.vercel.app/';
 
@@ -31,18 +31,21 @@ const VideoClassroom = () => {
     const [viewIndex, setViewIndex] = useState(-1);
     const [boardWidth, setBoardWidth] = useState(600);
     
-    // --- Hook for Drawing ---
-    const drawing = useBoardDrawing(orientation);
-
     // --- UI State ---
     const [boardKey, setBoardKey] = useState(0); 
     const [showTools, setShowTools] = useState(true);
     const [showCoordinates, setShowCoordinates] = useState(true);
     const [showSetupModal, setShowSetupModal] = useState(false);
+    
+    // --- FIX: Added Missing State Here ---
+    const [showSyllabusModal, setShowSyllabusModal] = useState(false); 
+    
     const [activeTab, setActiveTab] = useState('moves');
     const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
     const [chatMessages, setChatMessages] = useState([]);
+
+    const drawing = useBoardDrawing(orientation);
 
     // --- 1. RESIZE ---
     useEffect(() => {
@@ -58,24 +61,16 @@ const VideoClassroom = () => {
         
         socketRef.current.on('connect', () => { 
             setIsConnected(true); 
-            
-            // Define User Info
             const userInfo = {
-                name: user?.name || user?.username || "Coach", // Uses Auth data
+                name: user?.name || user?.username || "Coach", 
                 role: "Coach",
                 _id: user?._id
             };
-
-            // Send Object instead of just roomId
             socketRef.current.emit('join_room', { roomId, user: userInfo }); 
         });
         
-        // --- 2. ADD THIS LISTENER ---
-        socketRef.current.on('update_user_list', (users) => {
-            setConnectedUsers(users); // Updates the Sidebar list
-        });
+        socketRef.current.on('update_user_list', (users) => setConnectedUsers(users));
         
-        // MOVES
         socketRef.current.on('receive_move', (moveData) => {
             setGame((prevGame) => {
                 const gameCopy = new Chess();
@@ -89,13 +84,11 @@ const VideoClassroom = () => {
             });
         });
 
-        // ANNOTATIONS (Receive from Student)
         socketRef.current.on('receive_annotations', (data) => {
             drawing.setArrows(data.arrows || []);
             drawing.setSquares(data.squares || {});
         });
 
-        // CHAT
         socketRef.current.on('receive_message', (data) => {
             setChatMessages(prev => [...prev, { ...data, isMe: false }]);
         });
@@ -103,15 +96,11 @@ const VideoClassroom = () => {
         return () => { if (socketRef.current) socketRef.current.disconnect(); };
     }, [roomId]);
 
-    // --- Helper to Emit Drawing Changes ---
+    // --- Helpers ---
     const handleMouseUpWrapper = (e) => {
         const result = drawing.handleMouseUp(e);
         if (result.hasChanged && socketRef.current) {
-            socketRef.current.emit('sync_annotations', {
-                roomId,
-                arrows: result.newArrows,
-                squares: result.newSquares
-            });
+            socketRef.current.emit('sync_annotations', { roomId, arrows: result.newArrows, squares: result.newSquares });
         }
     };
 
@@ -122,7 +111,6 @@ const VideoClassroom = () => {
         }
     };
 
-    // --- 3. EXISTING HANDLERS ---
     const handleSendMessage = (text) => {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const senderName = user?.name || user?.username || 'Coach'; 
@@ -138,10 +126,7 @@ const VideoClassroom = () => {
             const move = tempGame.move({ from: source, to: target, promotion: 'q' });
             if (!move) return false;
             setGame(tempGame); setHistory(tempGame.history()); setViewIndex(-1);
-            
-            // Clear annotations on own move
             handleClearWrapper(); 
-            
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, from: source, to: target, promotion: 'q', fen: tempGame.fen() });
             return true;
         } catch (error) { return false; }
@@ -193,15 +178,25 @@ const VideoClassroom = () => {
                         {isConnected ? 'Live' : 'Offline'}
                     </span>
                 </div>
-                <button onClick={() => navigate(-1)} className="bg-red-600/90 hover:bg-red-600 text-white px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all">
-                    <PhoneOff className="w-3 h-3" /> Exit
-                </button>
+                
+                {/* Right Side Buttons */}
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setShowSyllabusModal(true)} 
+                        className="bg-violet-600/10 hover:bg-violet-600 border border-violet-500/50 text-violet-300 hover:text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all"
+                    >
+                        <BookOpen className="w-4 h-4" /> Syllabus
+                    </button>
+
+                    <button onClick={() => navigate(-1)} className="bg-red-600/90 hover:bg-red-600 text-white px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all">
+                        <PhoneOff className="w-3 h-3" /> Exit
+                    </button>
+                </div>
             </header>
 
             <div className="flex-1 flex overflow-hidden">
                 <div className="flex-1 bg-[#0a0a0a] relative flex flex-col justify-center items-center">
                     
-                    {/* BOARD WRAPPER FOR DRAWING */}
                     <div 
                         ref={drawing.boardWrapperRef}
                         onMouseDown={drawing.handleMouseDown}
@@ -214,11 +209,7 @@ const VideoClassroom = () => {
                             id="ClassroomBoard" key={boardKey} position={getBoardPosition()} onPieceDrop={onDrop} boardOrientation={orientation}
                             customDarkSquareStyle={{ backgroundColor: '#779954' }} customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
                             animationDuration={200} showBoardNotation={false}
-                            
-                            // Controlled Arrows
-                            areArrowsAllowed={false} 
-                            customArrows={drawing.arrows}
-                            customSquareStyles={drawing.squares}
+                            areArrowsAllowed={false} customArrows={drawing.arrows} customSquareStyles={drawing.squares}
                         />
                         <CoordinateOverlay orientation={orientation} showCoordinates={showCoordinates} boardWidth={boardWidth} />
                     </div>
@@ -235,29 +226,17 @@ const VideoClassroom = () => {
                         showTools={showTools} setShowTools={setShowTools} showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
                     />
                 </div>
-                <ClassroomSidebar 
-                    activeTab={activeTab} 
-                    setActiveTab={setActiveTab} 
-                    history={history} 
-                    viewIndex={viewIndex} 
-                    goToMove={setViewIndex} 
-                    onLoadPGN={handleLoadPGN} 
-                    onDownloadPGN={handleDownloadPGN} 
-                    micOn={micOn} 
-                    setMicOn={setMicOn} 
-                    cameraOn={cameraOn} 
-                    setCameraOn={setCameraOn} 
-                    chatMessages={chatMessages} 
-                    onSendMessage={handleSendMessage} 
-                    connectedUsers={connectedUsers} // <--- ADDED THIS PROP
-                />
+                <ClassroomSidebar activeTab={activeTab} setActiveTab={setActiveTab} history={history} viewIndex={viewIndex} goToMove={setViewIndex} onLoadPGN={handleLoadPGN} onDownloadPGN={handleDownloadPGN} micOn={micOn} setMicOn={setMicOn} cameraOn={cameraOn} setCameraOn={setCameraOn} chatMessages={chatMessages} onSendMessage={handleSendMessage} connectedUsers={connectedUsers} />
             </div>
+            
+            {/* Modals */}
             <SetupPosition isOpen={showSetupModal} onClose={() => setShowSetupModal(false)} currentFen={game.fen()} onLoadPosition={handleSetupLoad} />
-
+            
             <Syllabus 
                 isOpen={showSyllabusModal} 
                 onClose={() => setShowSyllabusModal(false)} 
-                onLoadPGN={handleLoadPGN} 
+                onLoadPGN={handleLoadPGN}
+                roomId={roomId} // Pass roomId so Syllabus can find the Course
             />
         </div>
     );
