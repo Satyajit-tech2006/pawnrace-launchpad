@@ -12,6 +12,7 @@ import AnalysisTools from './Classroom_features/AnalysisTools';
 import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from './Classroom_features/CoordinateOverlay';
 import SetupPosition from './Classroom_features/SetupPosition';
+import Syllabus from './Classroom_features/Syllabus';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-game-socket-backend.vercel.app/';
 
@@ -252,6 +253,12 @@ const VideoClassroom = () => {
                 />
             </div>
             <SetupPosition isOpen={showSetupModal} onClose={() => setShowSetupModal(false)} currentFen={game.fen()} onLoadPosition={handleSetupLoad} />
+
+            <Syllabus 
+                isOpen={showSyllabusModal} 
+                onClose={() => setShowSyllabusModal(false)} 
+                onLoadPGN={handleLoadPGN} 
+            />
         </div>
     );
 };

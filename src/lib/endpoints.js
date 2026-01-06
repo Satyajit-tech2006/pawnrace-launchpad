@@ -58,12 +58,18 @@ export const ENDPOINTS = {
     DELETE: (testId) => `/tests/${testId}`,
   },
   SYLLABUS: {
-    GET_BY_LEVEL: (level) => `/syllabus/${level}`,
+    // Global Access (Database View & Modal)
     ADD: '/syllabus/add',
+    GET_ALL: '/syllabus/all',
+    GET_BY_LEVEL: (level) => `/syllabus/level/${level}`, 
+    
+    // Course Context (Classroom View)
+    GET_BY_COURSE: (courseId) => `/syllabus/course/${courseId}`,
+    TOGGLE_COMPLETE: '/syllabus/course/toggle',
+    
+    // Unused/Future
     UPDATE: '/syllabus/update',
     DELETE: '/syllabus/delete',
-    TOGGLE_COMPLETE: '/syllabus/complete',
-    GET_ALL: '/syllabus/all'
   },
   TOURNAMENTS: {
     GET_ALL: '/tournaments',
