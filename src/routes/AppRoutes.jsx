@@ -32,7 +32,6 @@ import CoachChat from "../pages/dashboard/coach/CoachChat.jsx";
 import MyStudents from "../pages/dashboard/coach/MyStudents.jsx";
 import CoachClassesNew from "../pages/dashboard/coach/CoachClassesNew.jsx";
 import VideoClassroom from "../pages/dashboard/coach/VideoClassroom.jsx";
-// --- IMPORT THE NEW DATABASE COMPONENT HERE ---
 import CoachDatabase from "../pages/dashboard/coach/CoachDatabase.jsx"; 
 
 // Student Dashboard Pages
@@ -45,6 +44,7 @@ import StudentTestResults from "../pages/dashboard/student/StudentTestResults.js
 import StudentChat from "../pages/dashboard/student/StudentChat.jsx";
 import StudentClassesNew from "../pages/dashboard/student/StudentClassesNew.jsx"; 
 import StudentVideoClassroom from "../pages/dashboard/student/StudentVideoClassroom.jsx"; 
+import StudentDatabase from "../pages/dashboard/student/StudentDatabase.jsx";
 
 // --- GAME & CLASSROOM PAGES ---
 import LiveGamePage from "../pages/LiveGamePage.jsx"; 
@@ -80,6 +80,8 @@ const AppRoutes = () => {
         <Route path="chats" element={<StudentChat />} />
         <Route path="iqpuzzles" element={<ComingSoon />} />
         <Route path="new-classes(coming-soon)" element={<StudentClassesNew />} />
+        <Route path="database" element={<StudentDatabase />} />
+        <Route path="settings" element={<ComingSoon />} />
       </Route>
 
       {/* Coach Dashboard */}
