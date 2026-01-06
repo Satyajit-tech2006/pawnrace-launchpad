@@ -7,7 +7,7 @@ import { Database, Plus, BookOpen, CheckCircle, Circle, FileText, Layers, Search
 import { Button } from "../../../components/ui/button.tsx"; 
 
 const AUTHORIZED_COACH_IDS = [
-  "68b9ea4597d09c8a268e8d38" // Replace with real IDs
+  "68b9ea4597d09c8a268e8d38","68c5d1d20127081a51b8c073" // Replace with real IDs
 ];
 
 const LEVELS = [
