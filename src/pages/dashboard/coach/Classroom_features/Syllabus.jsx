@@ -8,8 +8,10 @@ import {
   Circle, 
   Loader2, 
   Layers, 
-  Copy, 
-  MonitorUp 
+  MonitorUp,
+  ChevronDown,
+  ChevronRight,
+  FileText
 } from "lucide-react";
 
 const LEVELS = [
@@ -23,6 +25,9 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
   const [course, setCourse] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState("Beginner 1");
   const [techniques, setTechniques] = useState([]);
+  
+  // Track which technique is currently expanded (Accordion)
+  const [expandedTechId, setExpandedTechId] = useState(null);
 
   // 1. INITIALIZATION: Find the Course based on Room ID
   useEffect(() => {
@@ -43,13 +48,6 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
   const fetchClassContext = async () => {
     try {
       setLoading(true);
-      // We need to find which Course this Room belongs to.
-      // Since we don't have a direct "Get Class By RoomID" endpoint in your list,
-      // we assume we can find it via the coach's classes or a specific endpoint.
-      // Ideally, you should add: router.get('/by-room/:roomId', ...) to your backend.
-      // FOR NOW: We will use a workaround or assume the endpoint exists.
-      
-      // OPTION A: If you created the endpoint I suggested earlier:
       const res = await apiClient.get(`/newclasses/room/${roomId}`);
       const classData = res.data.data;
       
@@ -64,8 +62,6 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
       }
     } catch (error) {
       console.error("Error fetching class context:", error);
-      // Fallback: If API fails, we can't show progress, but we can show generic syllabus
-      // toast.error("Failed to load class details.");
     } finally {
       setLoading(false);
     }
@@ -77,12 +73,7 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
     try {
       const res = await apiClient.get(`/syllabus/course/${course._id}?level=${encodeURIComponent(selectedLevel)}`);
       
-      // DEBUG: See exactly what the backend sends
-      console.log("Syllabus API Response:", res.data);
-
-      // FIX: Robust check. 
-      // If 'data' is the array (your current case), use it.
-      // If 'data.techniques' exists (future case), use that.
+      // Robust check for data structure
       const techniqueList = Array.isArray(res.data.data) 
           ? res.data.data 
           : res.data.data.techniques || [];
@@ -95,21 +86,24 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
     }
   };
 
-  const handleToggleComplete = async (techniqueId) => {
+  const handleToggleChapter = async (chapterId) => {
     if (!course) return;
 
-    // 1. Optimistic UI Update (Immediate feedback)
-    setTechniques(prev => prev.map(t => 
-      t._id === techniqueId 
-        ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' } 
-        : t
-    ));
+    // 1. Optimistic UI Update (Deep nested update)
+    setTechniques(prev => prev.map(tech => ({
+        ...tech,
+        chapters: tech.chapters.map(ch => 
+            ch._id === chapterId 
+                ? { ...ch, status: ch.status === 'completed' ? 'pending' : 'completed' }
+                : ch
+        )
+    })));
 
     try {
-      // 2. Call API
+      // 2. Call API (Updated endpoint for chapters)
       await apiClient.patch('/syllabus/course/toggle', { 
         courseId: course._id,
-        techniqueId 
+        chapterId 
       });
       toast.success("Progress updated");
     } catch (error) {
@@ -121,8 +115,12 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
   const handleLoad = (pgn, name) => {
     onLoadPGN(pgn);
     toast.success(`Loaded: ${name}`);
-    // Optional: Auto-close if you want
+    // Optional: Auto-close
     // onClose(); 
+  };
+
+  const toggleAccordion = (id) => {
+      setExpandedTechId(prev => prev === id ? null : id);
   };
 
   if (!isOpen) return null;
@@ -179,50 +177,85 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
               No techniques found for <strong>{selectedLevel}</strong>.
             </div>
           ) : (
-            techniques.map((tech) => (
-              <div key={tech._id} className="border border-white/5 bg-[#161616] p-4 rounded-xl flex flex-col gap-3 group hover:border-violet-500/30 transition-colors">
-                
-                {/* Top Row: Title & Toggle */}
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h4 className="text-sm font-bold text-gray-100 group-hover:text-violet-300 transition-colors">
-                            {tech.name}
-                        </h4>
-                        {tech.description && (
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-1">{tech.description}</p>
+            techniques.map((tech) => {
+              // Calculate progress for header (e.g., 2/5)
+              const completedCount = tech.chapters.filter(c => c.status === 'completed').length;
+              const totalCount = tech.chapters.length;
+              const isExpanded = expandedTechId === tech._id;
+
+              return (
+                <div key={tech._id} className="border border-white/5 bg-[#161616] rounded-xl overflow-hidden transition-all">
+                  
+                  {/* Technique Header (Clickable) */}
+                  <button 
+                    onClick={() => toggleAccordion(tech._id)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                        {isExpanded ? <ChevronDown className="w-4 h-4 text-violet-400"/> : <ChevronRight className="w-4 h-4 text-gray-500"/>}
+                        <div>
+                            <h4 className={`text-sm font-bold ${isExpanded ? 'text-violet-200' : 'text-gray-200'}`}>
+                                {tech.name}
+                            </h4>
+                            <p className="text-[10px] text-gray-500 mt-0.5">
+                                {completedCount}/{totalCount} chapters completed
+                            </p>
+                        </div>
+                    </div>
+                    {/* Progress Bar Mini */}
+                    <div className="w-16 h-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-violet-500 transition-all duration-500" 
+                            style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
+                        />
+                    </div>
+                  </button>
+
+                  {/* Chapters List (Expanded) */}
+                  {isExpanded && (
+                    <div className="border-t border-white/5 bg-[#0f0f0f]">
+                        {tech.chapters.length === 0 ? (
+                            <div className="p-4 text-center text-xs text-gray-600 italic">
+                                No chapters available yet.
+                            </div>
+                        ) : (
+                            tech.chapters.map((ch) => (
+                                <div key={ch._id} className="flex items-center justify-between p-3 pl-11 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors group">
+                                    
+                                    <div className="flex items-center gap-3">
+                                        <button 
+                                            onClick={() => handleToggleChapter(ch._id)}
+                                            className={`transition-colors ${ch.status === 'completed' ? 'text-green-400' : 'text-gray-600 hover:text-gray-400'}`}
+                                        >
+                                            {ch.status === 'completed' ? <CheckCircle className="w-4 h-4"/> : <Circle className="w-4 h-4"/>}
+                                        </button>
+                                        <div className="flex flex-col">
+                                            <span className={`text-xs font-medium ${ch.status === 'completed' ? 'text-gray-500 line-through' : 'text-gray-300'}`}>
+                                                {ch.name}
+                                            </span>
+                                            {/* Preview PGN Snippet */}
+                                            <span className="text-[9px] text-gray-600 font-mono line-clamp-1 max-w-[200px]">
+                                                {ch.pgn}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => handleLoad(ch.pgn, ch.name)}
+                                        className="flex items-center gap-1.5 px-3 py-1 bg-violet-600/10 hover:bg-violet-600 text-violet-300 hover:text-white text-[10px] font-bold uppercase rounded transition-all opacity-0 group-hover:opacity-100"
+                                    >
+                                        <MonitorUp className="w-3 h-3" /> Load
+                                    </button>
+
+                                </div>
+                            ))
                         )}
                     </div>
-                    
-                    <button 
-                        onClick={() => handleToggleComplete(tech._id)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border
-                        ${tech.status === 'completed'
-                            ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20"
-                            : "bg-gray-800 text-gray-500 border-gray-700 hover:border-gray-500 hover:text-gray-300"
-                        }`}
-                    >
-                        {tech.status === 'completed' ? <CheckCircle className="w-3 h-3"/> : <Circle className="w-3 h-3"/>}
-                        {tech.status === 'completed' ? "Done" : "Pending"}
-                    </button>
-                </div>
+                  )}
 
-                {/* Bottom Row: PGN & Load Button */}
-                <div className="flex items-center gap-3 mt-1">
-                    <div className="flex-1 bg-black/40 rounded px-3 py-1.5 border border-white/5">
-                        <code className="text-[10px] text-gray-500 font-mono line-clamp-1">
-                            {tech.pgn}
-                        </code>
-                    </div>
-                    <button 
-                        onClick={() => handleLoad(tech.pgn, tech.name)}
-                        className="flex items-center gap-2 px-4 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold rounded transition-colors shadow-lg shadow-violet-900/20"
-                    >
-                        <MonitorUp className="w-3 h-3" /> Load
-                    </button>
                 </div>
-
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
