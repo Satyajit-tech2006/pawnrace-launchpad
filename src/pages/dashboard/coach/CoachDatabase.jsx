@@ -207,7 +207,7 @@ const CoachDatabase = () => {
                         {tech.chapters.map((ch) => (
                             <div key={ch._id} className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 group">
                                 <div className="flex items-center gap-3">
-                                    {/* Toggle Checkbox */}
+                                    {/* Toggle Checkbox (Available to ALL) */}
                                     <button 
                                         onClick={() => handleToggleChapter(ch._id)}
                                         className={`transition-colors ${ch.status === 'completed' ? 'text-green-400' : 'text-gray-600 hover:text-gray-400'}`}
@@ -218,11 +218,15 @@ const CoachDatabase = () => {
                                         {ch.name}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => {navigator.clipboard.writeText(ch.pgn); toast.success("Copied")}} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                                        <Copy className="w-3 h-3"/> PGN
-                                    </button>
-                                </div>
+                                
+                                {/* PGN Copy Button (Restricted to Authorized) */}
+                                {isAuthorized && (
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => {navigator.clipboard.writeText(ch.pgn); toast.success("Copied")}} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                                            <Copy className="w-3 h-3"/> PGN
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
