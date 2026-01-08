@@ -208,6 +208,7 @@ const StudentVideoClassroom = () => {
                     chatMessages={chatMessages}
                     onSendMessage={handleSendMessage}
                     connectedUsers={connectedUsers} // <--- Pass the list here
+                    roomId={roomId}
                 />
             </div>
         </div>

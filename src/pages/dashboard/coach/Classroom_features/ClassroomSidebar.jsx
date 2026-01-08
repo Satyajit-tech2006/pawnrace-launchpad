@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Mic, MicOff, Video, VideoOff, MonitorUp, Clipboard, Download, X, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { MonitorUp, Clipboard, Download, X, ChevronLeft, ChevronRight, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 import ClassroomChat from './ClassroomChat';
+import VideoRoom from '../../../../components/VideoRoom'; // Ensure path is correct
 
 const ClassroomSidebar = ({ 
     activeTab, setActiveTab, history, viewIndex, goToMove, 
     onLoadPGN, onDownloadPGN, 
     micOn, setMicOn, cameraOn, setCameraOn,
     chatMessages, onSendMessage,
-    connectedUsers = [] // <--- FIXED: Default value is empty array
+    connectedUsers = [],
+    roomId // <--- 1. NEW PROP RECEIVED
 }) => {
     const [showPGNModal, setShowPGNModal] = useState(false);
     const [pgnInput, setPgnInput] = useState("");
@@ -21,16 +23,18 @@ const ClassroomSidebar = ({
     return (
         <div className="w-[350px] bg-[#111] border-l border-white/10 flex flex-col shrink-0 z-10 h-full">
             
-            {/* Video Placeholder */}
-            <div className="w-full aspect-video bg-black/50 relative group border-b border-white/5 flex items-center justify-center text-gray-600">
-                <div className="text-center">
-                    <MonitorUp className="w-8 h-8 mx-auto mb-2 opacity-30"/>
-                    <span className="text-xs font-medium opacity-50">Video Feed Ready</span>
-                </div>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => setMicOn(!micOn)} className={`p-2 rounded-full backdrop-blur-md ${micOn ? 'bg-white/10 hover:bg-white/20' : 'bg-red-500/80 hover:bg-red-500'}`}>{micOn ? <Mic className="w-3 h-3 text-white"/> : <MicOff className="w-3 h-3 text-white"/>}</button>
-                        <button onClick={() => setCameraOn(!cameraOn)} className={`p-2 rounded-full backdrop-blur-md ${cameraOn ? 'bg-white/10 hover:bg-white/20' : 'bg-red-500/80 hover:bg-red-500'}`}>{cameraOn ? <Video className="w-3 h-3 text-white"/> : <VideoOff className="w-3 h-3 text-white"/>}</button>
-                </div>
+            {/* --- VIDEO AREA --- */}
+            <div className="w-full aspect-video bg-black relative border-b border-white/5 overflow-hidden group">
+                {roomId ? (
+                    /* 2. REAL VIDEO COMPONENT */
+                    <VideoRoom roomId={roomId} />
+                ) : (
+                    /* Fallback state */
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-600">
+                        <MonitorUp className="w-8 h-8 mb-2 opacity-30"/>
+                        <span className="text-xs font-medium opacity-50">Initializing Video...</span>
+                    </div>
+                )}
             </div>
 
             {/* Tabs */}
@@ -79,7 +83,7 @@ const ClassroomSidebar = ({
                     <ClassroomChat messages={chatMessages || []} onSendMessage={onSendMessage} />
                 )}
 
-                {/* 3. STUDENTS TAB (UPDATED) */}
+                {/* 3. STUDENTS TAB */}
                 {activeTab === 'students' && (
                     <div className="absolute inset-0 overflow-y-auto p-4 space-y-2">
                          <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Online Now ({connectedUsers.length})</h3>

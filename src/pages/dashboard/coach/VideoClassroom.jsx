@@ -226,7 +226,7 @@ const VideoClassroom = () => {
                         showTools={showTools} setShowTools={setShowTools} showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
                     />
                 </div>
-                <ClassroomSidebar activeTab={activeTab} setActiveTab={setActiveTab} history={history} viewIndex={viewIndex} goToMove={setViewIndex} onLoadPGN={handleLoadPGN} onDownloadPGN={handleDownloadPGN} micOn={micOn} setMicOn={setMicOn} cameraOn={cameraOn} setCameraOn={setCameraOn} chatMessages={chatMessages} onSendMessage={handleSendMessage} connectedUsers={connectedUsers} />
+                <ClassroomSidebar activeTab={activeTab} setActiveTab={setActiveTab} history={history} viewIndex={viewIndex} goToMove={setViewIndex} onLoadPGN={handleLoadPGN} onDownloadPGN={handleDownloadPGN} micOn={micOn} setMicOn={setMicOn} cameraOn={cameraOn} setCameraOn={setCameraOn} chatMessages={chatMessages} onSendMessage={handleSendMessage} connectedUsers={connectedUsers} roomId={roomId}/>
             </div>
             
             {/* Modals */}
