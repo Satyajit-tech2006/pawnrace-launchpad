@@ -40,7 +40,17 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle token refresh for 401 errors
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401) {
+        
+      // --- CRITICAL FIX: STOP INFINITE LOOPS ---
+      // If the request that failed WAS the refresh attempt, or we already retried...
+      if (originalRequest._retry || originalRequest.url.includes("refresh-token")) {
+          // Session is dead. Clear state and redirect.
+          // (You can add localStorage clearing here if needed)
+          // window.location.href = "/login"; 
+          return Promise.reject(error);
+      }
+
       originalRequest._retry = true;
 
       try {
@@ -55,7 +65,10 @@ apiClient.interceptors.response.use(
 
       } catch (refreshError) {
         console.error("Session expired. Please log in again.", refreshError);
-        // Here you might trigger a logout or redirect
+        // Clean up user data if refresh fails
+        localStorage.removeItem("user"); 
+        // Optional: Force reload/redirect to ensure clean state
+        // window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
@@ -65,4 +78,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-
