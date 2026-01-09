@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { MonitorUp, Clipboard, Download, X, ChevronLeft, ChevronRight, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { 
+  MonitorUp, Clipboard, Download, X, 
+  ChevronLeft, ChevronRight, Users, MessageSquare, List 
+} from 'lucide-react';
 import ClassroomChat from './ClassroomChat';
-import VideoRoom from '../../../../components/VideoRoom'; // Ensure path is correct
+import VideoRoom from '../../../../components/VideoRoom'; 
 
 const ClassroomSidebar = ({ 
     activeTab, setActiveTab, history, viewIndex, goToMove, 
     onLoadPGN, onDownloadPGN, 
-    micOn, setMicOn, cameraOn, setCameraOn,
     chatMessages, onSendMessage,
     connectedUsers = [],
-    roomId // <--- 1. NEW PROP RECEIVED
+    roomId 
 }) => {
     const [showPGNModal, setShowPGNModal] = useState(false);
     const [pgnInput, setPgnInput] = useState("");
@@ -20,104 +22,174 @@ const ClassroomSidebar = ({
         setPgnInput("");
     };
 
+    // Helper for tabs
+    const TabButton = ({ id, label, icon: Icon }) => (
+        <button 
+            onClick={() => setActiveTab(id)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 rounded-md ${
+                activeTab === id 
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-900/20' 
+                : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
+            }`}
+        >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+        </button>
+    );
+
     return (
-        <div className="w-[350px] bg-[#111] border-l border-white/10 flex flex-col shrink-0 z-10 h-full">
+        // [CHANGE] Width changed from w-[360px] to w-[40vw] (40% of screen width)
+        // Added min-w-[350px] so it doesn't get too small on laptops
+        <div className="w-[40vw] min-w-[350px] bg-[#0F0F12] border-l border-white/5 flex flex-col h-full shrink-0 shadow-2xl shadow-black transition-all duration-300 ease-in-out">
             
-            {/* --- VIDEO AREA --- */}
-            <div className="w-full aspect-video bg-black relative border-b border-white/5 overflow-hidden group">
+            {/* --- TOP: VIDEO AREA --- */}
+            {/* Aspect ratio container that won't shrink */}
+            <div className="w-full shrink-0 aspect-video bg-black relative border-b border-white/5 overflow-hidden shadow-md z-20">
                 {roomId ? (
-                    /* 2. REAL VIDEO COMPONENT */
                     <VideoRoom roomId={roomId} />
                 ) : (
-                    /* Fallback state */
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-600">
-                        <MonitorUp className="w-8 h-8 mb-2 opacity-30"/>
-                        <span className="text-xs font-medium opacity-50">Initializing Video...</span>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 bg-zinc-900/50">
+                        <MonitorUp className="w-10 h-10 mb-3 opacity-20"/>
+                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Waiting for Video...</span>
                     </div>
                 )}
             </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-white/10 bg-[#161616]">
-                {['moves', 'chat', 'students'].map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-colors ${activeTab === tab ? 'text-violet-400 border-b-2 border-violet-400 bg-white/5' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
-                        {tab}
-                    </button>
-                ))}
+            {/* --- MIDDLE: NAVIGATION TABS --- */}
+            <div className="p-2 bg-[#0F0F12] border-b border-white/5 z-10">
+                <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
+                    <TabButton id="moves" label="Moves" icon={List} />
+                    <TabButton id="chat" label="Chat" icon={MessageSquare} />
+                    <TabButton id="students" label="People" icon={Users} />
+                </div>
             </div>
 
-            <div className="flex-1 bg-[#111] overflow-hidden flex flex-col relative">
+            {/* --- BOTTOM: CONTENT AREA --- */}
+            {/* flex-1 and min-h-0 are CRITICAL to stop content from overflowing/cutting off */}
+            <div className="flex-1 min-h-0 bg-[#0F0F12] relative flex flex-col">
                 
                 {/* 1. MOVES TAB */}
                 {activeTab === 'moves' && (
-                    <div className="absolute inset-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 flex flex-col">
-                        <div className="flex-1 p-2">
-                            <table className="w-full text-xs border-collapse">
-                                <thead className="bg-[#1a1a1a] text-gray-500 sticky top-0 font-mono"><tr><th className="py-2 pl-4 text-left w-10">#</th><th className="py-2 text-left">White</th><th className="py-2 text-left">Black</th></tr></thead>
+                    <div className="flex flex-col h-full">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-[3rem_1fr_1fr] px-4 py-2 bg-zinc-900/50 text-[10px] font-bold uppercase text-zinc-500 border-b border-white/5">
+                            <div>#</div>
+                            <div>White</div>
+                            <div>Black</div>
+                        </div>
+                        
+                        {/* Scrollable Move List */}
+                        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+                            <table className="w-full text-xs border-collapse table-fixed">
                                 <tbody>
                                     {Array.from({ length: Math.ceil(history.length / 2) }).map((_, i) => (
-                                        <tr key={i} className={`border-b border-white/5 transition-colors ${Math.floor(viewIndex/2) === i ? 'bg-violet-500/10' : 'hover:bg-white/5'}`}>
-                                            <td className="py-2 pl-4 text-gray-600 font-mono">{i + 1}.</td>
-                                            <td onClick={() => goToMove(i * 2)} className={`py-2 cursor-pointer ${viewIndex === (i * 2) ? 'text-violet-400 font-bold' : 'text-gray-300 hover:text-white'}`}>{history[i * 2]}</td>
-                                            <td onClick={() => history[i * 2 + 1] && goToMove(i * 2 + 1)} className={`py-2 cursor-pointer ${viewIndex === (i * 2 + 1) ? 'text-violet-400 font-bold' : 'text-gray-300 hover:text-white'}`}>{history[i * 2 + 1] || ''}</td>
+                                        <tr key={i} className={`border-b border-white/[0.02] transition-colors ${Math.floor(viewIndex/2) === i ? 'bg-violet-500/10' : 'hover:bg-white/[0.02]'}`}>
+                                            <td className="py-2.5 pl-4 text-zinc-600 font-mono w-12 text-[11px]">{i + 1}.</td>
+                                            <td 
+                                                onClick={() => goToMove(i * 2)} 
+                                                className={`py-2 px-2 cursor-pointer transition-colors ${viewIndex === (i * 2) ? 'text-violet-400 font-bold bg-violet-500/10 rounded' : 'text-zinc-300 hover:text-white'}`}
+                                            >
+                                                {history[i * 2]}
+                                            </td>
+                                            <td 
+                                                onClick={() => history[i * 2 + 1] && goToMove(i * 2 + 1)} 
+                                                className={`py-2 px-2 cursor-pointer transition-colors ${viewIndex === (i * 2 + 1) ? 'text-violet-400 font-bold bg-violet-500/10 rounded' : 'text-zinc-300 hover:text-white'}`}
+                                            >
+                                                {history[i * 2 + 1] || ''}
+                                            </td>
                                         </tr>
                                     ))}
+                                    {history.length === 0 && (
+                                        <tr><td colSpan="3" className="text-center py-10 text-zinc-600 text-xs italic">Game hasn't started</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
-                        <div className="p-2 border-t border-white/10 flex justify-center gap-2 bg-[#161616]">
-                             <button onClick={() => goToMove(0)} disabled={history.length === 0} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronLeft className="w-4 h-4"/><span className="sr-only">Start</span></button>
-                             <button onClick={() => goToMove(viewIndex === -1 ? history.length - 2 : viewIndex - 1)} disabled={history.length === 0 || viewIndex === 0} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronLeft className="w-3 h-3"/></button>
-                             <button onClick={() => goToMove(viewIndex === -1 ? -1 : viewIndex + 1)} disabled={viewIndex === -1 || viewIndex === history.length - 1} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronRight className="w-3 h-3"/></button>
-                             <button onClick={() => goToMove(-1)} disabled={viewIndex === -1} className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white disabled:opacity-30"><ChevronRight className="w-4 h-4"/></button>
-                        </div>
-                        <div className="p-3 border-t border-white/10 grid grid-cols-2 gap-2 bg-[#161616]">
-                            <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 py-2 rounded text-[10px] font-bold uppercase tracking-wider text-gray-300 transition-colors"><Clipboard className="w-3 h-3"/> Paste PGN</button>
-                            <button onClick={onDownloadPGN} className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 py-2 rounded text-[10px] font-bold uppercase tracking-wider text-white transition-colors"><Download className="w-3 h-3"/> Download</button>
+
+                        {/* Controls Footer */}
+                        <div className="p-3 border-t border-white/5 bg-[#121215] space-y-3">
+                            {/* Navigation Buttons */}
+                            <div className="flex justify-center gap-1">
+                                <ControlBtn onClick={() => goToMove(0)} icon={ChevronLeft} double />
+                                <ControlBtn onClick={() => goToMove(viewIndex === -1 ? history.length - 2 : viewIndex - 1)} icon={ChevronLeft} />
+                                <ControlBtn onClick={() => goToMove(viewIndex === -1 ? -1 : viewIndex + 1)} icon={ChevronRight} />
+                                <ControlBtn onClick={() => goToMove(-1)} icon={ChevronRight} double />
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-md text-[10px] font-bold uppercase text-zinc-300 transition-colors border border-white/5">
+                                    <Clipboard className="w-3 h-3"/> Import PGN
+                                </button>
+                                <button onClick={onDownloadPGN} className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 py-2.5 rounded-md text-[10px] font-bold uppercase text-white transition-colors shadow-lg shadow-violet-900/20">
+                                    <Download className="w-3 h-3"/> Download
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
                 
                 {/* 2. CHAT TAB */}
                 {activeTab === 'chat' && (
-                    <ClassroomChat messages={chatMessages || []} onSendMessage={onSendMessage} />
+                    <div className="h-full flex flex-col">
+                        <ClassroomChat messages={chatMessages || []} onSendMessage={onSendMessage} />
+                    </div>
                 )}
 
                 {/* 3. STUDENTS TAB */}
                 {activeTab === 'students' && (
-                    <div className="absolute inset-0 overflow-y-auto p-4 space-y-2">
-                         <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Online Now ({connectedUsers.length})</h3>
-                         {connectedUsers.map((u, i) => (
-                             <div key={i} className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg border border-white/5">
-                                 <div className="relative">
-                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-bold text-white">
-                                         {u.name.charAt(0).toUpperCase()}
-                                     </div>
-                                     <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-[#1a1a1a] rounded-full"></div>
-                                 </div>
-                                 <div>
-                                     <p className="text-sm font-bold text-gray-200">{u.name}</p>
-                                     <p className="text-[10px] text-gray-500 uppercase tracking-wide">{u.role}</p>
-                                 </div>
-                             </div>
-                         ))}
-                         {connectedUsers.length === 0 && (
-                             <div className="text-center text-gray-500 text-xs py-10">No users connected</div>
-                         )}
+                    <div className="absolute inset-0 overflow-y-auto p-4 space-y-3">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Connected</h3>
+                            <span className="bg-green-500/10 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold border border-green-500/20">{connectedUsers.length} Online</span>
+                        </div>
+                          
+                        {connectedUsers.map((u, i) => (
+                            <div key={i} className="flex items-center gap-3 p-3 bg-zinc-900/40 rounded-lg border border-white/5 hover:border-violet-500/30 transition-colors group">
+                                <div className="relative">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                                        {u.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#1a1a1a] rounded-full shadow-sm"></div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-zinc-200 truncate">{u.name}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">{u.role}</p>
+                                </div>
+                            </div>
+                        ))}
+                          
+                        {connectedUsers.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-12 text-zinc-600 gap-2 opacity-60">
+                                <Users className="w-8 h-8"/>
+                                <span className="text-xs">No users connected</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Modal */}
+            {/* PGN MODAL */}
             {showPGNModal && (
-                <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-[#1a1a1a] border border-white/10 rounded-xl p-6 w-full max-w-lg relative shadow-2xl">
-                        <button onClick={() => setShowPGNModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X className="w-5 h-5"/></button>
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-white"><Clipboard className="w-5 h-5 text-violet-400"/> Import Game</h2>
-                        <textarea value={pgnInput} onChange={(e) => setPgnInput(e.target.value)} placeholder="Paste PGN here..." className="w-full h-32 bg-black/50 border border-white/10 rounded-lg p-3 text-xs font-mono text-gray-300 focus:outline-none focus:border-violet-500 mb-4 resize-none"></textarea>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowPGNModal(false)} className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white uppercase">Cancel</button>
-                            <button onClick={handlePGNSubmit} className="px-6 py-2 bg-violet-600 hover:bg-violet-700 rounded text-xs font-bold text-white uppercase tracking-wide">Load</button>
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-6 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#18181B] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#1f1f22]">
+                            <h2 className="text-sm font-bold flex items-center gap-2 text-white uppercase tracking-wider">
+                                <Clipboard className="w-4 h-4 text-violet-400"/> Import Game (PGN)
+                            </h2>
+                            <button onClick={() => setShowPGNModal(false)} className="text-zinc-500 hover:text-white transition-colors"><X className="w-4 h-4"/></button>
+                        </div>
+                        <div className="p-4">
+                            <textarea 
+                                value={pgnInput} 
+                                onChange={(e) => setPgnInput(e.target.value)} 
+                                placeholder="1. e4 e5 2. Nf3 Nc6..." 
+                                className="w-full h-48 bg-black/30 border border-white/10 rounded-lg p-4 text-xs font-mono text-zinc-300 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 resize-none transition-all placeholder:text-zinc-700"
+                            ></textarea>
+                        </div>
+                        <div className="p-4 bg-[#1f1f22] border-t border-white/5 flex justify-end gap-3">
+                            <button onClick={() => setShowPGNModal(false)} className="px-4 py-2 text-xs font-bold text-zinc-400 hover:text-white uppercase transition-colors">Cancel</button>
+                            <button onClick={handlePGNSubmit} className="px-6 py-2 bg-violet-600 hover:bg-violet-500 rounded text-xs font-bold text-white uppercase tracking-wide shadow-lg shadow-violet-900/20 transition-all transform hover:scale-105 active:scale-95">Load Game</button>
                         </div>
                     </div>
                 </div>
@@ -125,5 +197,18 @@ const ClassroomSidebar = ({
         </div>
     );
 };
+
+// Mini Component for Move Controls
+const ControlBtn = ({ onClick, icon: Icon, double }) => (
+    <button 
+        onClick={onClick} 
+        className="h-8 flex-1 flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors border border-white/5"
+    >
+        <div className="flex -space-x-1">
+            <Icon className="w-3.5 h-3.5" />
+            {double && <Icon className="w-3.5 h-3.5" />}
+        </div>
+    </button>
+);
 
 export default ClassroomSidebar;
