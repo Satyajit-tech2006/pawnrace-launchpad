@@ -15,7 +15,8 @@ import {
   MessageSquare,
   LucideIcon,
   Brain,
-  Calendar, // Imported Calendar for the new icon
+  Calendar,
+  Gamepad2, 
 } from "lucide-react";
 
 // --- BACKGROUND ANIMATION COMPONENTS ---
@@ -135,8 +136,8 @@ const menuItems = [
   },
   // ✅ NEW CLASSES BUTTON ADDED HERE
   {
-    name: "New-Classes(Coming Soon)",
-    icon: Calendar,
+    name: "Training Sessions",
+    icon: Gamepad2,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
 ].map((item) => ({ ...item, path: item.name.toLowerCase().replace(" ", "-") }));

@@ -74,12 +74,12 @@ const AppRoutes = () => {
         <Route index element={<StudentDashboard />} />
         <Route path="schedule" element={<StudentSchedule />} />
         <Route path="assignments" element={<StudentAssignment />} />
-        <Route path="classes" element={<Classes />} />
+        <Route path="training-sessions" element={<Classes />} />
         <Route path="tournaments" element={<StudentTournament />} />
         <Route path="test-results" element={<StudentTestResults />} />
         <Route path="chats" element={<StudentChat />} />
         <Route path="iqpuzzles" element={<ComingSoon />} />
-        <Route path="new-classes(coming-soon)" element={<StudentClassesNew />} />
+        <Route path="classes" element={<StudentClassesNew />} />
         <Route path="database" element={<StudentDatabase />} />
         <Route path="settings" element={<ComingSoon />} />
       </Route>
@@ -89,8 +89,8 @@ const AppRoutes = () => {
         <Route index element={<CoachDashboard />} />
         <Route path="schedule" element={<CoachSchedule />} />
         <Route path="students" element={<CoachStudents />} />
-        <Route path="classes" element={<CoachClasses />} />
-        <Route path="new-classes(coming-soon)" element={<CoachClassesNew />} />
+        <Route path="training-sessions" element={<CoachClasses />} />
+        <Route path="classes" element={<CoachClassesNew />} />
         <Route path="assignments" element={<CoachAssignment />} />
         <Route path="tournaments" element={<CoachTournament />} />
         <Route path="test-results" element={<CoachTestResults />} />

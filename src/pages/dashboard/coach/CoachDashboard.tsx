@@ -12,7 +12,8 @@ import {
   Settings,
   Database,
   Gamepad,
-  Brain, // Brain icon import kar rahe hain
+  Brain,
+  Gamepad2 // Brain icon import kar rahe hain
 } from "lucide-react";
 
 // --- COACH MENU ITEMS ---
@@ -64,8 +65,8 @@ const coachMenuItems = [
     color: "bg-gradient-to-br from-yellow-400 to-orange-500", // Alag color diya hai
   },
   {
-    name: "New-Classes(Coming Soon)",
-    icon: Calendar,
+    name: "Training Sessions",
+    icon: Gamepad2,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
 ].map((item) => ({

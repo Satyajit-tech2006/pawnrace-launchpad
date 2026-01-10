@@ -87,7 +87,10 @@ const VideoClassroom = () => {
             // Received a move or position from socket
             if (moveData.fen && !moveData.from) {
                 // Forced FEN update
-                setCustomFen(null); 
+                setCustomFen(null); // Reset custom fallback
+                // Force re-render to prevent animation glitches
+                setBoardKey(prev => prev + 1);
+
                 try {
                     const fenGame = new Chess(moveData.fen);
                     setGame(fenGame);
@@ -96,11 +99,9 @@ const VideoClassroom = () => {
                 } catch (e) {
                     // If socket sends an "illegal" fen (empty board), use customFen
                     setCustomFen(moveData.fen);
-                    setGame(new Chess()); 
+                    setGame(new Chess()); // Reset engine to avoid errors
                     setStartFen(moveData.fen);
                 }
-                // [FIX] Force re-render of board to prevent crashes on socket update too
-                setBoardKey(k => k + 1);
                 return;
             }
 
@@ -163,7 +164,7 @@ const VideoClassroom = () => {
             // CHECK: Is Free Mode enabled?
             if (!illegalMode) {
                 toast.error("Strict Mode: Cannot move on invalid board.");
-                return false; 
+                return false; // BLOCK THE MOVE
             }
 
             // If Free Mode is ON, allow manual move
@@ -187,10 +188,10 @@ const VideoClassroom = () => {
             const tempGame = new Chess(); 
             tempGame.loadPgn(game.pgn());
             const move = tempGame.move({ from: source, to: target, promotion: 'q' });
-            if (!move) return false; 
+            if (!move) return false; // Rule violation (handled by chess.js)
             
             setGame(tempGame); 
-            setHistory(tempGame.history()); 
+            setHistory(tempGame.history()); // Update history state
             setViewIndex(-1);
             handleClearWrapper(); 
             
@@ -200,7 +201,7 @@ const VideoClassroom = () => {
     }
 
     const undoMove = () => {
-        if (customFen) return; 
+        if (customFen) return; // Can't undo on a static board
         const tempGame = new Chess(); 
         tempGame.loadPgn(game.pgn());
         if (tempGame.undo()) {
@@ -218,10 +219,12 @@ const VideoClassroom = () => {
             return;
         }
 
-        // [FIX] Force fresh board render to prevent white screen crash
+        // Reset board key to force re-render
         setBoardKey(prev => prev + 1);
 
         const cleanedData = data.trim();
+        
+        // CLEAN PGN: Remove headers, keep comments/moves
         const movesOnly = cleanedData.replace(/\[.*?\]/g, "").trim();
         setCurrentPgn(movesOnly); 
         
@@ -239,7 +242,6 @@ const VideoClassroom = () => {
                 const trueStartFen = startClone.fen();
 
                 setStartFen(trueStartFen); 
-                
                 setHistory([]); 
                 setGame(new Chess(trueStartFen)); 
                 setViewIndex(-1);
@@ -275,7 +277,7 @@ const VideoClassroom = () => {
                 console.warn("Loaded invalid position:", chessError.message);
                 
                 setCustomFen(targetFen); 
-                setGame(new Chess()); 
+                setGame(new Chess()); // Reset engine
                 setStartFen(targetFen);
                 setHistory([]);
                 setViewIndex(-1);
@@ -335,7 +337,7 @@ const VideoClassroom = () => {
     };
 
     const getBoardPosition = () => { 
-        if (customFen) return customFen; 
+        if (customFen) return customFen; // Priority for illegal positions
         if (viewIndex === -1) return game.fen();
         try {
             const t = new Chess(startFen); 
@@ -448,6 +450,7 @@ const VideoClassroom = () => {
                     
                     <AnalysisTools 
                         onUndo={undoMove}
+                        // [FIX] onReset now emits to sockets!
                         onReset={() => { 
                             const ng = new Chess(); 
                             setGame(ng); 
@@ -456,6 +459,11 @@ const VideoClassroom = () => {
                             setHistory([]); 
                             setViewIndex(-1); 
                             handleClearWrapper(); 
+                            
+                            // *** ADDED: Emit Reset to Students ***
+                            if (socketRef.current) {
+                                socketRef.current.emit('make_move', { roomId, fen: ng.fen() });
+                            }
                         }}
                         onFlip={() => setOrientation(o => o === 'white' ? 'black' : 'white')}
                         onClear={handleClearWrapper} 
@@ -478,6 +486,7 @@ const VideoClassroom = () => {
                     cameraOn={cameraOn} setCameraOn={setCameraOn} 
                     chatMessages={chatMessages} onSendMessage={handleSendMessage} 
                     connectedUsers={connectedUsers} roomId={roomId}
+                    currentPgn={currentPgn}
                 />
             </div>
             

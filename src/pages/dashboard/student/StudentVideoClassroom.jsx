@@ -23,8 +23,12 @@ const StudentVideoClassroom = () => {
     const [connectedUsers, setConnectedUsers] = useState([]); 
     const [game, setGame] = useState(new Chess());
     
-    // [FIX] Add startFen to prevent crashes on Puzzles/Custom Positions
+    // [FIX] Add customFen to handle "Invalid" boards (Puzzles/Setup)
+    const [customFen, setCustomFen] = useState(null);
     const [startFen, setStartFen] = useState('start');
+
+    // [FIX] Add boardKey to prevent animation crashes on board reset
+    const [boardKey, setBoardKey] = useState(0);
 
     const [orientation, setOrientation] = useState('black'); 
     const [history, setHistory] = useState([]);
@@ -66,29 +70,45 @@ const StudentVideoClassroom = () => {
             setConnectedUsers(users); 
         });
         
-        // [FIX] Handle Moves & PGN Loads safely
+        // [FIX] Robust Move Handler (Prevents Invalid FEN Crash)
         socketRef.current.on('receive_move', (moveData) => {
+            // 1. If Coach sent a Full Board Reset (PGN Load or Setup)
+            if (moveData.fen && !moveData.from) {
+                setCustomFen(null); // Assume standard first
+                setBoardKey(k => k + 1); // Force re-render to prevent white screen
+
+                try {
+                    const fenGame = new Chess(moveData.fen);
+                    setGame(fenGame);
+                    setStartFen(moveData.fen);
+                    setHistory([]);
+                    setViewIndex(-1);
+                } catch (e) {
+                    // CRASH PREVENTION: If FEN is "Invalid" (e.g. puzzle with no king), load as Custom
+                    console.warn("Received custom/setup position:", e.message);
+                    setCustomFen(moveData.fen);
+                    setGame(new Chess()); // Reset engine to safe state
+                    setStartFen(moveData.fen);
+                    setHistory([]);
+                    setViewIndex(-1);
+                }
+                return;
+            }
+
+            // 2. Normal Move
             setGame((prevGame) => {
                 const gameCopy = new Chess();
                 try {
-                    // 1. If Coach sent a Full Board Reset (PGN Load or Setup)
-                    if (moveData.fen && !moveData.from) {
-                        const fenGame = new Chess(moveData.fen);
-                        setStartFen(moveData.fen); // Sync start position
-                        setHistory([]); // History resets on new game
-                        setViewIndex(-1);
-                        return fenGame;
-                    }
-
-                    // 2. Normal Move
                     gameCopy.loadPgn(prevGame.pgn());
                     if (moveData.from) gameCopy.move(moveData);
                     
                     setHistory(gameCopy.history()); 
                     setViewIndex(-1); 
+                    setCustomFen(null);
                     return gameCopy;
                 } catch (e) { 
-                    return new Chess(moveData.fen || prevGame.fen()); 
+                    // Fallback if move logic fails
+                    return new Chess(); 
                 }
             });
         });
@@ -120,6 +140,12 @@ const StudentVideoClassroom = () => {
     // --- 3. GAME ACTIONS ---
     function onDrop(sourceSquare, targetSquare) {
         if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
+        
+        // Block moves on Custom/Invalid boards for students (unless you add Free Mode later)
+        if (customFen) {
+            return false;
+        }
+
         try {
             const tempGame = new Chess(); tempGame.loadPgn(game.pgn());
             const move = tempGame.move({ from: sourceSquare, to: targetSquare, promotion: 'q' });
@@ -148,12 +174,11 @@ const StudentVideoClassroom = () => {
         const a = document.createElement('a'); a.href = url; a.download = `class_game.pgn`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
-    // [FIX] Replay logic using startFen
     const getBoardPosition = () => { 
+        if (customFen) return customFen; // Display the custom/broken board if set
         if (viewIndex === -1) return game.fen();
         
         try {
-            // Use the correct start position (Start or Puzzle FEN)
             const t = new Chess(startFen); 
             for(let i=0; i<=viewIndex; i++) {
                 t.move(history[i]); 
@@ -194,6 +219,7 @@ const StudentVideoClassroom = () => {
                     >
                         <Chessboard 
                             id="StudentBoard" 
+                            key={boardKey} // [FIX] Force re-render on new game
                             position={getBoardPosition()} 
                             onPieceDrop={onDrop} 
                             boardOrientation={orientation}
@@ -218,8 +244,8 @@ const StudentVideoClassroom = () => {
                 <ClassroomSidebar 
                     activeTab={activeTab} setActiveTab={setActiveTab}
                     
-                    // [FIX] Hide future moves from Student Sidebar too
-                    history={history} 
+                    // [FIX] Correct History Logic
+                    history={viewIndex === -1 ? history : history.slice(0, viewIndex + 1)}
                     
                     viewIndex={viewIndex} goToMove={setViewIndex}
                     onLoadPGN={() => toast.error("Only Coach can load PGNs")} 
