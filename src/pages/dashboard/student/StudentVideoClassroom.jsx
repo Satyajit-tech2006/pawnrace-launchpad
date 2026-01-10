@@ -6,7 +6,7 @@ import { io } from 'socket.io-client';
 import { PhoneOff, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from "../../../contexts/AuthContext";
-import { useBoardDrawing } from '../../../hooks/useBoardDrawing'; // Hook Import
+import { useBoardDrawing } from '../../../hooks/useBoardDrawing'; 
 
 import ClassroomSidebar from '../coach/Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from '../coach/Classroom_features/CoordinateOverlay';
@@ -20,15 +20,18 @@ const StudentVideoClassroom = () => {
     const { user } = useAuth();
 
     // --- State ---
-    const [connectedUsers, setConnectedUsers] = useState([]); // <--- State for Sidebar List
+    const [connectedUsers, setConnectedUsers] = useState([]); 
     const [game, setGame] = useState(new Chess());
+    
+    // [FIX] Add startFen to prevent crashes on Puzzles/Custom Positions
+    const [startFen, setStartFen] = useState('start');
+
     const [orientation, setOrientation] = useState('black'); 
     const [history, setHistory] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
     const [viewIndex, setViewIndex] = useState(-1);
     const [boardWidth, setBoardWidth] = useState(600);
     
-    // --- Hook for Drawing ---
     const drawing = useBoardDrawing(orientation);
 
     // --- UI State ---
@@ -51,45 +54,50 @@ const StudentVideoClassroom = () => {
         
         socketRef.current.on('connect', () => { 
             setIsConnected(true); 
-            
-            // Define User Info
             const userInfo = {
-                name: user?.name || user?.username || "Student", 
+                name: user?.fullname || user?.username || "Student", 
                 role: "Student",
                 _id: user?._id
             };
-
-            // Send Object to join room
             socketRef.current.emit('join_room', { roomId, user: userInfo }); 
         });
         
-        // Listen for User List Updates
         socketRef.current.on('update_user_list', (users) => {
             setConnectedUsers(users); 
         });
         
-        // MOVES
+        // [FIX] Handle Moves & PGN Loads safely
         socketRef.current.on('receive_move', (moveData) => {
             setGame((prevGame) => {
                 const gameCopy = new Chess();
                 try {
+                    // 1. If Coach sent a Full Board Reset (PGN Load or Setup)
+                    if (moveData.fen && !moveData.from) {
+                        const fenGame = new Chess(moveData.fen);
+                        setStartFen(moveData.fen); // Sync start position
+                        setHistory([]); // History resets on new game
+                        setViewIndex(-1);
+                        return fenGame;
+                    }
+
+                    // 2. Normal Move
                     gameCopy.loadPgn(prevGame.pgn());
                     if (moveData.from) gameCopy.move(moveData);
-                    else if (moveData.fen) return new Chess(moveData.fen);
-                    setHistory(gameCopy.history()); setViewIndex(-1); 
                     
+                    setHistory(gameCopy.history()); 
+                    setViewIndex(-1); 
                     return gameCopy;
-                } catch (e) { return new Chess(moveData.fen); }
+                } catch (e) { 
+                    return new Chess(moveData.fen || prevGame.fen()); 
+                }
             });
         });
 
-        // ANNOTATIONS (Receive from Coach)
         socketRef.current.on('receive_annotations', (data) => {
             drawing.setArrows(data.arrows || []);
             drawing.setSquares(data.squares || {});
         });
 
-        // CHAT
         socketRef.current.on('receive_message', (data) => {
             setChatMessages(prev => [...prev, { ...data, isMe: false }]);
         });
@@ -97,7 +105,7 @@ const StudentVideoClassroom = () => {
         return () => { if (socketRef.current) socketRef.current.disconnect(); };
     }, [roomId, user]);
 
-    // --- Helper to Emit Drawing Changes (If student draws) ---
+    // --- Helper to Emit Drawing Changes ---
     const handleMouseUpWrapper = (e) => {
         const result = drawing.handleMouseUp(e);
         if (result.hasChanged && socketRef.current) {
@@ -118,7 +126,6 @@ const StudentVideoClassroom = () => {
             if (!move) return false;
             setGame(tempGame); setHistory(tempGame.history());
             
-            // Clear annotations on own move
             drawing.clearAnnotations();
             if (socketRef.current) socketRef.current.emit('sync_annotations', { roomId, arrows: [], squares: {} });
 
@@ -127,10 +134,9 @@ const StudentVideoClassroom = () => {
         } catch (error) { return false; }
     }
 
-    // --- 4. CHAT ---
     const handleSendMessage = (text) => {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const senderName = user?.name || user?.username || 'Student';
+        const senderName = user?.fullname || user?.username || 'Student';
         const messageData = { text, time, sender: senderName };
         setChatMessages(prev => [...prev, { ...messageData, isMe: true }]);
         if (socketRef.current) socketRef.current.emit('send_message', { roomId, ...messageData });
@@ -142,7 +148,21 @@ const StudentVideoClassroom = () => {
         const a = document.createElement('a'); a.href = url; a.download = `class_game.pgn`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
-    const getBoardPosition = () => { if (viewIndex === -1) return game.fen(); const t = new Chess(); for(let i=0;i<=viewIndex;i++) t.move(history[i]); return t.fen(); };
+    // [FIX] Replay logic using startFen
+    const getBoardPosition = () => { 
+        if (viewIndex === -1) return game.fen();
+        
+        try {
+            // Use the correct start position (Start or Puzzle FEN)
+            const t = new Chess(startFen); 
+            for(let i=0; i<=viewIndex; i++) {
+                t.move(history[i]); 
+            }
+            return t.fen();
+        } catch (e) {
+            return game.fen();
+        }
+    };
 
     return (
         <div className="h-screen bg-[#111] text-white flex flex-col overflow-hidden font-sans">
@@ -164,7 +184,6 @@ const StudentVideoClassroom = () => {
             <div className="flex-1 flex overflow-hidden">
                 <div className="flex-1 bg-[#0a0a0a] relative flex flex-col justify-center items-center">
                     
-                    {/* BOARD WRAPPER FOR DRAWING */}
                     <div 
                         ref={drawing.boardWrapperRef}
                         onMouseDown={drawing.handleMouseDown}
@@ -182,8 +201,6 @@ const StudentVideoClassroom = () => {
                             customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
                             animationDuration={200} 
                             showBoardNotation={false}
-                            
-                            // Controlled Arrows
                             areArrowsAllowed={false} 
                             customArrows={drawing.arrows}
                             customSquareStyles={drawing.squares}
@@ -200,14 +217,18 @@ const StudentVideoClassroom = () => {
 
                 <ClassroomSidebar 
                     activeTab={activeTab} setActiveTab={setActiveTab}
-                    history={history} viewIndex={viewIndex} goToMove={setViewIndex}
+                    
+                    // [FIX] Hide future moves from Student Sidebar too
+                    history={history} 
+                    
+                    viewIndex={viewIndex} goToMove={setViewIndex}
                     onLoadPGN={() => toast.error("Only Coach can load PGNs")} 
                     onDownloadPGN={handleDownloadPGN}
                     micOn={micOn} setMicOn={setMicOn}
                     cameraOn={cameraOn} setCameraOn={setCameraOn}
                     chatMessages={chatMessages}
                     onSendMessage={handleSendMessage}
-                    connectedUsers={connectedUsers} // <--- Pass the list here
+                    connectedUsers={connectedUsers} 
                     roomId={roomId}
                 />
             </div>

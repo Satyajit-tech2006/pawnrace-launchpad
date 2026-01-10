@@ -1,10 +1,13 @@
 import React from 'react';
 import { RotateCcw, Repeat, Trash2, PenTool, Eye, EyeOff, MousePointer2, Undo2, Hash, Settings2 } from 'lucide-react';
+import IllegalMoves from './IllegalMoves'; // Imported the new component
 
 const AnalysisTools = ({ 
-    onUndo, onReset, onFlip, onClear, onSetup, // Added onSetup
+    onUndo, onReset, onFlip, onClear, onSetup,
     showTools, setShowTools,
-    showCoordinates, setShowCoordinates 
+    showCoordinates, setShowCoordinates,
+    // New props for Illegal Moves
+    illegalMode, setIllegalMode
 }) => {
   return (
     <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-xl px-4">
@@ -30,13 +33,21 @@ const AnalysisTools = ({
                 
                 {/* 1. Game Controls */}
                 <div className="flex items-center gap-2 border-r border-white/10 pr-6">
-                    {/* Setup Button (New) */}
+                    
+                    {/* Setup Button */}
                     <button onClick={onSetup} className="flex flex-col items-center gap-1.5 p-2 hover:bg-white/5 rounded-lg group min-w-[55px] transition-all">
                         <div className="p-2 bg-[#252525] rounded-full group-hover:bg-[#333]">
                             <Settings2 className="w-4 h-4 text-gray-400 group-hover:text-white" />
                         </div>
                         <span className="text-[9px] text-gray-500 group-hover:text-gray-300 uppercase font-bold tracking-wider">Setup</span>
                     </button>
+
+                    {/* Illegal Moves Toggle */}
+                    {/* Default is ON (Free Mode) as requested */}
+                    <IllegalMoves 
+                        enabled={illegalMode} 
+                        onToggle={() => setIllegalMode(!illegalMode)} 
+                    />
 
                     <button onClick={onUndo} className="flex flex-col items-center gap-1.5 p-2 hover:bg-white/5 rounded-lg group min-w-[55px] transition-all">
                         <div className="p-2 bg-[#252525] rounded-full group-hover:bg-[#333]">
@@ -62,7 +73,6 @@ const AnalysisTools = ({
 
                 {/* 2. Annotation Actions */}
                 <div className="flex items-center gap-2 pl-2">
-                    {/* ... (Keep existing annotation buttons) ... */}
                     <button onClick={() => setShowCoordinates(!showCoordinates)} className={`flex flex-col items-center gap-1.5 p-2 rounded-lg group min-w-[55px] transition-all ${showCoordinates ? 'hover:bg-white/5' : 'opacity-50 hover:opacity-100'}`}>
                         <div className={`p-2 rounded-full ${showCoordinates ? 'bg-[#252525] group-hover:bg-[#333]' : 'bg-transparent border border-gray-600'}`}>
                             <Hash className={`w-4 h-4 ${showCoordinates ? 'text-blue-400' : 'text-gray-500'}`} />

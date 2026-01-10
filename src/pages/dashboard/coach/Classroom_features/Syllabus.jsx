@@ -10,8 +10,7 @@ import {
   Layers, 
   MonitorUp,
   ChevronDown,
-  ChevronRight,
-  FileText
+  ChevronRight
 } from "lucide-react";
 
 const LEVELS = [
@@ -100,7 +99,7 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
     })));
 
     try {
-      // 2. Call API (Updated endpoint for chapters)
+      // 2. Call API
       await apiClient.patch('/syllabus/course/toggle', { 
         courseId: course._id,
         chapterId 
@@ -113,10 +112,14 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
   };
 
   const handleLoad = (pgn, name) => {
-    onLoadPGN(pgn);
-    toast.success(`Loaded: ${name}`);
-    // Optional: Auto-close
-    // onClose(); 
+    // FIX: Safety check to prevent crash if parent didn't pass the prop
+    if (typeof onLoadPGN === 'function') {
+        onLoadPGN(pgn, name); // Fixed: Passed name correctly
+        // onClose(); // Optional: Auto-close
+    } else {
+        console.error("onLoadPGN prop is missing in Syllabus component");
+        toast.error("Error: Cannot load to board (Function not connected)");
+    }
   };
 
   const toggleAccordion = (id) => {
@@ -170,7 +173,7 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
             </div>
           ) : !course ? (
              <div className="text-center py-10 text-red-400 text-sm">
-                Error: Could not link this classroom to a course.
+               Error: Could not link this classroom to a course.
              </div>
           ) : techniques.length === 0 ? (
             <div className="text-center py-12 text-gray-500 text-sm border border-dashed border-white/5 rounded-xl">

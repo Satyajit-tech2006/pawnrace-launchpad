@@ -3,16 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { io } from 'socket.io-client';
-import { PhoneOff, BookOpen } from 'lucide-react';
+import { PhoneOff, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from "../../../contexts/AuthContext";
 import { useBoardDrawing } from '../../../hooks/useBoardDrawing'; 
 
+// --- IMPORTS FOR FEATURES ---
 import AnalysisTools from './Classroom_features/AnalysisTools';
 import ClassroomSidebar from './Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from './Classroom_features/CoordinateOverlay';
 import SetupPosition from './Classroom_features/SetupPosition';
-import Syllabus from './Classroom_features/Syllabus'; // Ensure this path is correct
+import Syllabus from './Classroom_features/Syllabus';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://pawnrace-game-socket-backend.vercel.app/';
 
@@ -22,22 +23,30 @@ const VideoClassroom = () => {
     const socketRef = useRef(null); 
     const { user } = useAuth();
 
-    // --- State ---
+    // --- Game State ---
     const [connectedUsers, setConnectedUsers] = useState([]);
     const [game, setGame] = useState(new Chess());
+    
+    // NEW: Handle positions that chess.js calls "Illegal" (like empty boards)
+    const [customFen, setCustomFen] = useState(null); 
+    const [illegalMode, setIllegalMode] = useState(true); // Default to Free Mode
+
+    const [startFen, setStartFen] = useState('start');
     const [orientation, setOrientation] = useState('white');
     const [history, setHistory] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
     const [viewIndex, setViewIndex] = useState(-1);
     const [boardWidth, setBoardWidth] = useState(600);
     
+    // --- Playlist / Navigation State ---
+    const [playlist, setPlaylist] = useState([]); 
+    const [currentChapterIndex, setCurrentChapterIndex] = useState(-1); 
+
     // --- UI State ---
     const [boardKey, setBoardKey] = useState(0); 
     const [showTools, setShowTools] = useState(true);
     const [showCoordinates, setShowCoordinates] = useState(true);
     const [showSetupModal, setShowSetupModal] = useState(false);
-    
-    // --- FIX: Added Missing State Here ---
     const [showSyllabusModal, setShowSyllabusModal] = useState(false); 
     
     const [activeTab, setActiveTab] = useState('moves');
@@ -62,7 +71,7 @@ const VideoClassroom = () => {
         socketRef.current.on('connect', () => { 
             setIsConnected(true); 
             const userInfo = {
-                name: user?.name || user?.username || "Coach", 
+                name: user?.fullname || user?.username || "Coach", 
                 role: "Coach",
                 _id: user?._id
             };
@@ -72,15 +81,36 @@ const VideoClassroom = () => {
         socketRef.current.on('update_user_list', (users) => setConnectedUsers(users));
         
         socketRef.current.on('receive_move', (moveData) => {
+            // Received a move or position from socket
+            if (moveData.fen && !moveData.from) {
+                // Forced FEN update
+                setCustomFen(null); // Reset custom fallback
+                try {
+                    const fenGame = new Chess(moveData.fen);
+                    setGame(fenGame);
+                    setStartFen(moveData.fen);
+                    setHistory([]);
+                } catch (e) {
+                    // If socket sends an "illegal" fen (empty board), use customFen
+                    setCustomFen(moveData.fen);
+                    setGame(new Chess()); // Reset engine to avoid errors
+                    setStartFen(moveData.fen);
+                }
+                return;
+            }
+
             setGame((prevGame) => {
                 const gameCopy = new Chess();
                 try {
                     gameCopy.loadPgn(prevGame.pgn());
                     if (moveData.from) gameCopy.move(moveData);
-                    else if (moveData.fen) return new Chess(moveData.fen);
-                    setHistory(gameCopy.history()); setViewIndex(-1); 
+                    setHistory(gameCopy.history()); 
+                    setViewIndex(-1); 
+                    setCustomFen(null);
                     return gameCopy;
-                } catch (e) { return new Chess(moveData.fen); }
+                } catch (e) { 
+                    return new Chess(); 
+                }
             });
         });
 
@@ -113,7 +143,7 @@ const VideoClassroom = () => {
 
     const handleSendMessage = (text) => {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const senderName = user?.name || user?.username || 'Coach'; 
+        const senderName = user?.fullname || user?.username || 'Coach'; 
         const messageData = { text, time, sender: senderName };
         setChatMessages(prev => [...prev, { ...messageData, isMe: true }]);
         if (socketRef.current) socketRef.current.emit('send_message', { roomId, ...messageData });
@@ -121,41 +151,154 @@ const VideoClassroom = () => {
 
     function onDrop(source, target) {
         if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
+        
+        // If we are in a "Custom FEN" state (broken rules), we can't play via chess.js
+        if (customFen) {
+            toast.error("Cannot play moves on a custom/setup board yet.");
+            return false;
+        }
+
         try {
-            const tempGame = new Chess(); tempGame.loadPgn(game.pgn());
+            const tempGame = new Chess(); 
+            tempGame.loadPgn(game.pgn());
             const move = tempGame.move({ from: source, to: target, promotion: 'q' });
             if (!move) return false;
-            setGame(tempGame); setHistory(tempGame.history()); setViewIndex(-1);
+            
+            setGame(tempGame); 
+            setHistory(tempGame.history()); 
+            setViewIndex(-1);
             handleClearWrapper(); 
+            
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, from: source, to: target, promotion: 'q', fen: tempGame.fen() });
             return true;
         } catch (error) { return false; }
     }
 
     const undoMove = () => {
-        const tempGame = new Chess(); tempGame.loadPgn(game.pgn()); 
+        if (customFen) return; // Can't undo on a static board
+        const tempGame = new Chess(); 
+        tempGame.loadPgn(game.pgn());
         if (tempGame.undo()) {
-            setGame(tempGame); setHistory(tempGame.history()); setViewIndex(-1);
+            setGame(tempGame); 
+            setHistory(tempGame.history()); 
+            setViewIndex(-1);
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
         }
     };
 
-    const handleLoadPGN = (pgn) => {
+    // --- ROBUST LOADER FUNCTION ---
+    const loadGameFromPgn = (data, title = "Lesson") => {
+        if (!data || typeof data !== 'string' || !data.trim()) {
+            toast.error("Cannot load: Data is empty.");
+            return;
+        }
+
+        const cleanedData = data.trim();
+        setCustomFen(null); // Reset custom state before trying to load
+
+        // 1. Try Loading as Standard PGN
         try {
-            const newGame = new Chess(); newGame.loadPgn(pgn);
-            setGame(newGame); setHistory(newGame.history()); setViewIndex(-1);
-            if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
-            toast.success("PGN Loaded");
-        } catch (e) { toast.error("Invalid PGN"); }
+            const pgnGame = new Chess();
+            pgnGame.loadPgn(cleanedData);
+            
+            // If valid PGN with history
+            if (pgnGame.history().length > 0) {
+                // Find true start
+                const startClone = new Chess();
+                startClone.loadPgn(cleanedData);
+                while (startClone.undo()) {} 
+                const trueStartFen = startClone.fen();
+
+                setStartFen(trueStartFen); 
+                setHistory(pgnGame.history()); 
+                setGame(new Chess(trueStartFen)); 
+                setViewIndex(-1);
+                
+                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: trueStartFen });
+                toast.success(`Loaded: ${title}`);
+                return;
+            }
+        } catch (e) {
+            // PGN load failed, continue to fallback
+        }
+
+        // 2. EXTRACT FEN FROM PGN TAGS (Fix for your specific issue)
+        // Your PGN has [FEN "..."] but chess.js PGN parser fails on the empty board.
+        // We regex grab the FEN content directly.
+        let targetFen = cleanedData;
+        const fenMatch = cleanedData.match(/\[FEN "([^"]+)"\]/);
+        if (fenMatch && fenMatch[1]) {
+            targetFen = fenMatch[1];
+        }
+
+        // 3. Try Loading FEN (Strict & Custom)
+        try {
+            // Check if it's broadly FEN-like (contains slashes)
+            if (!targetFen.includes('/')) throw new Error("Not a FEN");
+
+            try {
+                // Try Standard chess.js load
+                const fenGame = new Chess(targetFen);
+                setGame(fenGame);
+                setStartFen(targetFen);
+                setHistory([]);
+                setViewIndex(-1);
+                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
+                toast.success(`Loaded Position: ${title}`);
+            } catch (chessError) {
+                // 4. ILLEGAL MODE FALLBACK
+                // If chess.js says "missing king" etc, but Illegal Mode is ON, we force show it.
+                if (illegalMode) {
+                    console.warn("Loaded invalid position (Illegal Mode):", chessError.message);
+                    setCustomFen(targetFen); // Store raw string for UI
+                    setGame(new Chess()); // Reset engine to prevent crashes
+                    setStartFen(targetFen);
+                    setHistory([]);
+                    setViewIndex(-1);
+                    if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
+                    toast.success(`Loaded (Custom): ${title}`);
+                } else {
+                    toast.error(`Invalid Position: ${chessError.message}`);
+                }
+            }
+        } catch (finalError) {
+            console.error(finalError);
+            toast.error("Failed to recognize game data.");
+        }
+    };
+
+    // Handles loading a chapter and setting up the playlist
+    const handlePlayPlaylist = (chapterList, index) => {
+        setPlaylist(chapterList);
+        setCurrentChapterIndex(index);
+        
+        const chapter = chapterList[index];
+        if (chapter && chapter.pgn) {
+            loadGameFromPgn(chapter.pgn, chapter.name);
+            setShowSyllabusModal(false); 
+        } else {
+            toast.error("Selected chapter has no data.");
+        }
+    };
+
+    // Navigate Next/Prev
+    const handleNavigateChapter = (direction) => {
+        const newIndex = currentChapterIndex + direction;
+        if (newIndex >= 0 && newIndex < playlist.length) {
+            const nextChapter = playlist[newIndex];
+            setCurrentChapterIndex(newIndex);
+            loadGameFromPgn(nextChapter.pgn, nextChapter.name);
+        }
+    };
+
+    const handleLoadPGN = (pgn, name = "Uploaded PGN") => {
+        loadGameFromPgn(pgn, name);
+        setPlaylist([]); 
+        setCurrentChapterIndex(-1);
     };
 
     const handleSetupLoad = (fen) => {
-        try {
-            const newGame = new Chess(fen);
-            setGame(newGame); setHistory([]); setViewIndex(-1);
-            if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
-            toast.success("Custom Position Loaded");
-        } catch (e) { toast.error("Failed to load position"); }
+        loadGameFromPgn(fen, "Setup Position");
     };
 
     const handleDownloadPGN = () => {
@@ -164,7 +307,15 @@ const VideoClassroom = () => {
         const a = document.createElement('a'); a.href = url; a.download = `game_${roomId}.pgn`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
-    const getBoardPosition = () => { if (viewIndex === -1) return game.fen(); const t = new Chess(); for(let i=0;i<=viewIndex;i++) t.move(history[i]); return t.fen(); };
+    const getBoardPosition = () => { 
+        if (customFen) return customFen; // Priority for illegal positions
+        if (viewIndex === -1) return game.fen();
+        try {
+            const t = new Chess(startFen); 
+            for(let i=0; i<=viewIndex; i++) t.move(history[i]); 
+            return t.fen();
+        } catch (e) { return game.fen(); }
+    };
 
     return (
         <div className="h-screen bg-[#111] text-white flex flex-col overflow-hidden font-sans">
@@ -179,7 +330,38 @@ const VideoClassroom = () => {
                     </span>
                 </div>
                 
-                {/* Right Side Buttons */}
+                {/* --- CENTER: PLAYLIST CONTROLS --- */}
+                {playlist.length > 0 && (
+                    <div className="flex items-center bg-[#222] rounded-lg border border-white/10 p-1 gap-2 absolute left-1/2 transform -translate-x-1/2">
+                        <button 
+                            onClick={() => handleNavigateChapter(-1)} 
+                            disabled={currentChapterIndex <= 0}
+                            className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
+                            title="Previous Chapter"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        
+                        <div className="flex flex-col items-center px-2 min-w-[120px]">
+                            <span className="text-xs font-bold text-white truncate max-w-[150px]">
+                                {playlist[currentChapterIndex]?.name}
+                            </span>
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wider">
+                                {currentChapterIndex + 1} / {playlist.length}
+                            </span>
+                        </div>
+
+                        <button 
+                            onClick={() => handleNavigateChapter(1)} 
+                            disabled={currentChapterIndex >= playlist.length - 1}
+                            className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
+                            title="Next Chapter"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => setShowSyllabusModal(true)} 
@@ -217,26 +399,44 @@ const VideoClassroom = () => {
                     <AnalysisTools 
                         onUndo={undoMove}
                         onReset={() => { 
-                            const ng = new Chess(); setGame(ng); setHistory([]); setViewIndex(-1); 
+                            const ng = new Chess(); 
+                            setGame(ng); 
+                            setCustomFen(null);
+                            setStartFen('start'); 
+                            setHistory([]); 
+                            setViewIndex(-1); 
                             handleClearWrapper(); 
                         }}
                         onFlip={() => setOrientation(o => o === 'white' ? 'black' : 'white')}
                         onClear={handleClearWrapper} 
                         onSetup={() => setShowSetupModal(true)}
-                        showTools={showTools} setShowTools={setShowTools} showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
+                        showTools={showTools} setShowTools={setShowTools} 
+                        showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
+                        // CONNECTING ILLEGAL MODE
+                        illegalMode={illegalMode} setIllegalMode={setIllegalMode}
                     />
                 </div>
-                <ClassroomSidebar activeTab={activeTab} setActiveTab={setActiveTab} history={history} viewIndex={viewIndex} goToMove={setViewIndex} onLoadPGN={handleLoadPGN} onDownloadPGN={handleDownloadPGN} micOn={micOn} setMicOn={setMicOn} cameraOn={cameraOn} setCameraOn={setCameraOn} chatMessages={chatMessages} onSendMessage={handleSendMessage} connectedUsers={connectedUsers} roomId={roomId}/>
+                <ClassroomSidebar 
+                    activeTab={activeTab} setActiveTab={setActiveTab} 
+                    history={history.slice(0, viewIndex + 1)} 
+                    viewIndex={viewIndex} goToMove={setViewIndex} 
+                    onLoadPGN={handleLoadPGN} 
+                    onDownloadPGN={handleDownloadPGN} 
+                    micOn={micOn} setMicOn={setMicOn} 
+                    cameraOn={cameraOn} setCameraOn={setCameraOn} 
+                    chatMessages={chatMessages} onSendMessage={handleSendMessage} 
+                    connectedUsers={connectedUsers} roomId={roomId}
+                />
             </div>
             
-            {/* Modals */}
             <SetupPosition isOpen={showSetupModal} onClose={() => setShowSetupModal(false)} currentFen={game.fen()} onLoadPosition={handleSetupLoad} />
             
             <Syllabus 
                 isOpen={showSyllabusModal} 
                 onClose={() => setShowSyllabusModal(false)} 
+                onPlayPlaylist={handlePlayPlaylist}
+                roomId={roomId} 
                 onLoadPGN={handleLoadPGN}
-                roomId={roomId} // Pass roomId so Syllabus can find the Course
             />
         </div>
     );
