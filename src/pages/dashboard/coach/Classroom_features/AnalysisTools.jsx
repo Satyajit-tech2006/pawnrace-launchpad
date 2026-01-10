@@ -10,7 +10,8 @@ const AnalysisTools = ({
     illegalMode, setIllegalMode
 }) => {
   return (
-    <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-xl px-4">
+    // CHANGED: max-w-xl -> max-w-2xl (Wider Container)
+    <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-2xl px-4">
         
         {/* Toggle Button */}
         <div className="w-full flex justify-end">
@@ -43,7 +44,6 @@ const AnalysisTools = ({
                     </button>
 
                     {/* Illegal Moves Toggle */}
-                    {/* Default is ON (Free Mode) as requested */}
                     <IllegalMoves 
                         enabled={illegalMode} 
                         onToggle={() => setIllegalMode(!illegalMode)} 
