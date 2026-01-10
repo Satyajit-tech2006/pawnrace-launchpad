@@ -1,17 +1,19 @@
-import React from 'react';
-import { RotateCcw, Repeat, Trash2, PenTool, Eye, EyeOff, MousePointer2, Undo2, Hash, Settings2 } from 'lucide-react';
-import IllegalMoves from './IllegalMoves'; // Imported the new component
+import React, { useState } from 'react';
+import { RotateCcw, Repeat, Trash2, PenTool, Eye, EyeOff, MousePointer2, Undo2, Hash, Settings2, FileText, X } from 'lucide-react';
+import IllegalMoves from './IllegalMoves'; 
 
 const AnalysisTools = ({ 
     onUndo, onReset, onFlip, onClear, onSetup,
     showTools, setShowTools,
     showCoordinates, setShowCoordinates,
-    // New props for Illegal Moves
-    illegalMode, setIllegalMode
+    illegalMode, setIllegalMode,
+    currentPgn // <--- NEW PROP
 }) => {
+  const [showPgnModal, setShowPgnModal] = useState(false);
+
   return (
-    // CHANGED: max-w-xl -> max-w-2xl (Wider Container)
-    <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-2xl px-4">
+    // [CHANGE] Increased width from max-w-2xl to max-w-4xl
+    <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-4xl px-4 relative">
         
         {/* Toggle Button */}
         <div className="w-full flex justify-end">
@@ -41,6 +43,18 @@ const AnalysisTools = ({
                             <Settings2 className="w-4 h-4 text-gray-400 group-hover:text-white" />
                         </div>
                         <span className="text-[9px] text-gray-500 group-hover:text-gray-300 uppercase font-bold tracking-wider">Setup</span>
+                    </button>
+
+                    {/* NEW: PGN Moves Button */}
+                    <button 
+                        onClick={() => setShowPgnModal(true)} 
+                        className="flex flex-col items-center gap-1.5 p-2 hover:bg-white/5 rounded-lg group min-w-[55px] transition-all"
+                        title="View PGN Source Moves"
+                    >
+                        <div className="p-2 bg-[#252525] rounded-full group-hover:bg-[#333]">
+                            <FileText className="w-4 h-4 text-gray-400 group-hover:text-violet-400" />
+                        </div>
+                        <span className="text-[9px] text-gray-500 group-hover:text-violet-300 uppercase font-bold tracking-wider">PGN</span>
                     </button>
 
                     {/* Illegal Moves Toggle */}
@@ -96,6 +110,33 @@ const AnalysisTools = ({
                         </div>
                         <span className="text-[9px] text-gray-500 group-hover:text-red-300 uppercase font-bold tracking-wider">Clear</span>
                     </button>
+                </div>
+            </div>
+        )}
+
+        {/* --- PGN VIEWER MODAL --- */}
+        {showPgnModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="bg-[#18181B] border border-white/10 w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[60vh]">
+                    <div className="flex items-center justify-between p-4 border-b border-white/5 bg-[#202020]">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-violet-400"/> Source Moves
+                        </h3>
+                        <button onClick={() => setShowPgnModal(false)} className="text-zinc-500 hover:text-white transition-colors">
+                            <X className="w-4 h-4"/>
+                        </button>
+                    </div>
+                    <div className="p-5 overflow-y-auto bg-[#121212]">
+                        {currentPgn ? (
+                            <p className="text-sm font-mono text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                {currentPgn}
+                            </p>
+                        ) : (
+                            <div className="text-center py-8 text-zinc-600 text-xs italic">
+                                No PGN moves loaded.
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         )}

@@ -27,6 +27,9 @@ const VideoClassroom = () => {
     const [connectedUsers, setConnectedUsers] = useState([]);
     const [game, setGame] = useState(new Chess());
     
+    // NEW: Store the CLEAN PGN text (Moves Only)
+    const [currentPgn, setCurrentPgn] = useState(""); 
+
     // NEW: Handle positions that chess.js calls "Illegal" (like empty boards)
     const [customFen, setCustomFen] = useState(null); 
     const [illegalMode, setIllegalMode] = useState(true); // Default to Free Mode
@@ -214,6 +217,11 @@ const VideoClassroom = () => {
         }
 
         const cleanedData = data.trim();
+        
+        // [UPDATE] CLEAN PGN: Remove headers, keep comments/moves
+        const movesOnly = cleanedData.replace(/\[.*?\]/g, "").trim();
+        setCurrentPgn(movesOnly); // Store full lesson text for Analysis Tool
+        
         setCustomFen(null); 
 
         // 1. Try Loading as Standard PGN
@@ -222,13 +230,18 @@ const VideoClassroom = () => {
             pgnGame.loadPgn(cleanedData);
             
             if (pgnGame.history().length > 0) {
+                // Find true start of the lesson
                 const startClone = new Chess();
                 startClone.loadPgn(cleanedData);
                 while (startClone.undo()) {} 
                 const trueStartFen = startClone.fen();
 
                 setStartFen(trueStartFen); 
-                setHistory(pgnGame.history()); 
+                
+                // [FIX] DO NOT LOAD HISTORY. Start fresh.
+                setHistory([]); 
+                
+                // Set game to start position
                 setGame(new Chess(trueStartFen)); 
                 setViewIndex(-1);
                 
@@ -238,7 +251,7 @@ const VideoClassroom = () => {
             }
         } catch (e) {}
 
-        // 2. EXTRACT FEN FROM PGN TAGS
+        // 2. EXTRACT FEN FROM PGN TAGS (Fallback for puzzles)
         let targetFen = cleanedData;
         const fenMatch = cleanedData.match(/\[FEN "([^"]+)"\]/);
         if (fenMatch && fenMatch[1]) {
@@ -451,9 +464,11 @@ const VideoClassroom = () => {
                         showTools={showTools} setShowTools={setShowTools} 
                         showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
                         illegalMode={illegalMode} setIllegalMode={setIllegalMode}
+                        
+                        // Pass the CLEAN PGN text to the tools
+                        currentPgn={currentPgn} 
                     />
                 </div>
-                {/* --- FIX APPLIED HERE: Pass full history if live (-1) --- */}
                 <ClassroomSidebar 
                     activeTab={activeTab} setActiveTab={setActiveTab} 
                     history={viewIndex === -1 ? history : history.slice(0, viewIndex + 1)}
