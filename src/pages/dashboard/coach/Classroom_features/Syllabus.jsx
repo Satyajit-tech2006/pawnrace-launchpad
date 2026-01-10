@@ -19,7 +19,7 @@ const LEVELS = [
   'Advanced 1', 'Advanced 2', 'Advanced 3', 'Master'
 ];
 
-const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
+const Syllabus = ({ isOpen, onClose, onLoadPGN, onPlayPlaylist, roomId }) => {
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState("Beginner 1");
@@ -111,14 +111,16 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
     }
   };
 
-  const handleLoad = (pgn, name) => {
-    // FIX: Safety check to prevent crash if parent didn't pass the prop
-    if (typeof onLoadPGN === 'function') {
-        onLoadPGN(pgn, name); // Fixed: Passed name correctly
-        // onClose(); // Optional: Auto-close
+  // UPDATED: Handles loading a full playlist for the technique
+  const handleLoadChapter = (chapters, index) => {
+    if (typeof onPlayPlaylist === 'function') {
+        onPlayPlaylist(chapters, index);
+        // onClose(); // Optional: Auto-close the modal
+    } else if (typeof onLoadPGN === 'function') {
+        // Fallback if playlist function isn't provided
+        onLoadPGN(chapters[index].pgn, chapters[index].name);
     } else {
-        console.error("onLoadPGN prop is missing in Syllabus component");
-        toast.error("Error: Cannot load to board (Function not connected)");
+        toast.error("Error: Cannot load to board.");
     }
   };
 
@@ -222,7 +224,8 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
                                 No chapters available yet.
                             </div>
                         ) : (
-                            tech.chapters.map((ch) => (
+                            // UPDATED: Using index in map to pass to handler
+                            tech.chapters.map((ch, index) => (
                                 <div key={ch._id} className="flex items-center justify-between p-3 pl-11 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors group">
                                     
                                     <div className="flex items-center gap-3">
@@ -243,8 +246,9 @@ const Syllabus = ({ isOpen, onClose, onLoadPGN, roomId }) => {
                                         </div>
                                     </div>
 
+                                    {/* UPDATED: Calling handleLoadChapter with the full list and index */}
                                     <button 
-                                        onClick={() => handleLoad(ch.pgn, ch.name)}
+                                        onClick={() => handleLoadChapter(tech.chapters, index)}
                                         className="flex items-center gap-1.5 px-3 py-1 bg-violet-600/10 hover:bg-violet-600 text-violet-300 hover:text-white text-[10px] font-bold uppercase rounded transition-all opacity-0 group-hover:opacity-100"
                                     >
                                         <MonitorUp className="w-3 h-3" /> Load

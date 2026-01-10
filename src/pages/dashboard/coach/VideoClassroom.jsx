@@ -149,23 +149,43 @@ const VideoClassroom = () => {
         if (socketRef.current) socketRef.current.emit('send_message', { roomId, ...messageData });
     };
 
+    // --- MAIN MOVE HANDLER ---
     function onDrop(source, target) {
         if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
         
-        // If we are in a "Custom FEN" state (broken rules), we can't play via chess.js
+        // 1. IS THIS A CUSTOM / INVALID BOARD?
         if (customFen) {
-            toast.error("Cannot play moves on a custom/setup board yet.");
-            return false;
+            // CHECK: Is Free Mode enabled?
+            if (!illegalMode) {
+                toast.error("Strict Mode: Cannot move on invalid board.");
+                return false; // BLOCK THE MOVE
+            }
+
+            // If Free Mode is ON, allow manual move
+            try {
+                const newFen = movePieceInFen(customFen, source, target);
+                setCustomFen(newFen);
+                setStartFen(newFen); 
+                
+                if (socketRef.current) {
+                    socketRef.current.emit('make_move', { roomId, fen: newFen });
+                }
+                return true;
+            } catch (e) {
+                console.error("Free Move Error:", e);
+                return false;
+            }
         }
 
+        // 2. STANDARD CHESS BOARD
         try {
             const tempGame = new Chess(); 
             tempGame.loadPgn(game.pgn());
             const move = tempGame.move({ from: source, to: target, promotion: 'q' });
-            if (!move) return false;
+            if (!move) return false; // Rule violation (handled by chess.js)
             
             setGame(tempGame); 
-            setHistory(tempGame.history()); 
+            setHistory(tempGame.history()); // Update history state
             setViewIndex(-1);
             handleClearWrapper(); 
             
@@ -194,16 +214,14 @@ const VideoClassroom = () => {
         }
 
         const cleanedData = data.trim();
-        setCustomFen(null); // Reset custom state before trying to load
+        setCustomFen(null); 
 
         // 1. Try Loading as Standard PGN
         try {
             const pgnGame = new Chess();
             pgnGame.loadPgn(cleanedData);
             
-            // If valid PGN with history
             if (pgnGame.history().length > 0) {
-                // Find true start
                 const startClone = new Chess();
                 startClone.loadPgn(cleanedData);
                 while (startClone.undo()) {} 
@@ -218,22 +236,17 @@ const VideoClassroom = () => {
                 toast.success(`Loaded: ${title}`);
                 return;
             }
-        } catch (e) {
-            // PGN load failed, continue to fallback
-        }
+        } catch (e) {}
 
-        // 2. EXTRACT FEN FROM PGN TAGS (Fix for your specific issue)
-        // Your PGN has [FEN "..."] but chess.js PGN parser fails on the empty board.
-        // We regex grab the FEN content directly.
+        // 2. EXTRACT FEN FROM PGN TAGS
         let targetFen = cleanedData;
         const fenMatch = cleanedData.match(/\[FEN "([^"]+)"\]/);
         if (fenMatch && fenMatch[1]) {
             targetFen = fenMatch[1];
         }
 
-        // 3. Try Loading FEN (Strict & Custom)
+        // 3. Try Loading FEN
         try {
-            // Check if it's broadly FEN-like (contains slashes)
             if (!targetFen.includes('/')) throw new Error("Not a FEN");
 
             try {
@@ -246,19 +259,21 @@ const VideoClassroom = () => {
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
                 toast.success(`Loaded Position: ${title}`);
             } catch (chessError) {
-                // 4. ILLEGAL MODE FALLBACK
-                // If chess.js says "missing king" etc, but Illegal Mode is ON, we force show it.
+                // 4. FALLBACK: ALWAYS LOAD THE BOARD visually
+                console.warn("Loaded invalid position:", chessError.message);
+                
+                setCustomFen(targetFen); 
+                setGame(new Chess()); // Reset engine
+                setStartFen(targetFen);
+                setHistory([]);
+                setViewIndex(-1);
+                
+                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
+                
                 if (illegalMode) {
-                    console.warn("Loaded invalid position (Illegal Mode):", chessError.message);
-                    setCustomFen(targetFen); // Store raw string for UI
-                    setGame(new Chess()); // Reset engine to prevent crashes
-                    setStartFen(targetFen);
-                    setHistory([]);
-                    setViewIndex(-1);
-                    if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
-                    toast.success(`Loaded (Custom): ${title}`);
+                    toast.success(`Loaded (Free Mode): ${title}`);
                 } else {
-                    toast.error(`Invalid Position: ${chessError.message}`);
+                    toast.warning(`Loaded Invalid Board (Strict Mode Active)`);
                 }
             }
         } catch (finalError) {
@@ -332,7 +347,7 @@ const VideoClassroom = () => {
                 
                 {/* --- CENTER: PLAYLIST CONTROLS --- */}
                 {playlist.length > 0 && (
-                    <div className="flex items-center bg-[#222] rounded-lg border border-white/10 p-1 gap-2 absolute left-1/2 transform -translate-x-1/2">
+                    <div className="hidden md:flex items-center bg-[#222] rounded-lg border border-white/10 p-1 gap-2 absolute left-1/2 transform -translate-x-1/2">
                         <button 
                             onClick={() => handleNavigateChapter(-1)} 
                             disabled={currentChapterIndex <= 0}
@@ -363,6 +378,29 @@ const VideoClassroom = () => {
                 )}
 
                 <div className="flex items-center gap-3">
+                    
+                    {/* --- CURRENT TECHNIQUE BOX --- */}
+                    <div className="flex items-center bg-[#202020] border border-white/10 rounded-md px-3 py-1 mr-2">
+                        <div className="flex flex-col mr-3 items-end">
+                            <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Current Lesson</span>
+                            <span className="text-xs font-bold text-gray-200 truncate max-w-[150px]">
+                                {playlist.length > 0 && currentChapterIndex !== -1 
+                                 ? playlist[currentChapterIndex]?.name 
+                                 : "No Technique Loaded"}
+                            </span>
+                        </div>
+                        {playlist.length > 0 && (
+                             <button 
+                                onClick={() => handleNavigateChapter(1)}
+                                disabled={currentChapterIndex >= playlist.length - 1}
+                                className="p-1.5 hover:bg-white/10 rounded-full text-violet-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title="Next Chapter"
+                             >
+                                <ChevronRight className="w-4 h-4" />
+                             </button>
+                        )}
+                    </div>
+
                     <button 
                         onClick={() => setShowSyllabusModal(true)} 
                         className="bg-violet-600/10 hover:bg-violet-600 border border-violet-500/50 text-violet-300 hover:text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all"
@@ -412,13 +450,13 @@ const VideoClassroom = () => {
                         onSetup={() => setShowSetupModal(true)}
                         showTools={showTools} setShowTools={setShowTools} 
                         showCoordinates={showCoordinates} setShowCoordinates={setShowCoordinates}
-                        // CONNECTING ILLEGAL MODE
                         illegalMode={illegalMode} setIllegalMode={setIllegalMode}
                     />
                 </div>
+                {/* --- FIX APPLIED HERE: Pass full history if live (-1) --- */}
                 <ClassroomSidebar 
                     activeTab={activeTab} setActiveTab={setActiveTab} 
-                    history={history.slice(0, viewIndex + 1)} 
+                    history={viewIndex === -1 ? history : history.slice(0, viewIndex + 1)}
                     viewIndex={viewIndex} goToMove={setViewIndex} 
                     onLoadPGN={handleLoadPGN} 
                     onDownloadPGN={handleDownloadPGN} 
@@ -441,5 +479,54 @@ const VideoClassroom = () => {
         </div>
     );
 };
+
+// --- HELPER TO MOVE PIECES WITHOUT RULES (PURE STRING MANIPULATION) ---
+function movePieceInFen(fen, from, to) {
+    const files = 'abcdefgh';
+    
+    // Parse coordinates (e.g., 'e2' -> col 4, row 6)
+    const fromCol = files.indexOf(from[0]);
+    const fromRow = 8 - parseInt(from[1]); 
+    const toCol = files.indexOf(to[0]);
+    const toRow = 8 - parseInt(to[1]);
+
+    const parts = fen.split(' ');
+    const rows = parts[0].split('/');
+    
+    // 1. Expand rows to individual characters array (handling numbers like "8" or "3")
+    const board = rows.map(row => {
+        let expanded = '';
+        for (let char of row) {
+            if (!isNaN(char)) expanded += '1'.repeat(parseInt(char)); // Treat '1' as placeholder for empty
+            else expanded += char;
+        }
+        return expanded.split('');
+    });
+
+    // 2. Perform Move
+    const piece = board[fromRow][fromCol];
+    board[fromRow][fromCol] = '1'; // Leave empty space
+    board[toRow][toCol] = piece;   // Place piece (overwrites capture)
+
+    // 3. Compress rows back to FEN format
+    const newRows = board.map(row => {
+        let compressed = '';
+        let count = 0;
+        for (let char of row) {
+            if (char === '1') {
+                count++;
+            } else {
+                if (count > 0) { compressed += count; count = 0; }
+                compressed += char;
+            }
+        }
+        if (count > 0) compressed += count;
+        return compressed;
+    });
+
+    // Reconstruct FEN string (keep active color etc same for now)
+    parts[0] = newRows.join('/');
+    return parts.join(' ');
+}
 
 export default VideoClassroom;
