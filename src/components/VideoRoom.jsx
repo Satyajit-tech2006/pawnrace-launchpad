@@ -117,7 +117,7 @@ const CustomControlOverlay = () => {
         newProcessor = BackgroundProcessor({
           mode: 'virtual-background',
           imagePath:
-            'https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?auto=format&fit=crop&w=1000&q=80',
+            'src\assets\BG image .png',
         });
       }
 
