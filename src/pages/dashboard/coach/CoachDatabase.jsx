@@ -5,9 +5,11 @@ import { ENDPOINTS } from "../../../lib/endpoints.js";
 import { toast } from "sonner"; 
 import { Database, Plus, BookOpen, CheckCircle, Circle, FileText, Layers, Search, Loader2, Copy, Save } from "lucide-react";
 import { Button } from "../../../components/ui/button.tsx"; 
+// 1. IMPORT THE AUTH HOOK
+import { useAuth } from "../../../contexts/AuthContext";
 
 const AUTHORIZED_COACH_IDS = [
-  "68b9ea4597d09c8a268e8d38","68c5d1d20127081a51b8c073" 
+  "68b9ea4597d09c8a268e8d38", "68c5d1d20127081a51b8c073" 
 ];
 
 const LEVELS = [
@@ -17,9 +19,10 @@ const LEVELS = [
 ];
 
 const CoachDatabase = () => {
-  const [user, setUser] = useState(null);
-  const [courses, setCourses] = useState([]);
+  // 2. GET USER FROM CONTEXT (No more manual state or localStorage parsing)
+  const { user } = useAuth();
   
+  const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedViewLevel, setSelectedViewLevel] = useState("Beginner 1");
   const [syllabus, setSyllabus] = useState([]);
@@ -35,10 +38,9 @@ const CoachDatabase = () => {
     description: ""
   });
 
+  // 3. CLEAN USE EFFECT (Just fetch data)
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser) setUser(storedUser);
-    fetchMyCourses();
+      fetchMyCourses();
   }, []);
 
   const isAuthorized = user && AUTHORIZED_COACH_IDS.includes(user._id);
@@ -49,7 +51,10 @@ const CoachDatabase = () => {
       const res = await apiClient.get(ENDPOINTS.COURSES.GET_MY_COURSES_AS_COACH);
       let list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       setCourses(list);
-    } catch (err) { toast.error("Failed to load courses"); }
+    } catch (err) { 
+        // Silent fail or simple log
+        console.error("Failed to load courses", err);
+    }
   };
 
   const fetchSyllabusContent = async () => {
@@ -58,11 +63,17 @@ const CoachDatabase = () => {
     try {
       const res = await apiClient.get(`/syllabus/course/${selectedCourse._id}?level=${encodeURIComponent(selectedViewLevel)}`);
       setSyllabus(res.data.data || []);
-    } catch (err) { toast.error("Could not fetch syllabus"); } 
-    finally { setLoadingSyllabus(false); }
+    } catch (err) { 
+        toast.error("Could not fetch syllabus"); 
+    } 
+    finally { 
+        setLoadingSyllabus(false); 
+    }
   };
 
-  useEffect(() => { if (selectedCourse) fetchSyllabusContent(); }, [selectedCourse, selectedViewLevel]);
+  useEffect(() => { 
+      if (selectedCourse) fetchSyllabusContent(); 
+  }, [selectedCourse, selectedViewLevel]);
 
   // 1. CREATE TECHNIQUE CONTAINER
   const handleAddTechnique = async (e) => {
@@ -131,7 +142,11 @@ const CoachDatabase = () => {
           <h1 className="text-3xl font-extrabold flex items-center gap-3">
              <Database className="w-8 h-8 text-blue-500" /> Coach Database
           </h1>
-          {!isAuthorized && <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1 rounded-full">View Only</span>}
+          {/* Display User Name safely using Context */}
+          <div className="flex items-center gap-4">
+             <span className="text-sm text-gray-400">Hi, {user?.fullname || "Coach"}</span>
+             {!isAuthorized && <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1 rounded-full">View Only</span>}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

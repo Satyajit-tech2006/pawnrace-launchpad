@@ -54,7 +54,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const response = await apiClient.post(ENDPOINTS.USERS.REFRESH_TOKEN);
+        const response = await apiClient.post(ENDPOINTS.USERS.REFRESH_TOKEN,{});
         const { accessToken: newAccessToken } = response.data.data;
 
         setAccessToken(newAccessToken);

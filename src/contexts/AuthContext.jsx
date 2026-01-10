@@ -19,17 +19,26 @@ export function AuthProvider({ children }) {
 
   const checkAuthStatus = useCallback(async () => {
     try {
-      const response = await apiClient.post(ENDPOINTS.USERS.REFRESH_TOKEN);
+      // 1. ADDED: Pass empty object {} to ensure Content-Type header is sent
+      const response = await apiClient.post(ENDPOINTS.USERS.REFRESH_TOKEN, {});
+      
       const { user: refreshedUser, accessToken } = response.data.data;
       
-      setUser(refreshedUser);
-      setToken(accessToken);
-      setApiAccessToken(accessToken);
+      // 2. ADDED: Safety Check - Only update if we actually got user data
+      if (refreshedUser && accessToken) {
+          setUser(refreshedUser);
+          setToken(accessToken);
+          setApiAccessToken(accessToken);
 
-      // 1. SAVE TO LOCAL STORAGE ON REFRESH (So it persists if you reload page)
-      localStorage.setItem("user", JSON.stringify(refreshedUser)); // <--- ⚠️ ADD THIS LINE
-      
-      console.log("Session restored successfully.");
+          // 3. SAFE STORAGE: Only save valid objects
+          localStorage.setItem("user", JSON.stringify(refreshedUser)); 
+          
+          console.log("Session restored successfully for:", refreshedUser.username);
+      } else {
+          // If we got a token but no user data (Backend issue), don't crash the app
+          console.warn("Token refreshed but User data missing from response.");
+      }
+
     } catch (error) {
       console.log("No active session found.");
       setUser(null);
@@ -55,8 +64,10 @@ export function AuthProvider({ children }) {
       setToken(accessToken);
       setApiAccessToken(accessToken);
       
-      // 2. SAVE TO LOCAL STORAGE ON LOGIN (This fixes your CoachTournament issue)
-      localStorage.setItem("user", JSON.stringify(loggedInUser)); // <--- ⚠️ ADD THIS LINE
+      // SAVE TO LOCAL STORAGE ON LOGIN
+      if (loggedInUser) {
+        localStorage.setItem("user", JSON.stringify(loggedInUser));
+      }
       
       return loggedInUser;
     } catch (error) {
@@ -75,8 +86,8 @@ export function AuthProvider({ children }) {
         fullname, 
         email, 
         password, 
-        role,
-        countryCode,
+        role, 
+        countryCode, 
         number
       });
       return response.data;
@@ -90,7 +101,8 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await apiClient.post(ENDPOINTS.USERS.LOGOUT);
+      // ADDED: Pass empty object {} here too for consistency
+      await apiClient.post(ENDPOINTS.USERS.LOGOUT, {});
     } catch (error) {
       console.error("Server logout failed, clearing client session anyway:", error);
     } finally {
@@ -98,8 +110,8 @@ export function AuthProvider({ children }) {
       setToken(null);
       setApiAccessToken('');
 
-      // 3. REMOVE FROM LOCAL STORAGE ON LOGOUT
-      localStorage.removeItem("user"); // <--- ⚠️ ADD THIS LINE
+      // REMOVE FROM LOCAL STORAGE ON LOGOUT
+      localStorage.removeItem("user");
     }
   };
 
