@@ -87,7 +87,7 @@ const VideoClassroom = () => {
             // Received a move or position from socket
             if (moveData.fen && !moveData.from) {
                 // Forced FEN update
-                setCustomFen(null); // Reset custom fallback
+                setCustomFen(null); 
                 try {
                     const fenGame = new Chess(moveData.fen);
                     setGame(fenGame);
@@ -96,9 +96,11 @@ const VideoClassroom = () => {
                 } catch (e) {
                     // If socket sends an "illegal" fen (empty board), use customFen
                     setCustomFen(moveData.fen);
-                    setGame(new Chess()); // Reset engine to avoid errors
+                    setGame(new Chess()); 
                     setStartFen(moveData.fen);
                 }
+                // [FIX] Force re-render of board to prevent crashes on socket update too
+                setBoardKey(k => k + 1);
                 return;
             }
 
@@ -161,7 +163,7 @@ const VideoClassroom = () => {
             // CHECK: Is Free Mode enabled?
             if (!illegalMode) {
                 toast.error("Strict Mode: Cannot move on invalid board.");
-                return false; // BLOCK THE MOVE
+                return false; 
             }
 
             // If Free Mode is ON, allow manual move
@@ -185,10 +187,10 @@ const VideoClassroom = () => {
             const tempGame = new Chess(); 
             tempGame.loadPgn(game.pgn());
             const move = tempGame.move({ from: source, to: target, promotion: 'q' });
-            if (!move) return false; // Rule violation (handled by chess.js)
+            if (!move) return false; 
             
             setGame(tempGame); 
-            setHistory(tempGame.history()); // Update history state
+            setHistory(tempGame.history()); 
             setViewIndex(-1);
             handleClearWrapper(); 
             
@@ -198,7 +200,7 @@ const VideoClassroom = () => {
     }
 
     const undoMove = () => {
-        if (customFen) return; // Can't undo on a static board
+        if (customFen) return; 
         const tempGame = new Chess(); 
         tempGame.loadPgn(game.pgn());
         if (tempGame.undo()) {
@@ -216,11 +218,12 @@ const VideoClassroom = () => {
             return;
         }
 
+        // [FIX] Force fresh board render to prevent white screen crash
+        setBoardKey(prev => prev + 1);
+
         const cleanedData = data.trim();
-        
-        // [UPDATE] CLEAN PGN: Remove headers, keep comments/moves
         const movesOnly = cleanedData.replace(/\[.*?\]/g, "").trim();
-        setCurrentPgn(movesOnly); // Store full lesson text for Analysis Tool
+        setCurrentPgn(movesOnly); 
         
         setCustomFen(null); 
 
@@ -230,7 +233,6 @@ const VideoClassroom = () => {
             pgnGame.loadPgn(cleanedData);
             
             if (pgnGame.history().length > 0) {
-                // Find true start of the lesson
                 const startClone = new Chess();
                 startClone.loadPgn(cleanedData);
                 while (startClone.undo()) {} 
@@ -238,10 +240,7 @@ const VideoClassroom = () => {
 
                 setStartFen(trueStartFen); 
                 
-                // [FIX] DO NOT LOAD HISTORY. Start fresh.
                 setHistory([]); 
-                
-                // Set game to start position
                 setGame(new Chess(trueStartFen)); 
                 setViewIndex(-1);
                 
@@ -251,7 +250,7 @@ const VideoClassroom = () => {
             }
         } catch (e) {}
 
-        // 2. EXTRACT FEN FROM PGN TAGS (Fallback for puzzles)
+        // 2. EXTRACT FEN FROM PGN TAGS
         let targetFen = cleanedData;
         const fenMatch = cleanedData.match(/\[FEN "([^"]+)"\]/);
         if (fenMatch && fenMatch[1]) {
@@ -276,7 +275,7 @@ const VideoClassroom = () => {
                 console.warn("Loaded invalid position:", chessError.message);
                 
                 setCustomFen(targetFen); 
-                setGame(new Chess()); // Reset engine
+                setGame(new Chess()); 
                 setStartFen(targetFen);
                 setHistory([]);
                 setViewIndex(-1);
@@ -336,7 +335,7 @@ const VideoClassroom = () => {
     };
 
     const getBoardPosition = () => { 
-        if (customFen) return customFen; // Priority for illegal positions
+        if (customFen) return customFen; 
         if (viewIndex === -1) return game.fen();
         try {
             const t = new Chess(startFen); 
