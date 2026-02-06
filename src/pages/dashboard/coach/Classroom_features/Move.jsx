@@ -2,9 +2,6 @@ import React, { useEffect, useRef } from 'react';
 
 const Move = ({ history = [], viewIndex, goToMove, userRole }) => {
     const scrollRef = useRef(null);
-
-    // If Coach: Show full history (useful if you loaded a full PGN to study)
-    // If Student: Only show moves up to the current live move (viewIndex) so they can't see the future
     const visibleHistory = history; 
 
     // Auto-scroll to the active move
