@@ -27,10 +27,10 @@ const VideoClassroom = () => {
     const [connectedUsers, setConnectedUsers] = useState([]);
     const [game, setGame] = useState(new Chess());
     
-    // NEW: Store the CLEAN PGN text (Moves Only)
+    // Store the CLEAN PGN text (Moves Only)
     const [currentPgn, setCurrentPgn] = useState(""); 
 
-    // NEW: Handle positions that chess.js calls "Illegal" (like empty boards)
+    // Handle positions that chess.js calls "Illegal" (like empty boards)
     const [customFen, setCustomFen] = useState(null); 
     const [illegalMode, setIllegalMode] = useState(true); // Default to Free Mode
 
@@ -57,7 +57,7 @@ const VideoClassroom = () => {
     const [cameraOn, setCameraOn] = useState(true);
     const [chatMessages, setChatMessages] = useState([]);
 
-    // --- [NEW] CONTROL STATE ---
+    // --- CONTROL STATE ---
     // Stores which userId controls which color. { white: "userId1", black: "userId2" }
     const [controls, setControls] = useState({ white: null, black: null });
 
@@ -79,7 +79,7 @@ const VideoClassroom = () => {
             setIsConnected(true); 
             const userInfo = {
                 name: user?.fullname || user?.username || "Coach", 
-                role: user?.role === 'coach' ? "Coach" : "Student", // Ensure role is sent correctly
+                role: user?.role === 'coach' ? "Coach" : "Student", 
                 _id: user?._id
             };
             socketRef.current.emit('join_room', { roomId, user: userInfo }); 
@@ -87,7 +87,7 @@ const VideoClassroom = () => {
         
         socketRef.current.on('update_user_list', (users) => setConnectedUsers(users));
         
-        // [NEW] Listen for control updates
+        // Listen for control updates
         socketRef.current.on('controls_updated', (newControls) => {
             setControls(newControls);
         });
@@ -105,6 +105,7 @@ const VideoClassroom = () => {
                     setGame(fenGame);
                     setStartFen(moveData.fen);
                     setHistory([]);
+                    setCurrentPgn(fenGame.pgn());
                 } catch (e) {
                     // If socket sends an "illegal" fen (empty board), use customFen
                     setCustomFen(moveData.fen);
@@ -120,6 +121,7 @@ const VideoClassroom = () => {
                     gameCopy.loadPgn(prevGame.pgn());
                     if (moveData.from) gameCopy.move(moveData);
                     setHistory(gameCopy.history()); 
+                    setCurrentPgn(gameCopy.pgn());
                     setViewIndex(-1); 
                     setCustomFen(null);
                     return gameCopy;
@@ -164,7 +166,7 @@ const VideoClassroom = () => {
         if (socketRef.current) socketRef.current.emit('send_message', { roomId, ...messageData });
     };
 
-    // [NEW] Handler for Coach assigning controls
+    // Handler for Coach assigning controls
     const handleAssignControl = (color, userId) => {
         const newControls = { ...controls, [color]: userId };
         setControls(newControls);
@@ -178,21 +180,11 @@ const VideoClassroom = () => {
     function onDrop(source, target, piece) {
         if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
         
-        // [NEW] PERMISSION CHECK
-        // 'piece' string is like 'wP', 'bK'. First char is color 'w' or 'b'.
+        // PERMISSION CHECK
         const pieceColor = piece[0]; 
-        
-        // IMPORTANT: We need to know who "I" am. 
-        // If I am not the assigned player for this color, block.
-        // NOTE: Coach should probably always be able to move. 
-        // Let's assume the user object has a role or ID we can check.
-        // For now, I will use a simple check against the controls state.
-        
-        // Check if the user is a coach to bypass restrictions
         const isCoach = user?.role === 'coach'; 
 
         if (!isCoach) {
-            // If controls are set, enforce them.
             // Check White Move
             if (pieceColor === 'w') {
                 if (controls.white !== user?._id) {
@@ -240,6 +232,7 @@ const VideoClassroom = () => {
             
             setGame(tempGame); 
             setHistory(tempGame.history()); 
+            setCurrentPgn(tempGame.pgn());
             setViewIndex(-1);
             handleClearWrapper(); 
             
@@ -254,7 +247,8 @@ const VideoClassroom = () => {
         tempGame.loadPgn(game.pgn());
         if (tempGame.undo()) {
             setGame(tempGame); 
-            setHistory(tempGame.history()); 
+            setHistory(tempGame.history());
+            setCurrentPgn(tempGame.pgn()); 
             setViewIndex(-1);
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
         }
@@ -270,8 +264,7 @@ const VideoClassroom = () => {
         setBoardKey(prev => prev + 1);
 
         const cleanedData = data.trim();
-        const movesOnly = cleanedData.replace(/\[.*?\]/g, "").trim();
-        setCurrentPgn(movesOnly); 
+        
         setCustomFen(null); 
 
         // 1. Try Loading as Standard PGN
@@ -287,10 +280,16 @@ const VideoClassroom = () => {
 
                 setStartFen(trueStartFen); 
                 setHistory([]); 
-                setGame(new Chess(trueStartFen)); 
-                setViewIndex(-1);
                 
-                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: trueStartFen });
+                const fullGame = new Chess();
+                fullGame.loadPgn(cleanedData);
+                setGame(fullGame);
+                setHistory(fullGame.history());
+                setCurrentPgn(fullGame.pgn());
+                
+                setViewIndex(fullGame.history().length - 1); 
+                
+                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: fullGame.fen() });
                 toast.success(`Loaded: ${title}`);
                 return;
             }
@@ -312,6 +311,7 @@ const VideoClassroom = () => {
                 setGame(fenGame);
                 setStartFen(targetFen);
                 setHistory([]);
+                setCurrentPgn(fenGame.pgn());
                 setViewIndex(-1);
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
                 toast.success(`Loaded Position: ${title}`);
@@ -322,6 +322,7 @@ const VideoClassroom = () => {
                 setGame(new Chess()); 
                 setStartFen(targetFen);
                 setHistory([]);
+                setCurrentPgn("");
                 setViewIndex(-1);
                 
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
@@ -376,14 +377,27 @@ const VideoClassroom = () => {
         const a = document.createElement('a'); a.href = url; a.download = `game_${roomId}.pgn`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
+    // --- FIX: LOGIC FOR NAVIGATING HISTORY ---
     const getBoardPosition = () => { 
         if (customFen) return customFen; 
         if (viewIndex === -1) return game.fen();
+        
         try {
-            const t = new Chess(startFen); 
-            for(let i=0; i<=viewIndex; i++) t.move(history[i]); 
+            // FIX: 'start' is not a valid FEN string for the constructor in some versions
+            // We must instantiate with defaults if startFen is 'start'
+            const t = startFen === 'start' ? new Chess() : new Chess(startFen);
+            
+            // Replay moves up to viewIndex
+            for(let i=0; i<=viewIndex; i++) {
+                const moveResult = t.move(history[i]);
+                if(!moveResult) throw new Error("Move replay failed");
+            } 
             return t.fen();
-        } catch (e) { return game.fen(); }
+        } catch (e) { 
+            // Fallback to current game if replay fails
+            console.error("Board replay error:", e);
+            return game.fen(); 
+        }
     };
 
     // Determine user role for passing to Sidebar
@@ -497,6 +511,7 @@ const VideoClassroom = () => {
                             setCustomFen(null);
                             setStartFen('start'); 
                             setHistory([]); 
+                            setCurrentPgn("");
                             setViewIndex(-1); 
                             handleClearWrapper(); 
                             
@@ -515,7 +530,8 @@ const VideoClassroom = () => {
                 </div>
                 <ClassroomSidebar 
                     activeTab={activeTab} setActiveTab={setActiveTab} 
-                    history={viewIndex === -1 ? history : history.slice(0, viewIndex + 1)}
+                    // IMPORTANT: We pass the FULL history here so the move list is complete
+                    history={history}
                     viewIndex={viewIndex} goToMove={setViewIndex} 
                     onLoadPGN={handleLoadPGN} 
                     onDownloadPGN={handleDownloadPGN} 
@@ -525,8 +541,8 @@ const VideoClassroom = () => {
                     connectedUsers={connectedUsers} roomId={roomId}
                     currentPgn={currentPgn}
                     
-                    // [NEW] Pass Control Props
-                    userRole={currentUserRole} // Dynamic role from auth context
+                    // Pass Control Props
+                    userRole={currentUserRole} 
                     controls={controls}
                     onAssignControl={handleAssignControl}
                 />

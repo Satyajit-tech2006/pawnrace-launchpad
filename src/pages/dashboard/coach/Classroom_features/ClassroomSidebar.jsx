@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import { 
   MonitorUp, Clipboard, Download, X, 
-  ChevronLeft, ChevronRight, Users, MessageSquare, List, Shield 
+  ChevronLeft, ChevronRight, Users, MessageSquare, List, Shield, Info, FileText, Lock
 } from 'lucide-react';
 import ClassroomChat from './ClassroomChat';
 import VideoRoom from '../../../../components/VideoRoom'; 
+import Move from './Move';
 
 const ClassroomSidebar = ({ 
-    activeTab, setActiveTab, history, viewIndex, goToMove, 
+    activeTab, setActiveTab, 
+    history, viewIndex, goToMove, 
     onLoadPGN, onDownloadPGN, 
     chatMessages, onSendMessage,
     connectedUsers = [],
     roomId,
-    // [NEW PROPS]
-    userRole, // 'Coach' or 'Student'
-    controls, // { white: userId, black: userId }
-    onAssignControl // Function(color, userId)
+    userRole,         
+    controls,         
+    onAssignControl,
+    currentPgn 
 }) => {
     const [showPGNModal, setShowPGNModal] = useState(false);
     const [pgnInput, setPgnInput] = useState("");
@@ -26,7 +28,6 @@ const ClassroomSidebar = ({
         setPgnInput("");
     };
 
-    // Helper for tabs
     const TabButton = ({ id, label, icon: Icon }) => (
         <button 
             onClick={() => setActiveTab(id)}
@@ -42,10 +43,9 @@ const ClassroomSidebar = ({
     );
 
     return (
-        // Width changed to w-[40vw] (40% of screen width)
         <div className="w-[40vw] min-w-[350px] bg-[#0F0F12] border-l border-white/5 flex flex-col h-full shrink-0 shadow-2xl shadow-black transition-all duration-300 ease-in-out">
             
-            {/* --- TOP: VIDEO AREA --- */}
+            {/* 1. VIDEO AREA */}
             <div className="w-full shrink-0 aspect-video bg-black relative border-b border-white/5 overflow-hidden shadow-md z-20">
                 {roomId ? (
                     <VideoRoom roomId={roomId} />
@@ -57,85 +57,113 @@ const ClassroomSidebar = ({
                 )}
             </div>
 
-            {/* --- MIDDLE: NAVIGATION TABS --- */}
+            {/* 2. TABS */}
             <div className="p-2 bg-[#0F0F12] border-b border-white/5 z-10">
                 <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
                     <TabButton id="moves" label="Moves" icon={List} />
                     <TabButton id="chat" label="Chat" icon={MessageSquare} />
                     <TabButton id="students" label="People" icon={Users} />
+                    <TabButton id="pgn" label="PGN" icon={FileText} />
                 </div>
             </div>
 
-            {/* --- BOTTOM: CONTENT AREA --- */}
+            {/* 3. CONTENT AREA */}
             <div className="flex-1 min-h-0 bg-[#0F0F12] relative flex flex-col">
                 
-                {/* 1. MOVES TAB */}
+                {/* === MOVES TAB === */}
                 {activeTab === 'moves' && (
                     <div className="flex flex-col h-full">
-                        {/* Table Header */}
-                        <div className="grid grid-cols-[3rem_1fr_1fr] px-4 py-2 bg-zinc-900/50 text-[10px] font-bold uppercase text-zinc-500 border-b border-white/5">
-                            <div>#</div>
-                            <div>White</div>
-                            <div>Black</div>
-                        </div>
-                        
-                        {/* Scrollable Move List */}
-                        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-                            <table className="w-full text-xs border-collapse table-fixed">
-                                <tbody>
-                                    {Array.from({ length: Math.ceil(history.length / 2) }).map((_, i) => (
-                                        <tr key={i} className={`border-b border-white/[0.02] transition-colors ${Math.floor(viewIndex/2) === i ? 'bg-violet-500/10' : 'hover:bg-white/[0.02]'}`}>
-                                            <td className="py-2.5 pl-4 text-zinc-600 font-mono w-12 text-[11px]">{i + 1}.</td>
-                                            <td 
-                                                onClick={() => goToMove(i * 2)} 
-                                                className={`py-2 px-2 cursor-pointer transition-colors ${viewIndex === (i * 2) ? 'text-violet-400 font-bold bg-violet-500/10 rounded' : 'text-zinc-300 hover:text-white'}`}
-                                            >
-                                                {history[i * 2]}
-                                            </td>
-                                            <td 
-                                                onClick={() => history[i * 2 + 1] && goToMove(i * 2 + 1)} 
-                                                className={`py-2 px-2 cursor-pointer transition-colors ${viewIndex === (i * 2 + 1) ? 'text-violet-400 font-bold bg-violet-500/10 rounded' : 'text-zinc-300 hover:text-white'}`}
-                                            >
-                                                {history[i * 2 + 1] || ''}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {history.length === 0 && (
-                                        <tr><td colSpan="3" className="text-center py-10 text-zinc-600 text-xs italic">Game hasn't started</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                        {/* Render the dedicated Move Component */}
+                        <Move 
+                            history={history}
+                            viewIndex={viewIndex}
+                            goToMove={goToMove}
+                            userRole={userRole}
+                        />
 
-                        {/* Controls Footer */}
-                        <div className="p-3 border-t border-white/5 bg-[#121215] space-y-3">
+                        {/* Footer Controls */}
+                        <div className="p-3 border-t border-white/5 bg-[#121215] space-y-3 shrink-0">
                             <div className="flex justify-center gap-1">
-                                <ControlBtn onClick={() => goToMove(0)} icon={ChevronLeft} double />
-                                <ControlBtn onClick={() => goToMove(viewIndex === -1 ? history.length - 2 : viewIndex - 1)} icon={ChevronLeft} />
-                                <ControlBtn onClick={() => goToMove(viewIndex === -1 ? -1 : viewIndex + 1)} icon={ChevronRight} />
-                                <ControlBtn onClick={() => goToMove(-1)} icon={ChevronRight} double />
+                                <ControlBtn 
+                                    onClick={() => goToMove(0)} 
+                                    icon={ChevronLeft} double 
+                                    title="Start"
+                                />
+                                <ControlBtn 
+                                    onClick={() => goToMove(viewIndex <= 0 ? -1 : viewIndex - 1)} 
+                                    icon={ChevronLeft} 
+                                    title="Previous Move"
+                                />
+                                <ControlBtn 
+                                    onClick={() => goToMove(viewIndex >= history.length - 1 ? history.length - 1 : viewIndex + 1)} 
+                                    icon={ChevronRight} 
+                                    title="Next Move"
+                                />
+                                <ControlBtn 
+                                    onClick={() => goToMove(history.length - 1)} 
+                                    icon={ChevronRight} double 
+                                    title="Current Position"
+                                />
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-2">
-                                <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-md text-[10px] font-bold uppercase text-zinc-300 transition-colors border border-white/5">
-                                    <Clipboard className="w-3 h-3"/> Import PGN
-                                </button>
-                                <button onClick={onDownloadPGN} className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 py-2.5 rounded-md text-[10px] font-bold uppercase text-white transition-colors shadow-lg shadow-violet-900/20">
-                                    <Download className="w-3 h-3"/> Download
-                                </button>
-                            </div>
+                            {/* COACH ONLY: Import/Download PGN */}
+                            {userRole === 'Coach' && (
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-md text-[10px] font-bold uppercase text-zinc-300 transition-colors border border-white/5">
+                                        <Clipboard className="w-3 h-3"/> Import PGN
+                                    </button>
+                                    <button onClick={onDownloadPGN} className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 py-2.5 rounded-md text-[10px] font-bold uppercase text-white transition-colors shadow-lg shadow-violet-900/20">
+                                        <Download className="w-3 h-3"/> Download
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
                 
-                {/* 2. CHAT TAB */}
+                {/* === PGN TAB === */}
+                {activeTab === 'pgn' && (
+                    <div className="flex flex-col h-full p-4 relative">
+                        {userRole === 'Coach' ? (
+                            <>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Current PGN</h3>
+                                    <button 
+                                        onClick={() => navigator.clipboard.writeText(currentPgn)}
+                                        className="text-[10px] text-violet-400 hover:text-violet-300 font-bold uppercase"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                                <textarea 
+                                    readOnly
+                                    value={currentPgn || "No moves played yet."}
+                                    className="flex-1 w-full bg-black/30 border border-white/10 rounded-lg p-3 text-xs font-mono text-zinc-300 resize-none focus:outline-none"
+                                />
+                            </>
+                        ) : (
+                            // RESTRICTED VIEW FOR STUDENTS
+                            <div className="flex flex-col items-center justify-center h-full text-zinc-500 space-y-4">
+                                <div className="w-16 h-16 rounded-full bg-zinc-900/80 flex items-center justify-center border border-white/5 shadow-inner">
+                                    <Lock className="w-8 h-8 opacity-50" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1">Access Restricted</p>
+                                    <p className="text-[10px] opacity-60">Only Coach are authorized</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* === CHAT TAB === */}
                 {activeTab === 'chat' && (
                     <div className="h-full flex flex-col">
                         <ClassroomChat messages={chatMessages || []} onSendMessage={onSendMessage} />
                     </div>
                 )}
 
-                {/* 3. STUDENTS TAB (WITH CONTROL ASSIGNMENT) */}
+                {/* === STUDENTS TAB === */}
                 {activeTab === 'students' && (
                     <div className="absolute inset-0 overflow-y-auto p-4 space-y-3">
                         <div className="flex items-center justify-between mb-4">
@@ -155,35 +183,35 @@ const ClassroomSidebar = ({
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold text-zinc-200 truncate flex items-center gap-2">
                                         {u.name}
-                                        {/* Status Indicators */}
-                                        {controls?.white === u._id && <span className="text-[9px] bg-white text-black px-1 rounded font-bold" title="Controls White">W</span>}
-                                        {controls?.black === u._id && <span className="text-[9px] bg-zinc-800 text-white px-1 rounded font-bold border border-white/20" title="Controls Black">B</span>}
+                                        {/* Status Badges */}
+                                        {controls?.white === u.sessionId && <span className="text-[9px] bg-white text-black px-1 rounded font-bold shadow-sm" title="Controls White">W</span>}
+                                        {controls?.black === u.sessionId && <span className="text-[9px] bg-zinc-800 text-white px-1 rounded font-bold border border-white/20" title="Controls Black">B</span>}
                                     </p>
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">{u.role}</p>
                                 </div>
 
-                                {/* [NEW] CONTROL BUTTONS - VISIBLE TO COACH ONLY */}
+                                {/* COACH ONLY: Control Buttons */}
                                 {userRole === 'Coach' && (
                                     <div className="flex gap-1">
                                         <button 
-                                            onClick={() => onAssignControl('white', controls?.white === u._id ? null : u._id)}
+                                            onClick={() => onAssignControl('white', controls?.white === u.sessionId ? null : u.sessionId)}
                                             className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold border transition-all ${
-                                                controls?.white === u._id 
+                                                controls?.white === u.sessionId 
                                                 ? 'bg-white text-black border-white shadow-[0_0_8px_rgba(255,255,255,0.3)]' 
                                                 : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-white hover:text-white'
                                             }`}
-                                            title={controls?.white === u._id ? "Remove White Control" : "Give White Control"}
+                                            title={controls?.white === u.sessionId ? "Unassign White" : "Assign White"}
                                         >
                                             W
                                         </button>
                                         <button 
-                                            onClick={() => onAssignControl('black', controls?.black === u._id ? null : u._id)}
+                                            onClick={() => onAssignControl('black', controls?.black === u.sessionId ? null : u.sessionId)}
                                             className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold border transition-all ${
-                                                controls?.black === u._id 
+                                                controls?.black === u.sessionId 
                                                 ? 'bg-black text-white border-white shadow-[0_0_8px_rgba(255,255,255,0.1)]' 
                                                 : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-white hover:text-white'
                                             }`}
-                                            title={controls?.black === u._id ? "Remove Black Control" : "Give Black Control"}
+                                            title={controls?.black === u.sessionId ? "Unassign Black" : "Assign Black"}
                                         >
                                             B
                                         </button>
@@ -198,11 +226,22 @@ const ClassroomSidebar = ({
                                 <span className="text-xs">No users connected</span>
                             </div>
                         )}
+                        
+                        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-3">
+                            <Info className="w-5 h-5 text-blue-400 shrink-0" />
+                            <div className="space-y-1">
+                                <p className="text-[10px] text-blue-200 leading-relaxed font-medium">
+                                    <span className="text-blue-400 font-bold block mb-1">Control Rules:</span>
+                                    • <strong>No Assignment:</strong> Anyone can move (Open Mode).<br/>
+                                    • <strong>Assigned:</strong> Only that player can move.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* PGN MODAL */}
+            {/* PGN MODAL (Coach Only) */}
             {showPGNModal && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-6 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-[#18181B] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -231,10 +270,10 @@ const ClassroomSidebar = ({
     );
 };
 
-// Mini Component for Move Controls
-const ControlBtn = ({ onClick, icon: Icon, double }) => (
+const ControlBtn = ({ onClick, icon: Icon, double, title }) => (
     <button 
         onClick={onClick} 
+        title={title}
         className="h-8 flex-1 flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors border border-white/5"
     >
         <div className="flex -space-x-1">
