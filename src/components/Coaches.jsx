@@ -12,7 +12,7 @@ const coaches = [
   {
     name: "Dipti Ranjan Nayak",
     image:
-      "https://i.ibb.co/ZzW0MGqC/Whats-App-Image-2025-08-31-at-00-25-17-4cb7a091.jpg",
+      "https://i.ibb.co/7J8hYpj0/857e4e5d-6b53-4911-b91e-da1a0635e5b0.jpg",
     title: "Experienced Chess Coach & Player",
     description:
       "With over 8 years of playing experience and 3+ years of coaching experience, Dipti Ranjan Nayak is a highly accomplished chess coach and player.",
@@ -177,41 +177,28 @@ const coaches = [
     languages: ["English", "Hindi", "Odia"],
   },
   {
-    name: "Debiprasad Nayak",
-    image: "https://i.ibb.co/23qJqT4v/IMG-7519-1.jpg", 
-    title: "State & National Level Chess Coach",
+    name: "Tapan Badamundi",
+    image:
+      "https://i.ibb.co/RGGxB5kz/455e7661-1fc9-4385-94c2-717bbda15d27.jpg", 
+      // ⬆️ Replace this with uploaded image URL (imgbb / cloudinary)
+    title: "FIDE Rated Chess Coach & Player",
     description:
-      "Debiprasad Nayak is a highly accomplished chess player and coach with 3+ years of coaching experience and outstanding achievements at state, national, and international levels.",
+      "Tapan Badamundi is a highly respected FIDE-rated chess player and coach with a peak FIDE rating of 2000. Known for his deep positional understanding and tournament experience, he brings elite-level training to his students.",
     achievements: [
-      "🏆 U-17 State Open Chess Championship 2019 – 1st",
-      "🥉 U-17 State Championship 2018 – 3rd",
-      "🏆 Rajdhani Cup (Category-A) – 1st",
-      "🏆 All Odisha Open Chess Championship 2020 – 1st",
-      "🌍 Kashmir International Open Rating Chess 2022 – 14th",
-      "🥇 KVS Regional 2018 – Gold Medal",
-      "🏆 Inter College Chess Championship – 1st",
-      "🥈 All India Open Kantabanji – 2nd",
-      "⭐ Many more achievements",
+      "♟️ FIDE Rating: 2000",
+      "🏆 Multiple National & International Tournament Performances",
+      "🎯 Known for strong positional & endgame mastery",
+      "🌍 Active participant in FIDE-rated events",
     ],
-    coaching: ["3+ years of professional coaching experience"],
-    students: [
-      {
-        name: "Sayansh Das",
-        achievement: "FIDE Rating: 1524",
-        photo: "https://via.placeholder.com/100?text=Sayansh",
-      },
-      {
-        name: "Ananya Mishra",
-        achievement: "FIDE Rating: 1464",
-        photo: "https://via.placeholder.com/100?text=Ananya",
-      },
-      {
-        name: "Kusagra",
-        achievement: "FIDE Rating: 1514",
-        photo: "https://via.placeholder.com/100?text=Kusagra",
-      },
+    coaching: [
+      "Professional Chess Coaching",
+      "Advanced Tournament Preparation",
+      "Opening Repertoire & Endgame Training",
     ],
-  }
+    students: [],
+    fideId: "XXXXXXX", // 👉 add real FIDE ID if available
+  },
+  
 ];
 
 export default function Coaches() {
