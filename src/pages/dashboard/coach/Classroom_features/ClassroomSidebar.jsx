@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   MonitorUp, Clipboard, Download, X, 
-  ChevronLeft, ChevronRight, Users, MessageSquare, List, Shield, Info, FileText, Lock
+  ChevronLeft, ChevronRight, Users, MessageSquare, List, Info, Lock, FileText
 } from 'lucide-react';
 import ClassroomChat from './ClassroomChat';
 import VideoRoom from '../../../../components/VideoRoom'; 
@@ -10,6 +10,11 @@ import Move from './Move';
 const ClassroomSidebar = ({ 
     activeTab, setActiveTab, 
     history, viewIndex, goToMove, 
+    
+    // Reference Props
+    referenceHistory = [],
+    onRestoreReference,
+
     onLoadPGN, onDownloadPGN, 
     chatMessages, onSendMessage,
     connectedUsers = [],
@@ -42,6 +47,19 @@ const ClassroomSidebar = ({
         </button>
     );
 
+    // Helper component for restricted access message
+    const RestrictedAccess = ({ tabName = "Content" }) => (
+        <div className="flex flex-col items-center justify-center h-full text-zinc-500 space-y-4 p-6">
+            <div className="w-16 h-16 rounded-full bg-zinc-900/80 flex items-center justify-center border border-white/5 shadow-inner">
+                <Lock className="w-8 h-8 opacity-50" />
+            </div>
+            <div className="text-center">
+                <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1">Access Restricted</p>
+                <p className="text-[10px] opacity-60">Only Coach are authorized to view {tabName}</p>
+            </div>
+        </div>
+    );
+
     return (
         <div className="w-[40vw] min-w-[350px] bg-[#0F0F12] border-l border-white/5 flex flex-col h-full shrink-0 shadow-2xl shadow-black transition-all duration-300 ease-in-out">
             
@@ -60,95 +78,68 @@ const ClassroomSidebar = ({
             {/* 2. TABS */}
             <div className="p-2 bg-[#0F0F12] border-b border-white/5 z-10">
                 <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
-                    <TabButton id="moves" label="Moves" icon={List} />
+                    <TabButton id="moves" label="Live" icon={List} />
+                    <TabButton id="pgn" label="PGN" icon={FileText} />
                     <TabButton id="chat" label="Chat" icon={MessageSquare} />
                     <TabButton id="students" label="People" icon={Users} />
-                    <TabButton id="pgn" label="PGN" icon={FileText} />
                 </div>
             </div>
 
             {/* 3. CONTENT AREA */}
             <div className="flex-1 min-h-0 bg-[#0F0F12] relative flex flex-col">
                 
-                {/* === MOVES TAB === */}
+                {/* === LIVE MOVES TAB (RESTRICTED TO COACH) === */}
                 {activeTab === 'moves' && (
                     <div className="flex flex-col h-full">
-                        <Move 
-                            history={history}
-                            viewIndex={viewIndex}
-                            goToMove={goToMove}
-                            userRole={userRole}
-                        />
-
-                        {/* Footer Controls */}
-                        <div className="p-3 border-t border-white/5 bg-[#121215] space-y-3 shrink-0">
-                            <div className="flex justify-center gap-1">
-                                <ControlBtn 
-                                    onClick={() => goToMove(-1)} 
-                                    icon={ChevronLeft} double 
-                                    title="Start"
-                                />
-                                <ControlBtn 
-                                    onClick={() => goToMove(viewIndex <= -1 ? -1 : viewIndex - 1)} 
-                                    icon={ChevronLeft} 
-                                    title="Previous Move"
-                                />
-                                <ControlBtn 
-                                    onClick={() => goToMove(viewIndex >= history.length - 1 ? history.length - 1 : viewIndex + 1)} 
-                                    icon={ChevronRight} 
-                                    title="Next Move"
-                                />
-                                <ControlBtn 
-                                    onClick={() => goToMove(history.length - 1)} 
-                                    icon={ChevronRight} double 
-                                    title="Current Position"
-                                />
-                            </div>
-                            
-                            {userRole === 'Coach' && (
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-md text-[10px] font-bold uppercase text-zinc-300 transition-colors border border-white/5">
-                                        <Clipboard className="w-3 h-3"/> Import PGN
-                                    </button>
-                                    <button onClick={onDownloadPGN} className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 py-2.5 rounded-md text-[10px] font-bold uppercase text-white transition-colors shadow-lg shadow-violet-900/20">
-                                        <Download className="w-3 h-3"/> Download
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-                
-                {/* === PGN TAB === */}
-                {activeTab === 'pgn' && (
-                    <div className="flex flex-col h-full p-4 relative">
                         {userRole === 'Coach' ? (
                             <>
-                                <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Current PGN</h3>
-                                    <button 
-                                        onClick={() => navigator.clipboard.writeText(currentPgn)}
-                                        className="text-[10px] text-violet-400 hover:text-violet-300 font-bold uppercase"
-                                    >
-                                        Copy
-                                    </button>
+                                <Move 
+                                    history={history}
+                                    viewIndex={viewIndex}
+                                    goToMove={goToMove}
+                                    userRole={userRole}
+                                />
+                                {/* Footer Controls */}
+                                <div className="p-3 border-t border-white/5 bg-[#121215] space-y-3 shrink-0">
+                                    <div className="flex justify-center gap-1">
+                                        <ControlBtn onClick={() => goToMove(-1)} icon={ChevronLeft} double title="Start"/>
+                                        <ControlBtn onClick={() => goToMove(viewIndex <= -1 ? -1 : viewIndex - 1)} icon={ChevronLeft} title="Prev"/>
+                                        <ControlBtn onClick={() => goToMove(viewIndex >= history.length - 1 ? history.length - 1 : viewIndex + 1)} icon={ChevronRight} title="Next"/>
+                                        <ControlBtn onClick={() => goToMove(history.length - 1)} icon={ChevronRight} double title="End"/>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-md text-[10px] font-bold uppercase text-zinc-300 transition-colors border border-white/5">
+                                            <Clipboard className="w-3 h-3"/> Import PGN
+                                        </button>
+                                        <button onClick={onDownloadPGN} className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 py-2.5 rounded-md text-[10px] font-bold uppercase text-white transition-colors shadow-lg shadow-violet-900/20">
+                                            <Download className="w-3 h-3"/> Download
+                                        </button>
+                                    </div>
                                 </div>
-                                <textarea 
-                                    readOnly
-                                    value={currentPgn || "No moves played yet."}
-                                    className="flex-1 w-full bg-black/30 border border-white/10 rounded-lg p-3 text-xs font-mono text-zinc-300 resize-none focus:outline-none"
+                            </>
+                        ) : (
+                            <RestrictedAccess tabName="Moves" />
+                        )}
+                    </div>
+                )}
+
+                {/* === PGN REFERENCE TAB (RESTRICTED TO COACH, STATIC HISTORY) === */}
+                {activeTab === 'pgn' && (
+                    <div className="flex flex-col h-full">
+                        {userRole === 'Coach' ? (
+                            <>
+                                <div className="p-2 border-b border-white/5 bg-[#121215] text-[10px] text-zinc-500 text-center font-bold uppercase tracking-wide">
+                                    Original Syllabus (Reference)
+                                </div>
+                                <Move 
+                                    history={referenceHistory}
+                                    viewIndex={-1} // Don't highlight current move to differentiate from live, or maintain sync if preferred. Passing -1 allows pure navigation.
+                                    goToMove={onRestoreReference} // Clicking here restores the game to this point
+                                    userRole={userRole}
                                 />
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-zinc-500 space-y-4">
-                                <div className="w-16 h-16 rounded-full bg-zinc-900/80 flex items-center justify-center border border-white/5 shadow-inner">
-                                    <Lock className="w-8 h-8 opacity-50" />
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1">Access Restricted</p>
-                                    <p className="text-[10px] opacity-60">Only Coach are authorized</p>
-                                </div>
-                            </div>
+                            <RestrictedAccess tabName="Syllabus" />
                         )}
                     </div>
                 )}
@@ -174,7 +165,6 @@ const ClassroomSidebar = ({
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-xs font-bold text-white shadow-inner">
                                         {u.name.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#1a1a1a] rounded-full shadow-sm"></div>
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
@@ -212,6 +202,7 @@ const ClassroomSidebar = ({
                 )}
             </div>
 
+            {/* PGN MODAL (Coach Only) */}
             {showPGNModal && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-6 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-[#18181B] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">

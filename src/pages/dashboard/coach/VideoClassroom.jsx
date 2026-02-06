@@ -30,6 +30,11 @@ const VideoClassroom = () => {
     // Clean PGN for display
     const [currentPgn, setCurrentPgn] = useState(""); 
 
+    // --- REFERENCE STATE (For PGN Tab) ---
+    // This holds the "Original/Syllabus" history that won't be overwritten by variations
+    const [referenceHistory, setReferenceHistory] = useState([]);
+    const [referenceStartFen, setReferenceStartFen] = useState('start');
+
     // Handle positions that chess.js calls "Illegal"
     const [customFen, setCustomFen] = useState(null); 
     const [illegalMode, setIllegalMode] = useState(true);
@@ -42,7 +47,6 @@ const VideoClassroom = () => {
     // VIEW INDEX LOGIC: 
     // -1 = Start Position (No moves made)
     // 0 to N = Move Index
-    // To be "Live", viewIndex must equal (history.length - 1)
     const [viewIndex, setViewIndex] = useState(-1);
     
     const [boardWidth, setBoardWidth] = useState(600);
@@ -108,7 +112,7 @@ const VideoClassroom = () => {
                     setStartFen(moveData.fen);
                     setHistory([]);
                     setCurrentPgn(fenGame.pgn());
-                    setViewIndex(-1); // Reset to start (which is also live since history is 0)
+                    setViewIndex(-1); 
                 } catch (e) {
                     setCustomFen(moveData.fen);
                     setGame(new Chess());
@@ -126,7 +130,6 @@ const VideoClassroom = () => {
                     const newHistory = gameCopy.history();
                     setHistory(newHistory); 
                     setCurrentPgn(gameCopy.pgn());
-                    // Auto-follow: Set view to the new latest move
                     setViewIndex(newHistory.length - 1); 
                     setCustomFen(null);
                     return gameCopy;
@@ -179,12 +182,42 @@ const VideoClassroom = () => {
         }
     };
 
+    // --- JUMP TO REFERENCE HANDLER (Restores Main Line) ---
+    const handleRestoreReference = (index) => {
+        try {
+            // Reconstruct game from Reference Start + Reference Moves up to index
+            const t = referenceStartFen === 'start' ? new Chess() : new Chess(referenceStartFen);
+            
+            // Replay moves from reference history
+            for(let i=0; i<=index; i++) {
+                if (referenceHistory[i]) t.move(referenceHistory[i]);
+            }
+
+            // Update Live Game State
+            setGame(t);
+            setHistory(t.history());
+            setCurrentPgn(t.pgn());
+            setViewIndex(index);
+            
+            // Sync with Room
+            if (socketRef.current) {
+                // We send FEN to force all clients to jump to this state (overwrite their history)
+                socketRef.current.emit('make_move', { roomId, fen: t.fen() });
+            }
+        } catch (e) {
+            toast.error("Could not restore position.");
+            console.error(e);
+        }
+    };
+
     // --- MAIN MOVE HANDLER ---
     function onDrop(source, target, piece) {
         // Enforce: Can only move if viewing the latest position
-        if (viewIndex !== history.length - 1) { 
-            toast.error("Go to the latest move to play."); 
-            return false; 
+        if (viewIndex !== history.length - 1 && history.length > 0 && viewIndex !== -1) { 
+             // Allow move if we are at start (-1) and history is empty (0)
+             // Or if viewIndex is at the end.
+             // If we are navigating the past, we usually want to branch.
+             // Let's rely on the "branching" logic below.
         }
         
         // Permission Check
@@ -219,8 +252,13 @@ const VideoClassroom = () => {
 
         // 2. Standard Logic
         try {
-            const tempGame = new Chess(); 
-            tempGame.loadPgn(game.pgn());
+            const tempGame = startFen === 'start' ? new Chess() : new Chess(startFen);
+            
+            // Replay moves only up to viewIndex (Supports Branching)
+            for(let i=0; i<=viewIndex; i++) {
+                if (history[i]) tempGame.move(history[i]);
+            }
+
             const move = tempGame.move({ from: source, to: target, promotion: 'q' });
             if (!move) return false; 
             
@@ -229,30 +267,40 @@ const VideoClassroom = () => {
             setHistory(newHistory); 
             setCurrentPgn(tempGame.pgn());
             
-            // STAY LIVE: Update view index to new last move
+            // Check if we branched (was not at the end of previous history)
+            const wasBranching = viewIndex !== history.length - 1;
+
             setViewIndex(newHistory.length - 1);
-            
             handleClearWrapper(); 
             
-            if (socketRef.current) socketRef.current.emit('make_move', { roomId, from: source, to: target, promotion: 'q', fen: tempGame.fen() });
+            if (socketRef.current) {
+                if (wasBranching) {
+                    // Force sync new branch
+                    socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
+                } else {
+                    // Append move
+                    socketRef.current.emit('make_move', { roomId, from: source, to: target, promotion: 'q', fen: tempGame.fen() });
+                }
+            }
             return true;
         } catch (error) { return false; }
     }
 
     const undoMove = () => {
         if (customFen) return; 
-        const tempGame = new Chess(); 
-        tempGame.loadPgn(game.pgn());
-        if (tempGame.undo()) {
-            setGame(tempGame); 
-            const newHistory = tempGame.history();
-            setHistory(newHistory);
-            setCurrentPgn(tempGame.pgn()); 
+        if (viewIndex >= 0) {
+            const newHistory = history.slice(0, -1);
+            const newGame = startFen === 'start' ? new Chess() : new Chess(startFen);
+            for(const m of newHistory) newGame.move(m);
             
-            // Update view index to match new end
+            setGame(newGame);
+            setHistory(newHistory);
+            setCurrentPgn(newGame.pgn());
             setViewIndex(newHistory.length - 1);
             
-            if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
+            if (socketRef.current) {
+                socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
+            }
         }
     };
 
@@ -273,7 +321,6 @@ const VideoClassroom = () => {
             pgnGame.loadPgn(cleanedData);
             
             if (pgnGame.history().length > 0) {
-                // Determine Start FEN
                 const startClone = new Chess();
                 startClone.loadPgn(cleanedData);
                 while (startClone.undo()) {} 
@@ -281,14 +328,17 @@ const VideoClassroom = () => {
 
                 setStartFen(trueStartFen); 
                 
-                // Set Game to Full State (so we have PGN)
+                // SAVE REFERENCE (Static Syllabus)
                 const fullGame = new Chess();
                 fullGame.loadPgn(cleanedData);
+                setReferenceHistory(fullGame.history()); // Save Original History
+                setReferenceStartFen(trueStartFen);      // Save Original Start
+
+                // Set Live Game
                 setGame(fullGame);
                 setHistory(fullGame.history());
                 setCurrentPgn(fullGame.pgn());
                 
-                // CRITICAL FIX: Set View Index to -1 (START) instead of End
                 setViewIndex(-1); 
                 
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: fullGame.fen() });
@@ -310,6 +360,11 @@ const VideoClassroom = () => {
                 setGame(fenGame);
                 setStartFen(targetFen);
                 setHistory([]);
+                
+                // For FEN, reference is just the position
+                setReferenceHistory([]); 
+                setReferenceStartFen(targetFen);
+
                 setCurrentPgn(fenGame.pgn());
                 setViewIndex(-1);
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
@@ -319,6 +374,7 @@ const VideoClassroom = () => {
                 setGame(new Chess()); 
                 setStartFen(targetFen);
                 setHistory([]);
+                setReferenceHistory([]); 
                 setCurrentPgn("");
                 setViewIndex(-1);
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
@@ -369,21 +425,12 @@ const VideoClassroom = () => {
     };
 
     // --- REPLAY LOGIC ---
-    // Always calculates the board based on viewIndex + startFen
     const getBoardPosition = () => { 
         if (customFen) return customFen; 
-        
         try {
-            // Robust constructor
             const t = startFen === 'start' ? new Chess() : new Chess(startFen);
-            
-            // Replay only up to viewIndex
-            // If viewIndex is -1, this loop doesn't run, returning Start Fen.
             for(let i=0; i<=viewIndex; i++) {
-                if (history[i]) {
-                    const moveResult = t.move(history[i]);
-                    if(!moveResult) throw new Error("Move replay failed");
-                }
+                if (history[i]) t.move(history[i]);
             } 
             return t.fen();
         } catch (e) { 
@@ -501,6 +548,7 @@ const VideoClassroom = () => {
                             setCustomFen(null);
                             setStartFen('start'); 
                             setHistory([]); 
+                            setReferenceHistory([]); // Clear reference on reset
                             setCurrentPgn("");
                             setViewIndex(-1); 
                             handleClearWrapper(); 
@@ -519,6 +567,10 @@ const VideoClassroom = () => {
                     activeTab={activeTab} setActiveTab={setActiveTab} 
                     history={history}
                     viewIndex={viewIndex} goToMove={setViewIndex} 
+                    // Pass Reference Data
+                    referenceHistory={referenceHistory}
+                    onRestoreReference={handleRestoreReference}
+                    
                     onLoadPGN={handleLoadPGN} 
                     onDownloadPGN={handleDownloadPGN} 
                     micOn={micOn} setMicOn={setMicOn} 
