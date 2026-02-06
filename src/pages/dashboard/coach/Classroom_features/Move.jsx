@@ -4,7 +4,6 @@ const Move = ({ history = [], viewIndex, goToMove, userRole }) => {
     const scrollRef = useRef(null);
     const visibleHistory = history; 
 
-    // Auto-scroll to the active move
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -13,22 +12,18 @@ const Move = ({ history = [], viewIndex, goToMove, userRole }) => {
 
     return (
         <div className="flex flex-col h-full bg-[#0F0F12]">
-            {/* Header */}
             <div className="grid grid-cols-[3rem_1fr_1fr] px-4 py-2 bg-zinc-900/50 text-[10px] font-bold uppercase text-zinc-500 border-b border-white/5 shrink-0">
                 <div>#</div>
                 <div>White</div>
                 <div>Black</div>
             </div>
 
-            {/* List */}
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
                 <table className="w-full text-xs border-collapse table-fixed">
                     <tbody>
                         {Array.from({ length: Math.ceil(visibleHistory.length / 2) }).map((_, i) => {
                             const whiteMoveIndex = i * 2;
                             const blackMoveIndex = i * 2 + 1;
-                            
-                            // Check if this row contains the current view index
                             const isCurrentRow = Math.floor(viewIndex / 2) === i;
 
                             return (
@@ -38,12 +33,10 @@ const Move = ({ history = [], viewIndex, goToMove, userRole }) => {
                                         isCurrentRow ? 'bg-white/[0.02]' : 'hover:bg-white/[0.02]'
                                     }`}
                                 >
-                                    {/* Number */}
                                     <td className="py-2.5 pl-4 text-zinc-600 font-mono w-12 text-[11px]">
                                         {i + 1}.
                                     </td>
 
-                                    {/* White Move */}
                                     <td 
                                         onClick={() => goToMove(whiteMoveIndex)} 
                                         ref={viewIndex === whiteMoveIndex ? scrollRef : null}
@@ -56,7 +49,6 @@ const Move = ({ history = [], viewIndex, goToMove, userRole }) => {
                                         {visibleHistory[whiteMoveIndex]}
                                     </td>
 
-                                    {/* Black Move */}
                                     <td 
                                         onClick={() => visibleHistory[blackMoveIndex] && goToMove(blackMoveIndex)} 
                                         ref={viewIndex === blackMoveIndex ? scrollRef : null}

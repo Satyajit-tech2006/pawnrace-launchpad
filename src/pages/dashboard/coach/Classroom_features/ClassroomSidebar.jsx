@@ -73,7 +73,6 @@ const ClassroomSidebar = ({
                 {/* === MOVES TAB === */}
                 {activeTab === 'moves' && (
                     <div className="flex flex-col h-full">
-                        {/* Render the dedicated Move Component */}
                         <Move 
                             history={history}
                             viewIndex={viewIndex}
@@ -85,12 +84,12 @@ const ClassroomSidebar = ({
                         <div className="p-3 border-t border-white/5 bg-[#121215] space-y-3 shrink-0">
                             <div className="flex justify-center gap-1">
                                 <ControlBtn 
-                                    onClick={() => goToMove(0)} 
+                                    onClick={() => goToMove(-1)} 
                                     icon={ChevronLeft} double 
                                     title="Start"
                                 />
                                 <ControlBtn 
-                                    onClick={() => goToMove(viewIndex <= 0 ? -1 : viewIndex - 1)} 
+                                    onClick={() => goToMove(viewIndex <= -1 ? -1 : viewIndex - 1)} 
                                     icon={ChevronLeft} 
                                     title="Previous Move"
                                 />
@@ -106,7 +105,6 @@ const ClassroomSidebar = ({
                                 />
                             </div>
                             
-                            {/* COACH ONLY: Import/Download PGN */}
                             {userRole === 'Coach' && (
                                 <div className="grid grid-cols-2 gap-2">
                                     <button onClick={() => setShowPGNModal(true)} className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-md text-[10px] font-bold uppercase text-zinc-300 transition-colors border border-white/5">
@@ -142,7 +140,6 @@ const ClassroomSidebar = ({
                                 />
                             </>
                         ) : (
-                            // RESTRICTED VIEW FOR STUDENTS
                             <div className="flex flex-col items-center justify-center h-full text-zinc-500 space-y-4">
                                 <div className="w-16 h-16 rounded-full bg-zinc-900/80 flex items-center justify-center border border-white/5 shadow-inner">
                                     <Lock className="w-8 h-8 opacity-50" />
@@ -183,14 +180,12 @@ const ClassroomSidebar = ({
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold text-zinc-200 truncate flex items-center gap-2">
                                         {u.name}
-                                        {/* Status Badges */}
                                         {controls?.white === u.sessionId && <span className="text-[9px] bg-white text-black px-1 rounded font-bold shadow-sm" title="Controls White">W</span>}
                                         {controls?.black === u.sessionId && <span className="text-[9px] bg-zinc-800 text-white px-1 rounded font-bold border border-white/20" title="Controls Black">B</span>}
                                     </p>
                                     <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">{u.role}</p>
                                 </div>
 
-                                {/* COACH ONLY: Control Buttons */}
                                 {userRole === 'Coach' && (
                                     <div className="flex gap-1">
                                         <button 
@@ -200,10 +195,7 @@ const ClassroomSidebar = ({
                                                 ? 'bg-white text-black border-white shadow-[0_0_8px_rgba(255,255,255,0.3)]' 
                                                 : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-white hover:text-white'
                                             }`}
-                                            title={controls?.white === u.sessionId ? "Unassign White" : "Assign White"}
-                                        >
-                                            W
-                                        </button>
+                                        >W</button>
                                         <button 
                                             onClick={() => onAssignControl('black', controls?.black === u.sessionId ? null : u.sessionId)}
                                             className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold border transition-all ${
@@ -211,37 +203,15 @@ const ClassroomSidebar = ({
                                                 ? 'bg-black text-white border-white shadow-[0_0_8px_rgba(255,255,255,0.1)]' 
                                                 : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-white hover:text-white'
                                             }`}
-                                            title={controls?.black === u.sessionId ? "Unassign Black" : "Assign Black"}
-                                        >
-                                            B
-                                        </button>
+                                        >B</button>
                                     </div>
                                 )}
                             </div>
                         ))}
-                          
-                        {connectedUsers.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-12 text-zinc-600 gap-2 opacity-60">
-                                <Users className="w-8 h-8"/>
-                                <span className="text-xs">No users connected</span>
-                            </div>
-                        )}
-                        
-                        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-3">
-                            <Info className="w-5 h-5 text-blue-400 shrink-0" />
-                            <div className="space-y-1">
-                                <p className="text-[10px] text-blue-200 leading-relaxed font-medium">
-                                    <span className="text-blue-400 font-bold block mb-1">Control Rules:</span>
-                                    • <strong>No Assignment:</strong> Anyone can move (Open Mode).<br/>
-                                    • <strong>Assigned:</strong> Only that player can move.
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 )}
             </div>
 
-            {/* PGN MODAL (Coach Only) */}
             {showPGNModal && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-6 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-[#18181B] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">

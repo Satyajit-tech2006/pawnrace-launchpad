@@ -27,18 +27,24 @@ const VideoClassroom = () => {
     const [connectedUsers, setConnectedUsers] = useState([]);
     const [game, setGame] = useState(new Chess());
     
-    // Store the CLEAN PGN text (Moves Only)
+    // Clean PGN for display
     const [currentPgn, setCurrentPgn] = useState(""); 
 
-    // Handle positions that chess.js calls "Illegal" (like empty boards)
+    // Handle positions that chess.js calls "Illegal"
     const [customFen, setCustomFen] = useState(null); 
-    const [illegalMode, setIllegalMode] = useState(true); // Default to Free Mode
+    const [illegalMode, setIllegalMode] = useState(true);
 
     const [startFen, setStartFen] = useState('start');
     const [orientation, setOrientation] = useState('white');
     const [history, setHistory] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
+    
+    // VIEW INDEX LOGIC: 
+    // -1 = Start Position (No moves made)
+    // 0 to N = Move Index
+    // To be "Live", viewIndex must equal (history.length - 1)
     const [viewIndex, setViewIndex] = useState(-1);
+    
     const [boardWidth, setBoardWidth] = useState(600);
     
     // --- Playlist / Navigation State ---
@@ -58,7 +64,6 @@ const VideoClassroom = () => {
     const [chatMessages, setChatMessages] = useState([]);
 
     // --- CONTROL STATE ---
-    // Stores which userId controls which color. { white: "userId1", black: "userId2" }
     const [controls, setControls] = useState({ white: null, black: null });
 
     const drawing = useBoardDrawing(orientation);
@@ -87,17 +92,14 @@ const VideoClassroom = () => {
         
         socketRef.current.on('update_user_list', (users) => setConnectedUsers(users));
         
-        // Listen for control updates
         socketRef.current.on('controls_updated', (newControls) => {
             setControls(newControls);
         });
 
         socketRef.current.on('receive_move', (moveData) => {
-            // Received a move or position from socket
             if (moveData.fen && !moveData.from) {
                 // Forced FEN update
-                setCustomFen(null); // Reset custom fallback
-                // Force re-render to prevent animation glitches
+                setCustomFen(null); 
                 setBoardKey(prev => prev + 1);
 
                 try {
@@ -106,11 +108,12 @@ const VideoClassroom = () => {
                     setStartFen(moveData.fen);
                     setHistory([]);
                     setCurrentPgn(fenGame.pgn());
+                    setViewIndex(-1); // Reset to start (which is also live since history is 0)
                 } catch (e) {
-                    // If socket sends an "illegal" fen (empty board), use customFen
                     setCustomFen(moveData.fen);
-                    setGame(new Chess()); // Reset engine to avoid errors
+                    setGame(new Chess());
                     setStartFen(moveData.fen);
+                    setViewIndex(-1);
                 }
                 return;
             }
@@ -120,9 +123,11 @@ const VideoClassroom = () => {
                 try {
                     gameCopy.loadPgn(prevGame.pgn());
                     if (moveData.from) gameCopy.move(moveData);
-                    setHistory(gameCopy.history()); 
+                    const newHistory = gameCopy.history();
+                    setHistory(newHistory); 
                     setCurrentPgn(gameCopy.pgn());
-                    setViewIndex(-1); 
+                    // Auto-follow: Set view to the new latest move
+                    setViewIndex(newHistory.length - 1); 
                     setCustomFen(null);
                     return gameCopy;
                 } catch (e) { 
@@ -166,11 +171,9 @@ const VideoClassroom = () => {
         if (socketRef.current) socketRef.current.emit('send_message', { roomId, ...messageData });
     };
 
-    // Handler for Coach assigning controls
     const handleAssignControl = (color, userId) => {
         const newControls = { ...controls, [color]: userId };
         setControls(newControls);
-        // Emit to server so all students update their permission state
         if (socketRef.current) {
             socketRef.current.emit('update_controls', { roomId, controls: newControls });
         }
@@ -178,52 +181,43 @@ const VideoClassroom = () => {
 
     // --- MAIN MOVE HANDLER ---
     function onDrop(source, target, piece) {
-        if (viewIndex !== -1) { toast.error("Resume live game to play."); return false; }
+        // Enforce: Can only move if viewing the latest position
+        if (viewIndex !== history.length - 1) { 
+            toast.error("Go to the latest move to play."); 
+            return false; 
+        }
         
-        // PERMISSION CHECK
+        // Permission Check
         const pieceColor = piece[0]; 
         const isCoach = user?.role === 'coach'; 
 
         if (!isCoach) {
-            // Check White Move
-            if (pieceColor === 'w') {
-                if (controls.white !== user?._id) {
-                    toast.error("You are not assigned to play White.");
-                    return false;
-                }
+            if (pieceColor === 'w' && controls.white !== user?._id) {
+                toast.error("You are not assigned to play White.");
+                return false;
             }
-            // Check Black Move
-            if (pieceColor === 'b') {
-                if (controls.black !== user?._id) {
-                    toast.error("You are not assigned to play Black.");
-                    return false;
-                }
+            if (pieceColor === 'b' && controls.black !== user?._id) {
+                toast.error("You are not assigned to play Black.");
+                return false;
             }
         }
         
-        // 1. IS THIS A CUSTOM / INVALID BOARD?
+        // 1. Custom Board Logic
         if (customFen) {
             if (!illegalMode) {
                 toast.error("Strict Mode: Cannot move on invalid board.");
                 return false; 
             }
-
             try {
                 const newFen = movePieceInFen(customFen, source, target);
                 setCustomFen(newFen);
                 setStartFen(newFen); 
-                
-                if (socketRef.current) {
-                    socketRef.current.emit('make_move', { roomId, fen: newFen });
-                }
+                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: newFen });
                 return true;
-            } catch (e) {
-                console.error("Free Move Error:", e);
-                return false;
-            }
+            } catch (e) { return false; }
         }
 
-        // 2. STANDARD CHESS BOARD
+        // 2. Standard Logic
         try {
             const tempGame = new Chess(); 
             tempGame.loadPgn(game.pgn());
@@ -231,9 +225,13 @@ const VideoClassroom = () => {
             if (!move) return false; 
             
             setGame(tempGame); 
-            setHistory(tempGame.history()); 
+            const newHistory = tempGame.history();
+            setHistory(newHistory); 
             setCurrentPgn(tempGame.pgn());
-            setViewIndex(-1);
+            
+            // STAY LIVE: Update view index to new last move
+            setViewIndex(newHistory.length - 1);
+            
             handleClearWrapper(); 
             
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, from: source, to: target, promotion: 'q', fen: tempGame.fen() });
@@ -247,14 +245,18 @@ const VideoClassroom = () => {
         tempGame.loadPgn(game.pgn());
         if (tempGame.undo()) {
             setGame(tempGame); 
-            setHistory(tempGame.history());
+            const newHistory = tempGame.history();
+            setHistory(newHistory);
             setCurrentPgn(tempGame.pgn()); 
-            setViewIndex(-1);
+            
+            // Update view index to match new end
+            setViewIndex(newHistory.length - 1);
+            
             if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
         }
     };
 
-    // --- ROBUST LOADER FUNCTION ---
+    // --- LOAD PGN LOGIC ---
     const loadGameFromPgn = (data, title = "Lesson") => {
         if (!data || typeof data !== 'string' || !data.trim()) {
             toast.error("Cannot load: Data is empty.");
@@ -262,32 +264,32 @@ const VideoClassroom = () => {
         }
 
         setBoardKey(prev => prev + 1);
-
         const cleanedData = data.trim();
-        
         setCustomFen(null); 
 
-        // 1. Try Loading as Standard PGN
+        // 1. Standard PGN
         try {
             const pgnGame = new Chess();
             pgnGame.loadPgn(cleanedData);
             
             if (pgnGame.history().length > 0) {
+                // Determine Start FEN
                 const startClone = new Chess();
                 startClone.loadPgn(cleanedData);
                 while (startClone.undo()) {} 
                 const trueStartFen = startClone.fen();
 
                 setStartFen(trueStartFen); 
-                setHistory([]); 
                 
+                // Set Game to Full State (so we have PGN)
                 const fullGame = new Chess();
                 fullGame.loadPgn(cleanedData);
                 setGame(fullGame);
                 setHistory(fullGame.history());
                 setCurrentPgn(fullGame.pgn());
                 
-                setViewIndex(fullGame.history().length - 1); 
+                // CRITICAL FIX: Set View Index to -1 (START) instead of End
+                setViewIndex(-1); 
                 
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: fullGame.fen() });
                 toast.success(`Loaded: ${title}`);
@@ -295,17 +297,14 @@ const VideoClassroom = () => {
             }
         } catch (e) {}
 
-        // 2. EXTRACT FEN FROM PGN TAGS
+        // 2. FEN Tag in PGN
         let targetFen = cleanedData;
         const fenMatch = cleanedData.match(/\[FEN "([^"]+)"\]/);
-        if (fenMatch && fenMatch[1]) {
-            targetFen = fenMatch[1];
-        }
+        if (fenMatch && fenMatch[1]) { targetFen = fenMatch[1]; }
 
-        // 3. Try Loading FEN
+        // 3. Raw FEN
         try {
             if (!targetFen.includes('/')) throw new Error("Not a FEN");
-
             try {
                 const fenGame = new Chess(targetFen);
                 setGame(fenGame);
@@ -316,25 +315,17 @@ const VideoClassroom = () => {
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
                 toast.success(`Loaded Position: ${title}`);
             } catch (chessError) {
-                console.warn("Loaded invalid position:", chessError.message);
-                
                 setCustomFen(targetFen); 
                 setGame(new Chess()); 
                 setStartFen(targetFen);
                 setHistory([]);
                 setCurrentPgn("");
                 setViewIndex(-1);
-                
                 if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
-                
-                if (illegalMode) {
-                    toast.success(`Loaded (Free Mode): ${title}`);
-                } else {
-                    toast.warning(`Loaded Invalid Board (Strict Mode Active)`);
-                }
+                if (illegalMode) toast.success(`Loaded (Free Mode): ${title}`);
+                else toast.warning(`Loaded Invalid Board (Strict Mode Active)`);
             }
         } catch (finalError) {
-            console.error(finalError);
             toast.error("Failed to recognize game data.");
         }
     };
@@ -377,30 +368,29 @@ const VideoClassroom = () => {
         const a = document.createElement('a'); a.href = url; a.download = `game_${roomId}.pgn`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
-    // --- FIX: LOGIC FOR NAVIGATING HISTORY ---
+    // --- REPLAY LOGIC ---
+    // Always calculates the board based on viewIndex + startFen
     const getBoardPosition = () => { 
         if (customFen) return customFen; 
-        if (viewIndex === -1) return game.fen();
         
         try {
-            // FIX: 'start' is not a valid FEN string for the constructor in some versions
-            // We must instantiate with defaults if startFen is 'start'
+            // Robust constructor
             const t = startFen === 'start' ? new Chess() : new Chess(startFen);
             
-            // Replay moves up to viewIndex
+            // Replay only up to viewIndex
+            // If viewIndex is -1, this loop doesn't run, returning Start Fen.
             for(let i=0; i<=viewIndex; i++) {
-                const moveResult = t.move(history[i]);
-                if(!moveResult) throw new Error("Move replay failed");
+                if (history[i]) {
+                    const moveResult = t.move(history[i]);
+                    if(!moveResult) throw new Error("Move replay failed");
+                }
             } 
             return t.fen();
         } catch (e) { 
-            // Fallback to current game if replay fails
-            console.error("Board replay error:", e);
             return game.fen(); 
         }
     };
 
-    // Determine user role for passing to Sidebar
     const currentUserRole = user?.role === 'coach' ? "Coach" : "Student";
 
     return (
@@ -514,10 +504,7 @@ const VideoClassroom = () => {
                             setCurrentPgn("");
                             setViewIndex(-1); 
                             handleClearWrapper(); 
-                            
-                            if (socketRef.current) {
-                                socketRef.current.emit('make_move', { roomId, fen: ng.fen() });
-                            }
+                            if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: ng.fen() });
                         }}
                         onFlip={() => setOrientation(o => o === 'white' ? 'black' : 'white')}
                         onClear={handleClearWrapper} 
@@ -530,7 +517,6 @@ const VideoClassroom = () => {
                 </div>
                 <ClassroomSidebar 
                     activeTab={activeTab} setActiveTab={setActiveTab} 
-                    // IMPORTANT: We pass the FULL history here so the move list is complete
                     history={history}
                     viewIndex={viewIndex} goToMove={setViewIndex} 
                     onLoadPGN={handleLoadPGN} 
@@ -540,8 +526,6 @@ const VideoClassroom = () => {
                     chatMessages={chatMessages} onSendMessage={handleSendMessage} 
                     connectedUsers={connectedUsers} roomId={roomId}
                     currentPgn={currentPgn}
-                    
-                    // Pass Control Props
                     userRole={currentUserRole} 
                     controls={controls}
                     onAssignControl={handleAssignControl}
@@ -561,42 +545,31 @@ const VideoClassroom = () => {
     );
 };
 
-// --- HELPER TO MOVE PIECES WITHOUT RULES (PURE STRING MANIPULATION) ---
 function movePieceInFen(fen, from, to) {
     const files = 'abcdefgh';
-    
-    // Parse coordinates (e.g., 'e2' -> col 4, row 6)
     const fromCol = files.indexOf(from[0]);
     const fromRow = 8 - parseInt(from[1]); 
     const toCol = files.indexOf(to[0]);
     const toRow = 8 - parseInt(to[1]);
-
     const parts = fen.split(' ');
     const rows = parts[0].split('/');
-    
-    // 1. Expand rows to individual characters array (handling numbers like "8" or "3")
     const board = rows.map(row => {
         let expanded = '';
         for (let char of row) {
-            if (!isNaN(char)) expanded += '1'.repeat(parseInt(char)); // Treat '1' as placeholder for empty
+            if (!isNaN(char)) expanded += '1'.repeat(parseInt(char)); 
             else expanded += char;
         }
         return expanded.split('');
     });
-
-    // 2. Perform Move
     const piece = board[fromRow][fromCol];
-    board[fromRow][fromCol] = '1'; // Leave empty space
-    board[toRow][toCol] = piece;   // Place piece (overwrites capture)
-
-    // 3. Compress rows back to FEN format
+    board[fromRow][fromCol] = '1'; 
+    board[toRow][toCol] = piece;
     const newRows = board.map(row => {
         let compressed = '';
         let count = 0;
         for (let char of row) {
-            if (char === '1') {
-                count++;
-            } else {
+            if (char === '1') { count++; } 
+            else {
                 if (count > 0) { compressed += count; count = 0; }
                 compressed += char;
             }
@@ -604,8 +577,6 @@ function movePieceInFen(fen, from, to) {
         if (count > 0) compressed += count;
         return compressed;
     });
-
-    // Reconstruct FEN string (keep active color etc same for now)
     parts[0] = newRows.join('/');
     return parts.join(' ');
 }
