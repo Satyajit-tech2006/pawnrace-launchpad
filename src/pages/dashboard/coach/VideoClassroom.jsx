@@ -15,7 +15,8 @@ import CoordinateOverlay from './Classroom_features/CoordinateOverlay';
 import SetupPosition from './Classroom_features/SetupPosition';
 import Syllabus from './Classroom_features/Syllabus';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ;
+// FIX: Explicitly use the provided Socket Backend URL
+const SOCKET_URL = "https://pawnrace-game-socket-backend.vercel.app/";
 
 const VideoClassroom = () => {
     const { roomId } = useParams();
@@ -26,36 +27,29 @@ const VideoClassroom = () => {
     // --- Game State ---
     const [connectedUsers, setConnectedUsers] = useState([]);
     const [game, setGame] = useState(new Chess());
-    
-    // Clean PGN for display
     const [currentPgn, setCurrentPgn] = useState(""); 
 
     // --- REFERENCE STATE (For PGN Tab) ---
-    // This holds the "Original/Syllabus" history that won't be overwritten by variations
     const [referenceHistory, setReferenceHistory] = useState([]);
     const [referenceStartFen, setReferenceStartFen] = useState('start');
 
-    // Handle positions that chess.js calls "Illegal"
+    // --- Board State ---
     const [customFen, setCustomFen] = useState(null); 
     const [illegalMode, setIllegalMode] = useState(true);
-
     const [startFen, setStartFen] = useState('start');
     const [orientation, setOrientation] = useState('white');
     const [history, setHistory] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
     
-    // VIEW INDEX LOGIC: 
-    // -1 = Start Position (No moves made)
-    // 0 to N = Move Index
+    // -1 = Start Position, 0...N = Moves
     const [viewIndex, setViewIndex] = useState(-1);
-    
     const [boardWidth, setBoardWidth] = useState(600);
     
-    // --- Playlist / Navigation State ---
+    // --- Playlist ---
     const [playlist, setPlaylist] = useState([]); 
     const [currentChapterIndex, setCurrentChapterIndex] = useState(-1); 
 
-    // --- UI State ---
+    // --- UI & Controls ---
     const [boardKey, setBoardKey] = useState(0); 
     const [showTools, setShowTools] = useState(true);
     const [showCoordinates, setShowCoordinates] = useState(true);
@@ -66,11 +60,20 @@ const VideoClassroom = () => {
     const [micOn, setMicOn] = useState(true);
     const [cameraOn, setCameraOn] = useState(true);
     const [chatMessages, setChatMessages] = useState([]);
-
-    // --- CONTROL STATE ---
     const [controls, setControls] = useState({ white: null, black: null });
 
     const drawing = useBoardDrawing(orientation);
+
+    // --- FIX: Create a ref to track the latest state for socket listeners ---
+    const gameStateRef = useRef({
+        currentPgn, startFen, history, viewIndex, customFen, referenceHistory, referenceStartFen, game
+    });
+
+    useEffect(() => {
+        gameStateRef.current = {
+            currentPgn, startFen, history, viewIndex, customFen, referenceHistory, referenceStartFen, game
+        };
+    }, [currentPgn, startFen, history, viewIndex, customFen, referenceHistory, referenceStartFen, game]);
 
     // --- 1. RESIZE ---
     useEffect(() => {
@@ -92,20 +95,61 @@ const VideoClassroom = () => {
                 _id: user?._id
             };
             socketRef.current.emit('join_room', { roomId, user: userInfo }); 
+            
+            // If I am a student, ask for the current state immediately
+            if (user?.role !== 'coach') {
+                socketRef.current.emit('request_sync', roomId);
+            }
         });
         
         socketRef.current.on('update_user_list', (users) => setConnectedUsers(users));
-        
-        socketRef.current.on('controls_updated', (newControls) => {
-            setControls(newControls);
+        socketRef.current.on('controls_updated', (newControls) => setControls(newControls));
+
+        // --- SYNC LOGIC ---
+        socketRef.current.on('perform_sync', (requesterId) => {
+            if (user?.role === 'coach') {
+                const state = gameStateRef.current; // Grab fresh state using the ref
+                socketRef.current.emit('send_sync_data', {
+                    targetId: requesterId,
+                    pgn: state.currentPgn,
+                    startFen: state.startFen,
+                    history: state.history,
+                    viewIndex: state.viewIndex,
+                    fen: state.customFen || state.game.fen(),
+                    referenceHistory: state.referenceHistory,
+                    referenceStartFen: state.referenceStartFen
+                });
+            }
+        });
+
+        socketRef.current.on('receive_sync_data', (data) => {
+            // Priority: Load PGN if available
+            if (data.pgn) {
+                loadGameFromPgn(data.pgn, "Synced Game", true, data.viewIndex); // Pass target viewIndex
+                if (data.referenceHistory) setReferenceHistory(data.referenceHistory);
+                if (data.referenceStartFen) setReferenceStartFen(data.referenceStartFen);
+            } else if (data.fen) {
+                setCustomFen(data.fen);
+                setStartFen(data.fen);
+                setGame(new Chess());
+                setHistory([]);
+                setViewIndex(-1);
+                setBoardKey(prev => prev + 1);
+            }
+        });
+
+        // --- LESSON LOADED (Fix for StudB seeing end) ---
+        socketRef.current.on('receive_pgn', (data) => {
+            // When Coach loads a PGN, students receive this.
+            // true = skipEmit (don't re-broadcast)
+            loadGameFromPgn(data.pgn, "Coach Loaded Lesson", true);
         });
 
         socketRef.current.on('receive_move', (moveData) => {
             if (moveData.fen && !moveData.from) {
-                // Forced FEN update
+                // Forced FEN update (e.g., reset or branch)
                 setCustomFen(null); 
                 setBoardKey(prev => prev + 1);
-
                 try {
                     const fenGame = new Chess(moveData.fen);
                     setGame(fenGame);
@@ -133,9 +177,7 @@ const VideoClassroom = () => {
                     setViewIndex(newHistory.length - 1); 
                     setCustomFen(null);
                     return gameCopy;
-                } catch (e) { 
-                    return new Chess(); 
-                }
+                } catch (e) { return new Chess(); }
             });
         });
 
@@ -144,12 +186,10 @@ const VideoClassroom = () => {
             drawing.setSquares(data.squares || {});
         });
 
-        socketRef.current.on('receive_message', (data) => {
-            setChatMessages(prev => [...prev, { ...data, isMe: false }]);
-        });
+        socketRef.current.on('receive_message', (data) => setChatMessages(prev => [...prev, { ...data, isMe: false }]));
 
         return () => { if (socketRef.current) socketRef.current.disconnect(); };
-    }, [roomId]);
+    }, [roomId, user]); // Kept dependencies minimal
 
     // --- Helpers ---
     const handleMouseUpWrapper = (e) => {
@@ -182,45 +222,27 @@ const VideoClassroom = () => {
         }
     };
 
-    // --- JUMP TO REFERENCE HANDLER (Restores Main Line) ---
     const handleRestoreReference = (index) => {
         try {
-            // Reconstruct game from Reference Start + Reference Moves up to index
             const t = referenceStartFen === 'start' ? new Chess() : new Chess(referenceStartFen);
-            
-            // Replay moves from reference history
             for(let i=0; i<=index; i++) {
                 if (referenceHistory[i]) t.move(referenceHistory[i]);
             }
-
-            // Update Live Game State
             setGame(t);
             setHistory(t.history());
             setCurrentPgn(t.pgn());
             setViewIndex(index);
-            
-            // Sync with Room
             if (socketRef.current) {
-                // We send FEN to force all clients to jump to this state (overwrite their history)
                 socketRef.current.emit('make_move', { roomId, fen: t.fen() });
             }
         } catch (e) {
             toast.error("Could not restore position.");
-            console.error(e);
         }
     };
 
-    // --- MAIN MOVE HANDLER ---
     function onDrop(source, target, piece) {
-        // Enforce: Can only move if viewing the latest position
-        if (viewIndex !== history.length - 1 && history.length > 0 && viewIndex !== -1) { 
-             // Allow move if we are at start (-1) and history is empty (0)
-             // Or if viewIndex is at the end.
-             // If we are navigating the past, we usually want to branch.
-             // Let's rely on the "branching" logic below.
-        }
+        if (viewIndex !== history.length - 1 && history.length > 0 && viewIndex !== -1) { /* Branching allowed */ }
         
-        // Permission Check
         const pieceColor = piece[0]; 
         const isCoach = user?.role === 'coach'; 
 
@@ -235,7 +257,6 @@ const VideoClassroom = () => {
             }
         }
         
-        // 1. Custom Board Logic
         if (customFen) {
             if (!illegalMode) {
                 toast.error("Strict Mode: Cannot move on invalid board.");
@@ -250,11 +271,8 @@ const VideoClassroom = () => {
             } catch (e) { return false; }
         }
 
-        // 2. Standard Logic
         try {
             const tempGame = startFen === 'start' ? new Chess() : new Chess(startFen);
-            
-            // Replay moves only up to viewIndex (Supports Branching)
             for(let i=0; i<=viewIndex; i++) {
                 if (history[i]) tempGame.move(history[i]);
             }
@@ -267,18 +285,14 @@ const VideoClassroom = () => {
             setHistory(newHistory); 
             setCurrentPgn(tempGame.pgn());
             
-            // Check if we branched (was not at the end of previous history)
             const wasBranching = viewIndex !== history.length - 1;
-
             setViewIndex(newHistory.length - 1);
             handleClearWrapper(); 
             
             if (socketRef.current) {
                 if (wasBranching) {
-                    // Force sync new branch
                     socketRef.current.emit('make_move', { roomId, fen: tempGame.fen() });
                 } else {
-                    // Append move
                     socketRef.current.emit('make_move', { roomId, from: source, to: target, promotion: 'q', fen: tempGame.fen() });
                 }
             }
@@ -292,30 +306,25 @@ const VideoClassroom = () => {
             const newHistory = history.slice(0, -1);
             const newGame = startFen === 'start' ? new Chess() : new Chess(startFen);
             for(const m of newHistory) newGame.move(m);
-            
             setGame(newGame);
             setHistory(newHistory);
             setCurrentPgn(newGame.pgn());
             setViewIndex(newHistory.length - 1);
-            
             if (socketRef.current) {
                 socketRef.current.emit('make_move', { roomId, fen: newGame.fen() });
             }
         }
     };
 
-    // --- LOAD PGN LOGIC ---
-    const loadGameFromPgn = (data, title = "Lesson") => {
-        if (!data || typeof data !== 'string' || !data.trim()) {
-            toast.error("Cannot load: Data is empty.");
-            return;
-        }
+    // --- KEY FIX: Add targetViewIndex to handle React state sync better ---
+    const loadGameFromPgn = (data, title = "Lesson", skipEmit = false, targetViewIndex = -1) => {
+        if (!data || typeof data !== 'string' || !data.trim()) return;
 
         setBoardKey(prev => prev + 1);
         const cleanedData = data.trim();
         setCustomFen(null); 
 
-        // 1. Standard PGN
+        // 1. Try Loading Standard PGN
         try {
             const pgnGame = new Chess();
             pgnGame.loadPgn(cleanedData);
@@ -326,33 +335,35 @@ const VideoClassroom = () => {
                 while (startClone.undo()) {} 
                 const trueStartFen = startClone.fen();
 
-                setStartFen(trueStartFen); 
+                setStartFen(trueStartFen);
                 
-                // SAVE REFERENCE (Static Syllabus)
                 const fullGame = new Chess();
                 fullGame.loadPgn(cleanedData);
-                setReferenceHistory(fullGame.history()); // Save Original History
-                setReferenceStartFen(trueStartFen);      // Save Original Start
+                
+                setReferenceHistory(fullGame.history());
+                setReferenceStartFen(trueStartFen);
 
-                // Set Live Game
                 setGame(fullGame);
                 setHistory(fullGame.history());
                 setCurrentPgn(fullGame.pgn());
                 
-                setViewIndex(-1); 
+                // CRITICAL: Set View to targetViewIndex (defaults to -1)
+                setViewIndex(targetViewIndex); 
                 
-                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: fullGame.fen() });
+                if (!skipEmit && socketRef.current) {
+                    socketRef.current.emit('load_pgn', { roomId, pgn: cleanedData });
+                }
+                
                 toast.success(`Loaded: ${title}`);
                 return;
             }
         } catch (e) {}
 
-        // 2. FEN Tag in PGN
+        // 2. Fallback to FEN
         let targetFen = cleanedData;
         const fenMatch = cleanedData.match(/\[FEN "([^"]+)"\]/);
         if (fenMatch && fenMatch[1]) { targetFen = fenMatch[1]; }
 
-        // 3. Raw FEN
         try {
             if (!targetFen.includes('/')) throw new Error("Not a FEN");
             try {
@@ -360,14 +371,14 @@ const VideoClassroom = () => {
                 setGame(fenGame);
                 setStartFen(targetFen);
                 setHistory([]);
-                
-                // For FEN, reference is just the position
                 setReferenceHistory([]); 
                 setReferenceStartFen(targetFen);
-
                 setCurrentPgn(fenGame.pgn());
                 setViewIndex(-1);
-                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
+                
+                if (!skipEmit && socketRef.current) {
+                    socketRef.current.emit('make_move', { roomId, fen: targetFen });
+                }
                 toast.success(`Loaded Position: ${title}`);
             } catch (chessError) {
                 setCustomFen(targetFen); 
@@ -377,9 +388,10 @@ const VideoClassroom = () => {
                 setReferenceHistory([]); 
                 setCurrentPgn("");
                 setViewIndex(-1);
-                if (socketRef.current) socketRef.current.emit('make_move', { roomId, fen: targetFen });
+                if (!skipEmit && socketRef.current) {
+                    socketRef.current.emit('make_move', { roomId, fen: targetFen });
+                }
                 if (illegalMode) toast.success(`Loaded (Free Mode): ${title}`);
-                else toast.warning(`Loaded Invalid Board (Strict Mode Active)`);
             }
         } catch (finalError) {
             toast.error("Failed to recognize game data.");
@@ -389,7 +401,6 @@ const VideoClassroom = () => {
     const handlePlayPlaylist = (chapterList, index) => {
         setPlaylist(chapterList);
         setCurrentChapterIndex(index);
-        
         const chapter = chapterList[index];
         if (chapter && chapter.pgn) {
             loadGameFromPgn(chapter.pgn, chapter.name);
@@ -424,17 +435,18 @@ const VideoClassroom = () => {
         const a = document.createElement('a'); a.href = url; a.download = `game_${roomId}.pgn`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     };
 
-    // --- REPLAY LOGIC ---
+    // --- KEY FIX: Prevent crash during React state transitions ---
     const getBoardPosition = () => { 
         if (customFen) return customFen; 
         try {
             const t = startFen === 'start' ? new Chess() : new Chess(startFen);
-            for(let i=0; i<=viewIndex; i++) {
+            const safeLimit = Math.min(viewIndex, history.length - 1);
+            for(let i=0; i<=safeLimit; i++) {
                 if (history[i]) t.move(history[i]);
             } 
             return t.fen();
         } catch (e) { 
-            return game.fen(); 
+            return startFen === 'start' ? new Chess().fen() : startFen; 
         }
     };
 
@@ -455,65 +467,34 @@ const VideoClassroom = () => {
                 
                 {playlist.length > 0 && (
                     <div className="hidden md:flex items-center bg-[#222] rounded-lg border border-white/10 p-1 gap-2 absolute left-1/2 transform -translate-x-1/2">
-                        <button 
-                            onClick={() => handleNavigateChapter(-1)} 
-                            disabled={currentChapterIndex <= 0}
-                            className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
-                            title="Previous Chapter"
-                        >
+                        <button onClick={() => handleNavigateChapter(-1)} disabled={currentChapterIndex <= 0} className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed text-gray-300">
                             <ChevronLeft className="w-4 h-4" />
                         </button>
-                        
                         <div className="flex flex-col items-center px-2 min-w-[120px]">
-                            <span className="text-xs font-bold text-white truncate max-w-[150px]">
-                                {playlist[currentChapterIndex]?.name}
-                            </span>
-                            <span className="text-[9px] text-gray-500 uppercase tracking-wider">
-                                {currentChapterIndex + 1} / {playlist.length}
-                            </span>
+                            <span className="text-xs font-bold text-white truncate max-w-[150px]">{playlist[currentChapterIndex]?.name}</span>
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wider">{currentChapterIndex + 1} / {playlist.length}</span>
                         </div>
-
-                        <button 
-                            onClick={() => handleNavigateChapter(1)} 
-                            disabled={currentChapterIndex >= playlist.length - 1}
-                            className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
-                            title="Next Chapter"
-                        >
+                        <button onClick={() => handleNavigateChapter(1)} disabled={currentChapterIndex >= playlist.length - 1} className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed text-gray-300">
                             <ChevronRight className="w-4 h-4" />
                         </button>
                     </div>
                 )}
 
                 <div className="flex items-center gap-3">
-                    
                     <div className="flex items-center bg-[#202020] border border-white/10 rounded-md px-3 py-1 mr-2">
                         <div className="flex flex-col mr-3 items-end">
                             <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Current Lesson</span>
-                            <span className="text-xs font-bold text-gray-200 truncate max-w-[150px]">
-                                {playlist.length > 0 && currentChapterIndex !== -1 
-                                 ? playlist[currentChapterIndex]?.name 
-                                 : "No Technique Loaded"}
-                            </span>
+                            <span className="text-xs font-bold text-gray-200 truncate max-w-[150px]">{playlist.length > 0 && currentChapterIndex !== -1 ? playlist[currentChapterIndex]?.name : "No Technique Loaded"}</span>
                         </div>
                         {playlist.length > 0 && (
-                             <button 
-                                onClick={() => handleNavigateChapter(1)}
-                                disabled={currentChapterIndex >= playlist.length - 1}
-                                className="p-1.5 hover:bg-white/10 rounded-full text-violet-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                title="Next Chapter"
-                             >
+                             <button onClick={() => handleNavigateChapter(1)} disabled={currentChapterIndex >= playlist.length - 1} className="p-1.5 hover:bg-white/10 rounded-full text-violet-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                                 <ChevronRight className="w-4 h-4" />
                              </button>
                         )}
                     </div>
-
-                    <button 
-                        onClick={() => setShowSyllabusModal(true)} 
-                        className="bg-violet-600/10 hover:bg-violet-600 border border-violet-500/50 text-violet-300 hover:text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all"
-                    >
+                    <button onClick={() => setShowSyllabusModal(true)} className="bg-violet-600/10 hover:bg-violet-600 border border-violet-500/50 text-violet-300 hover:text-white px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all">
                         <BookOpen className="w-4 h-4" /> Syllabus
                     </button>
-
                     <button onClick={() => navigate(-1)} className="bg-red-600/90 hover:bg-red-600 text-white px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all">
                         <PhoneOff className="w-3 h-3" /> Exit
                     </button>
@@ -522,7 +503,6 @@ const VideoClassroom = () => {
 
             <div className="flex-1 flex overflow-hidden">
                 <div className="flex-1 bg-[#0a0a0a] relative flex flex-col justify-center items-center">
-                    
                     <div 
                         ref={drawing.boardWrapperRef}
                         onMouseDown={drawing.handleMouseDown}
@@ -548,7 +528,7 @@ const VideoClassroom = () => {
                             setCustomFen(null);
                             setStartFen('start'); 
                             setHistory([]); 
-                            setReferenceHistory([]); // Clear reference on reset
+                            setReferenceHistory([]); 
                             setCurrentPgn("");
                             setViewIndex(-1); 
                             handleClearWrapper(); 
@@ -567,10 +547,8 @@ const VideoClassroom = () => {
                     activeTab={activeTab} setActiveTab={setActiveTab} 
                     history={history}
                     viewIndex={viewIndex} goToMove={setViewIndex} 
-                    // Pass Reference Data
                     referenceHistory={referenceHistory}
                     onRestoreReference={handleRestoreReference}
-                    
                     onLoadPGN={handleLoadPGN} 
                     onDownloadPGN={handleDownloadPGN} 
                     micOn={micOn} setMicOn={setMicOn} 
@@ -583,16 +561,8 @@ const VideoClassroom = () => {
                     onAssignControl={handleAssignControl}
                 />
             </div>
-            
             <SetupPosition isOpen={showSetupModal} onClose={() => setShowSetupModal(false)} currentFen={game.fen()} onLoadPosition={handleSetupLoad} />
-            
-            <Syllabus 
-                isOpen={showSyllabusModal} 
-                onClose={() => setShowSyllabusModal(false)} 
-                onPlayPlaylist={handlePlayPlaylist}
-                roomId={roomId} 
-                onLoadPGN={handleLoadPGN} 
-            />
+            <Syllabus isOpen={showSyllabusModal} onClose={() => setShowSyllabusModal(false)} onPlayPlaylist={handlePlayPlaylist} roomId={roomId} onLoadPGN={handleLoadPGN} />
         </div>
     );
 };
