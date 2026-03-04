@@ -7,7 +7,7 @@ import { ENDPOINTS } from "../../../lib/endpoints.js";
 import { toast } from "sonner";
 import { 
   CheckCircle2, Play, Clock, AlertCircle, 
-  Trophy, ChevronRight, Loader2 
+  Trophy, ChevronRight, Loader2, BookOpen
 } from "lucide-react";
 import { Button } from "../../../components/ui/button.tsx";
 
@@ -39,12 +39,13 @@ const StudentAssignment = () => {
         // 3. Flatten list
         const allAssignments = assignmentResults.flatMap(res => res.data.data || []);
         
-        // 4. Sort into Pending vs Completed based on 'mySubmission' status
+        // 4. Sort into Pending vs Completed
         const pending = [];
         const completed = [];
 
         allAssignments.forEach(assign => {
-          const sub = assign.mySubmission;
+          // Safe fallback for newly enrolled students with no submission record yet
+          const sub = assign?.mySubmission;
           if (!sub || ['pending', 'in_progress', 'submitted', 'fail'].includes(sub.status)) {
             pending.push(assign);
           } else if (sub.status === 'pass') {
@@ -67,162 +68,164 @@ const StudentAssignment = () => {
     if (user) fetchData();
   }, [user]);
 
-  // --- Helper to calculate progress ---
   const getProgress = (assign) => {
-    const total = assign.tasks?.length || 0;
-    const solved = assign.mySubmission?.solvedTaskIds?.length || 0;
+    const total = assign?.tasks?.length || 0;
+    const solved = assign?.mySubmission?.solvedTaskIds?.length || 0;
     const percent = total > 0 ? (solved / total) * 100 : 0;
     return { solved, total, percent };
   };
 
-  // --- Helper for Status Badge ---
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'submitted': return <span className="text-xs font-bold bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded flex items-center gap-1"><Clock className="w-3 h-3"/> In Review</span>;
-      case 'fail': return <span className="text-xs font-bold bg-red-500/20 text-red-400 px-2 py-0.5 rounded flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Redo</span>;
-      case 'pass': return <span className="text-xs font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded flex items-center gap-1"><Trophy className="w-3 h-3"/> Passed</span>;
-      default: return <span className="text-xs font-bold bg-gray-700 text-gray-400 px-2 py-0.5 rounded">To Do</span>;
+      case 'submitted': return <span className="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md flex items-center gap-1 uppercase tracking-wider"><Clock className="w-3 h-3"/> Pending Review</span>;
+      case 'fail': return <span className="text-[10px] font-bold bg-red-500/20 text-red-400 px-2 py-1 rounded-md flex items-center gap-1 uppercase tracking-wider"><AlertCircle className="w-3 h-3"/> Needs Revision</span>;
+      case 'pass': return <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-1 rounded-md flex items-center gap-1 uppercase tracking-wider"><Trophy className="w-3 h-3"/> Passed</span>;
+      default: return <span className="text-[10px] font-bold bg-white/10 text-gray-300 px-2 py-1 rounded-md uppercase tracking-wider">In Progress</span>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a1429] via-[#0a1020] to-black p-6 text-white font-sans">
-      <h1 className="text-3xl font-extrabold text-center mb-8 flex justify-center items-center gap-3">
-        <span>📘</span> My Assignments
-      </h1>
+    <div className="min-h-screen bg-[#0B0F19] p-4 md:p-8 text-white font-sans selection:bg-blue-500/30">
+      <div className="max-w-5xl mx-auto space-y-10">
+        
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">
+              Training Grounds
+            </h1>
+            <p className="text-gray-400 mt-2 text-sm md:text-base">Master the lines assigned by your coach.</p>
+          </div>
+        </header>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center h-64">
-           <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-2"/>
-           <p className="text-gray-400">Loading your tasks...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center text-lg text-red-500 bg-red-500/10 p-4 rounded-lg border border-red-500/20">{error}</div>
-      ) : (
-        <div className="max-w-4xl mx-auto space-y-10">
-          
-          {/* === ACTIVE ASSIGNMENTS === */}
-          <section>
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400">
-              <Clock className="w-5 h-5"/> Active Tasks
-            </h2>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-64 space-y-4">
+             <Loader2 className="w-10 h-10 text-blue-500 animate-spin"/>
+             <p className="text-gray-400 font-medium tracking-wide animate-pulse">Loading assignments...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-40 bg-red-500/10 border border-red-500/20 rounded-2xl">
+            <AlertCircle className="w-8 h-8 text-red-400 mb-2"/>
+            <p className="text-red-400 font-medium">{error}</p>
+          </div>
+        ) : (
+          <div className="space-y-12">
             
-            <div className="space-y-4">
-              {pendingAssignments.length > 0 ? (
-                pendingAssignments.map((assign) => {
-                  const { solved, total, percent } = getProgress(assign);
-                  const sub = assign.mySubmission;
+            {/* === ACTIVE ASSIGNMENTS === */}
+            <section>
+              <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-white">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                Active Training
+              </h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {pendingAssignments.length > 0 ? (
+                  pendingAssignments.map((assign) => {
+                    const { solved, total, percent } = getProgress(assign);
+                    const sub = assign?.mySubmission;
 
-                  return (
-                    <motion.div 
-                      key={assign._id} 
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                      className="bg-white/5 border border-white/10 p-5 rounded-2xl hover:border-yellow-500/30 transition-all shadow-lg"
-                    >
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        
-                        {/* Info Section */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-lg font-bold text-white">{assign.title}</h3>
+                    return (
+                      <motion.div 
+                        key={assign._id} 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        className="group bg-[#131825] border border-white/5 hover:border-blue-500/30 p-5 rounded-2xl transition-all duration-300 flex flex-col justify-between hover:shadow-2xl hover:shadow-blue-900/10 relative overflow-hidden"
+                      >
+                        {/* Background subtle glow */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
+
+                        <div>
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="text-lg font-bold text-gray-100 group-hover:text-blue-400 transition-colors line-clamp-1">{assign.title}</h3>
                             {getStatusBadge(sub?.status)}
                           </div>
-                          <p className="text-sm text-gray-400 mb-3">
-                            Course: <span className="text-gray-300">{assign.course?.title}</span>
+                          <p className="text-xs text-gray-500 flex items-center gap-1.5 mb-6">
+                            <BookOpen className="w-3.5 h-3.5"/> {assign.course?.title}
                           </p>
                           
-                          {/* Progress Bar */}
-                          <div className="w-full max-w-sm">
-                            <div className="flex justify-between text-xs text-gray-500 mb-1">
-                              <span>Progress</span>
-                              <span>{solved} / {total} Tasks</span>
+                          {/* Coach Feedback Box */}
+                          {sub?.status === 'fail' && sub?.feedback && (
+                            <div className="mb-6 bg-red-950/30 border border-red-900/50 p-3 rounded-lg">
+                              <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-1 block flex items-center gap-1">
+                                Coach Notes
+                              </span>
+                              <p className="text-sm text-red-200/80 leading-relaxed">"{sub.feedback}"</p>
                             </div>
-                            <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                          )}
+                        </div>
+
+                        {/* Bottom Section: Progress & Action */}
+                        <div className="flex items-end justify-between gap-4 mt-auto pt-4 border-t border-white/5">
+                          <div className="flex-1 max-w-[200px]">
+                            <div className="flex justify-between text-[11px] font-medium text-gray-400 mb-1.5 uppercase tracking-wide">
+                              <span>Progress</span>
+                              <span>{solved} / {total}</span>
+                            </div>
+                            <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
                               <div 
-                                className={`h-full rounded-full ${sub?.status === 'fail' ? 'bg-red-500' : 'bg-yellow-500'}`} 
+                                className={`h-full rounded-full transition-all duration-500 ${sub?.status === 'fail' ? 'bg-red-500' : 'bg-blue-500'}`} 
                                 style={{ width: `${percent}%` }}
                               ></div>
                             </div>
                           </div>
 
-                          {/* Coach Feedback (If Failed/Redo) */}
-                          {sub?.status === 'fail' && sub?.feedback && (
-                            <div className="mt-4 bg-red-900/20 border-l-2 border-red-500 p-3 rounded-r text-sm text-red-200">
-                              <span className="font-bold text-red-400 block text-xs uppercase mb-1">Coach Feedback:</span>
-                              "{sub.feedback}"
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Button */}
-                        <div>
                           <Button 
-                            /* --- FIXED: Matches your /student-dashboard route --- */
                             onClick={() => navigate(`/student-dashboard/assignment/${assign._id}`)}
-                            className="w-full md:w-auto bg-violet-600 hover:bg-violet-500 text-white font-bold"
+                            className="bg-white text-black hover:bg-gray-200 font-bold px-6 py-2 h-auto rounded-lg shadow-lg hover:shadow-xl transition-all"
                           >
-                            <Play className="w-4 h-4 mr-2"/> 
-                            {solved > 0 ? "Continue" : "Start"}
+                            <Play className="w-4 h-4 mr-2 fill-black"/> 
+                            {solved > 0 ? "Resume" : "Start"}
                           </Button>
                         </div>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-10 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                  <p className="text-gray-500">No active assignments. Relax! 🌴</p>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* === COMPLETED HISTORY === */}
-          {completedAssignments.length > 0 && (
-            <section>
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-green-400">
-                <CheckCircle2 className="w-5 h-5"/> Completed
-              </h2>
-              
-              <div className="space-y-3">
-                {completedAssignments.map((assign) => (
-                  <motion.div 
-                    key={assign._id}
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="bg-green-900/10 border border-green-500/20 p-4 rounded-xl flex items-center justify-between"
-                  >
-                    <div>
-                      <h3 className="font-bold text-gray-300 line-through decoration-green-500/50">{assign.title}</h3>
-                      <p className="text-xs text-gray-500">{assign.course?.title}</p>
-                    </div>
-                    
-                    <div className="text-right">
-                      {assign.mySubmission?.feedback && (
-                        <div className="text-xs text-green-300 italic mb-1">
-                          "{assign.mySubmission.feedback}"
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 justify-end">
-                        <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded font-bold uppercase">Passed</span>
-                        <Button 
-                           variant="ghost" 
-                           size="sm"
-                           className="text-gray-500 hover:text-white"
-                           /* --- FIXED: Matches your /student-dashboard route --- */
-                           onClick={() => navigate(`/student-dashboard/assignment/${assign._id}`)}
-                        >
-                          Review <ChevronRight className="w-3 h-3 ml-1"/>
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full flex flex-col items-center justify-center py-16 bg-[#131825]/50 border border-dashed border-white/10 rounded-2xl">
+                    <Trophy className="w-12 h-12 text-gray-600 mb-3"/>
+                    <p className="text-gray-400 font-medium text-center">You are all caught up on your assignments.</p>
+                  </div>
+                )}
               </div>
             </section>
-          )}
 
-        </div>
-      )}
+            {/* === COMPLETED HISTORY === */}
+            {completedAssignments.length > 0 && (
+              <section>
+                <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-gray-400">
+                  <CheckCircle2 className="w-5 h-5"/> Training History
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {completedAssignments.map((assign) => (
+                    <motion.div 
+                      key={assign._id}
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                      onClick={() => navigate(`/student-dashboard/assignment/${assign._id}`)}
+                      className="group bg-[#131825] border border-white/5 hover:border-green-500/30 p-4 rounded-xl flex items-center justify-between cursor-pointer transition-all hover:bg-[#161d2d]"
+                    >
+                      <div className="flex-1 pr-4">
+                        <h3 className="font-semibold text-gray-300 group-hover:text-white transition-colors">{assign.title}</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">{assign.course?.title}</p>
+                        {assign?.mySubmission?.feedback && (
+                          <p className="text-xs text-green-400/80 italic mt-2 border-l-2 border-green-500/30 pl-2">
+                            "{assign.mySubmission.feedback}"
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] bg-green-500/10 text-green-400 px-2 py-1 rounded font-bold uppercase tracking-wider">Passed</span>
+                        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-green-400 transition-colors"/>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+          </div>
+        )}
+      </div>
     </div>
   );
 };

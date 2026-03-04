@@ -6,11 +6,16 @@ import { ENDPOINTS } from "../../../lib/endpoints.js";
 import { toast } from "sonner";
 import { 
   Trash2, Plus, CheckCircle, 
-  XCircle, Loader2, User, Filter 
+  XCircle, Loader2, User, Filter,
+  Search, GitBranch, ArrowLeft, Lightbulb // Added new icons for the review flow
 } from "lucide-react";
 import { Button } from "../../../components/ui/button.tsx";
 
-// [NEW] Constant matching CoachDatabase.jsx
+// [NEW] Added Chess imports for the detailed review board
+import { Chess } from "chess.js";
+import { Chessboard } from "react-chessboard";
+
+// Constant matching CoachDatabase.jsx
 const LEVELS = [
   'Beginner 1', 'Beginner 2', 'Beginner 3', 
   'Intermediate 1', 'Intermediate 2', 'Intermediate 3', 
@@ -35,7 +40,7 @@ const CoachAssignment = () => {
   const [loadingSyllabus, setLoadingSyllabus] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState([]); 
   
-  // [UPDATED] Filter State defaults to first level to match Database behavior
+  // Filter State defaults to first level to match Database behavior
   const [filterLevel, setFilterLevel] = useState("Beginner 1");
 
   // --- Review Modal State ---
@@ -43,6 +48,11 @@ const CoachAssignment = () => {
   const [currentAssignment, setCurrentAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
+  // --- [NEW] Detailed Review State ---
+  const [detailedSubmission, setDetailedSubmission] = useState(null); // The specific student being reviewed
+  const [activeTaskReview, setActiveTaskReview] = useState(null); // The specific task being viewed on the board
+  const [reviewGame, setReviewGame] = useState(new Chess());
 
   // --- Feedback Inputs (Map by submissionId) ---
   const [feedbackMap, setFeedbackMap] = useState({}); 
@@ -87,27 +97,21 @@ const CoachAssignment = () => {
 
   // ==================== 2. SYLLABUS & TASK SELECTION ====================
 
-  // [UPDATED] Fetch syllabus depends on Course AND Level (Server-side filter)
+  // Fetch syllabus depends on Course AND Level (Server-side filter)
   useEffect(() => {
     if (!selectedCourseId) {
       setSyllabus([]);
-      setSelectedTasks([]); // Optional: Clear selection on course change
+      setSelectedTasks([]); 
       return;
     }
 
     const fetchSyllabus = async () => {
       try {
         setLoadingSyllabus(true);
-        
-        // [UPDATED] API Call uses query param like CoachDatabase
-        // Assuming ENDPOINTS.SYLLABUS.GET_BY_COURSE returns string like "/syllabus/course/:id"
-        // We append the level query param
         const baseUrl = ENDPOINTS.SYLLABUS.GET_BY_COURSE(selectedCourseId);
         const res = await apiClient.get(`${baseUrl}?level=${encodeURIComponent(filterLevel)}`);
         
         const data = res.data.data; 
-        
-        // Ensure we handle both structure types (array of levels OR object with techniques)
         const syllabusList = Array.isArray(data) ? data : (data.techniques || []);
         setSyllabus(syllabusList);
         
@@ -120,7 +124,7 @@ const CoachAssignment = () => {
     };
 
     fetchSyllabus();
-  }, [selectedCourseId, filterLevel]); // [UPDATED] Dependency array includes filterLevel
+  }, [selectedCourseId, filterLevel]); 
 
   const toggleTaskSelection = (chapter) => {
     setSelectedTasks(prev => {
@@ -137,9 +141,6 @@ const CoachAssignment = () => {
       }
     });
   };
-
-  // [REMOVED] Client-side filteredSyllabus logic. 
-  // We now use `syllabus` directly because the API returns exactly what we asked for.
 
   // ==================== 3. ACTIONS (CREATE, DELETE, REVIEW) ====================
 
@@ -190,8 +191,11 @@ const CoachAssignment = () => {
 
   const openReviewModal = async (assignment) => {
     setCurrentAssignment(assignment);
+    setDetailedSubmission(null); // Reset detailed view state
+    setActiveTaskReview(null);
     setReviewModalOpen(true);
     setLoadingSubmissions(true);
+    
     try {
       const res = await apiClient.get(ENDPOINTS.SUBMISSIONS.GET_ALL_FOR_ASSIGNMENT(assignment._id));
       setSubmissions(res.data.data || []);
@@ -222,9 +226,57 @@ const CoachAssignment = () => {
         sub._id === submissionId ? { ...sub, status, feedback: feedbackText } : sub
       ));
 
+      // Auto-back to list if they review from detailed view
+      if (detailedSubmission) {
+          setDetailedSubmission(null);
+          setActiveTaskReview(null);
+      }
+
     } catch (error) {
       toast.error("Failed to submit review.");
     }
+  };
+
+  // --- [NEW] Detailed Task Helper ---
+  // --- [NEW] Detailed Task Helper ---
+  const getTaskSubmissionData = (task) => {
+    if (!detailedSubmission) return null;
+    
+    // Look for a match against either the sub-document ID or the Syllabus Chapter ID
+    const matchId1 = task._id;
+    const matchId2 = task.chapterId;
+    
+    // Check if the backend uses the updated schema (solvedTasks array of objects)
+    if (detailedSubmission.solvedTasks) {
+        return detailedSubmission.solvedTasks.find(t => 
+            t.taskId === matchId1 || t.taskId === matchId2
+        );
+    }
+    
+    // Fallback if backend is still sending array of IDs
+    if (detailedSubmission.solvedTaskIds) {
+        if (detailedSubmission.solvedTaskIds.includes(matchId1) || detailedSubmission.solvedTaskIds.includes(matchId2)) {
+            return { isCorrect: true }; 
+        }
+    }
+    return null;
+  };
+
+  const loadTaskBoard = (taskData, assignmentTaskData) => {
+      setActiveTaskReview(taskData);
+      try {
+          const game = new Chess();
+          // If the student submitted an override PGN, load it to see their exact final position
+          if (taskData.overridePgn) {
+              game.loadPgn(taskData.overridePgn);
+          } else if (assignmentTaskData.fen && assignmentTaskData.fen !== 'start') {
+              // Fallback to the starting position of the puzzle if no override
+              game.load(assignmentTaskData.fen);
+          }
+          setReviewGame(game);
+      } catch (e) {
+          toast.error("Could not parse student's board data.");
+      }
   };
 
   // ==================== RENDER ====================
@@ -258,7 +310,6 @@ const CoachAssignment = () => {
                     value={selectedCourseId}
                     onChange={(e) => {
                       setSelectedCourseId(e.target.value);
-                      // Reset to first level on new course selection if needed, or keep current filter
                     }}
                     className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-violet-500 outline-none"
                   >
@@ -291,14 +342,13 @@ const CoachAssignment = () => {
 
                 {/* 3. Task Selection (Syllabus Tree) */}
                 <div className="border-t border-white/10 pt-4">
-                  {/* HEADER: Label + Filter Dropdown */}
                   <div className="flex flex-col gap-2 mb-2">
                     <label className="text-xs font-bold text-violet-400 uppercase flex justify-between items-center">
                       <span>Select Tasks</span>
                       <span className="text-white bg-violet-600 px-2 py-0.5 rounded-full text-[10px]">{selectedTasks.length} Selected</span>
                     </label>
 
-                    {/* Filter Dropdown (UPDATED TO MATCH DATABASE) */}
+                    {/* Filter Dropdown */}
                     <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/10">
                         <Filter className="w-4 h-4 text-gray-400" />
                         <select 
@@ -327,18 +377,12 @@ const CoachAssignment = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {/* We map directly over syllabus now, as API filtered it */}
                         {syllabus.map((item) => (
                           <div key={item._id} className="mb-2">
-                            {/* Level / Group Header */}
                             <h4 className="text-xs font-bold text-gray-300 bg-[#1a2333] px-3 py-2 rounded-t border border-white/10 border-b-0 sticky top-0 z-10 flex justify-between items-center shadow-md">
                                 {item.name || item.level} 
                             </h4>
-                            
-                            {/* Items Container */}
                             <div className="border border-white/10 rounded-b bg-black/20 p-2 space-y-1">
-                                
-                                {/* Structure Type 1: Techniques -> Chapters (Standard) */}
                                 {item.techniques?.map((tech) => (
                                     <div key={tech._id} className="mb-2">
                                         <div className="text-[11px] font-bold text-violet-400 px-2 py-1 uppercase">{tech.name}</div>
@@ -362,7 +406,6 @@ const CoachAssignment = () => {
                                     </div>
                                 ))}
 
-                                {/* Structure Type 2: Direct Chapters (Coach Database style if flat) */}
                                 {item.chapters?.map((ch) => {
                                   const isSelected = selectedTasks.some(t => t.chapterId === ch._id);
                                   return (
@@ -484,15 +527,26 @@ const CoachAssignment = () => {
           >
             <motion.div 
               initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-              className="bg-[#121212] border border-white/10 w-full max-w-4xl h-[80vh] rounded-2xl flex flex-col shadow-2xl"
+              className="bg-[#121212] border border-white/10 w-full max-w-5xl h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#181818] rounded-t-2xl">
-                <div>
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    Submissions: <span className="text-violet-400">{currentAssignment.title}</span>
-                  </h2>
-                  <p className="text-xs text-gray-500 mt-1">Total Tasks: {currentAssignment.tasks.length}</p>
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#181818]">
+                <div className="flex items-center gap-4">
+                  {detailedSubmission && (
+                    <button 
+                      onClick={() => { setDetailedSubmission(null); setActiveTaskReview(null); }} 
+                      className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white flex items-center gap-2 text-sm font-bold uppercase tracking-wider"
+                    >
+                      <ArrowLeft className="w-4 h-4"/> Back to List
+                    </button>
+                  )}
+                  <div>
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      {detailedSubmission ? `Reviewing: ${detailedSubmission.student?.fullname}` : "Submissions:"} 
+                      {!detailedSubmission && <span className="text-violet-400">{currentAssignment.title}</span>}
+                    </h2>
+                    <p className="text-xs text-gray-500 mt-1">Total Tasks: {currentAssignment.tasks.length}</p>
+                  </div>
                 </div>
                 <button onClick={() => setReviewModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white">
                   <XCircle className="w-6 h-6" />
@@ -500,21 +554,116 @@ const CoachAssignment = () => {
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-y-auto p-6 bg-[#0a0a0a]">
+              <div className="flex-1 overflow-y-auto bg-[#0a0a0a]">
                 {loadingSubmissions ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
                     <Loader2 className="w-8 h-8 animate-spin mb-2"/>
                     Loading...
                   </div>
                 ) : submissions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full border border-dashed border-white/10 rounded-xl">
+                  <div className="flex flex-col items-center justify-center h-full border border-dashed border-white/10 rounded-xl m-6">
                     <p className="text-gray-500">No students have started this assignment yet.</p>
                   </div>
+                ) : detailedSubmission ? (
+                  /* --- [NEW] DETAILED REVIEW VIEW --- */
+                  <div className="flex flex-col md:flex-row h-full">
+                      {/* Left Side: Task List & Feedback */}
+                      <div className="w-full md:w-1/2 p-6 overflow-y-auto border-r border-white/10 flex flex-col">
+                          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Task Breakdown</h3>
+                          
+                          <div className="space-y-3 mb-6 flex-1">
+                              {currentAssignment.tasks.map((task, idx) => {
+                                  const subData = getTaskSubmissionData(task);
+                                  const isCompleted = !!subData;
+                                  const isOffScript = isCompleted && subData.isCorrect === false;
+                                  const isActive = activeTaskReview && activeTaskReview.taskId === task._id;
+
+                                  return (
+                                      <div key={task._id} className={`p-4 rounded-xl border transition-all ${isActive ? 'bg-blue-900/20 border-blue-500/50' : 'bg-[#161616] border-white/5 hover:border-white/10'}`}>
+                                          <div className="flex justify-between items-start mb-2">
+                                              <span className="font-bold text-gray-200 text-sm">{idx + 1}. {task.title}</span>
+                                              {isCompleted ? (
+                                                  isOffScript ? (
+                                                      <span className="text-[10px] font-bold bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded uppercase flex items-center gap-1">
+                                                          <GitBranch className="w-3 h-3"/> Off-Script
+                                                      </span>
+                                                  ) : (
+                                                      <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded uppercase flex items-center gap-1">
+                                                          <CheckCircle className="w-3 h-3"/> Book Move
+                                                      </span>
+                                                  )
+                                              ) : (
+                                                  <span className="text-[10px] font-bold bg-gray-800 text-gray-500 px-2 py-0.5 rounded uppercase">Unsolved</span>
+                                              )}
+                                          </div>
+                                          
+                                          {isOffScript && (
+                                              <Button 
+                                                  size="sm" 
+                                                  onClick={() => loadTaskBoard(subData, task)}
+                                                  className="w-full mt-2 bg-orange-600/20 hover:bg-orange-600/40 text-orange-400 border border-orange-500/30 font-bold"
+                                              >
+                                                  <Search className="w-4 h-4 mr-2"/> Review Custom Line
+                                              </Button>
+                                          )}
+                                      </div>
+                                  );
+                              })}
+                          </div>
+
+                          {/* Final Grading Box attached to Detailed View */}
+                          <div className="bg-[#181818] p-4 rounded-xl border border-white/10">
+                              <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Issue Final Grade</label>
+                              <textarea
+                                className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-gray-300 focus:border-violet-500 outline-none resize-none mb-3"
+                                rows="2"
+                                placeholder="Write final feedback to student..."
+                                value={feedbackMap[detailedSubmission._id] || ""}
+                                onChange={(e) => setFeedbackMap(prev => ({ ...prev, [detailedSubmission._id]: e.target.value }))}
+                              />
+                              <div className="flex gap-2">
+                                <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-500" onClick={() => submitReview(detailedSubmission._id, 'pass')}>
+                                  Pass Student
+                                </Button>
+                                <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-500" onClick={() => submitReview(detailedSubmission._id, 'fail')}>
+                                  Fail / Redo
+                                </Button>
+                              </div>
+                          </div>
+                      </div>
+
+                      {/* Right Side: Chessboard */}
+                      <div className="w-full md:w-1/2 p-6 flex flex-col items-center justify-center bg-black/50">
+                          {activeTaskReview ? (
+                              <div className="w-full max-w-[400px]">
+                                  <div className="mb-4 text-center">
+                                      <h3 className="font-bold text-orange-400 flex items-center justify-center gap-2 mb-1">
+                                          <GitBranch className="w-4 h-4"/> Student's Custom Line
+                                      </h3>
+                                      <p className="text-xs text-gray-500">Board reflects the final position of their submission.</p>
+                                  </div>
+                                  <div className="rounded-md overflow-hidden shadow-2xl border-2 border-orange-500/50 p-1 bg-orange-900/20">
+                                      <Chessboard 
+                                          position={reviewGame.fen()} 
+                                          arePiecesDraggable={false}
+                                          customDarkSquareStyle={{ backgroundColor: '#47638A' }} 
+                                          customLightSquareStyle={{ backgroundColor: '#E4EBF2' }}
+                                      />
+                                  </div>
+                              </div>
+                          ) : (
+                              <div className="flex flex-col items-center justify-center text-gray-500">
+                                  <Lightbulb className="w-12 h-12 mb-3 opacity-20"/>
+                                  <p className="text-sm">Select an "Off-Script" task on the left to review the board.</p>
+                              </div>
+                          )}
+                      </div>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  /* --- [EXISTING] OVERVIEW GRID --- */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
                     {submissions.map(sub => {
-                      // Calculate Progress
-                      const progressStr = sub.progress || "0 / 0"; // Backend sends "3 / 5" string
+                      const progressStr = sub.progress || "0 / 0"; 
                       const [solved, total] = progressStr.split(' / ').map(Number);
                       const percent = total > 0 ? (solved / total) * 100 : 0;
                       
@@ -556,6 +705,16 @@ const CoachAssignment = () => {
 
                           {/* Feedback Section */}
                           <div className="mt-auto pt-4 border-t border-white/5">
+                            
+                            {/* [NEW] Inspect Button */}
+                            <Button 
+                                variant="outline" 
+                                className="w-full mb-4 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors"
+                                onClick={() => setDetailedSubmission(sub)}
+                            >
+                                <Search className="w-4 h-4 mr-2"/> Inspect Board & Lines
+                            </Button>
+
                             <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Feedback Review</label>
                             <textarea
                               className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-gray-300 focus:border-violet-500 outline-none resize-none mb-3"
