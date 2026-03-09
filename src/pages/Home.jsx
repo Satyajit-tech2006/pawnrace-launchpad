@@ -1,45 +1,42 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // 1. Import useNavigate
-import { useAuth } from "../contexts/AuthContext"; // 2. Import useAuth
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import sambitpandaIMG from "../assets/sambit-panda.jpg";
 
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
-import Testimonials from "@/components/Testimonials";
 import Coaches from "@/components/Coaches";
-import Contacts from "@/components/Contacts";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
 import StudentGlory from "../components/StudentGlory";
-import AutoPopup from "@/components/AutoPopup"; 
+import AutoPopup from "@/components/AutoPopup";
 
 export default function Home() {
-  const { user } = useAuth(); // 3. Get user from context
-  const navigate = useNavigate(); // 4. Initialize navigation
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAutoPopupOpen, setIsAutoPopupOpen] = useState(false);
 
-  // 5. NEW: Auto-Redirect Effect
+  // Auto redirect
   useEffect(() => {
     if (user) {
-      // Check role and redirect immediately
-      if (user.role === 'coach') {
-        navigate('/coach-dashboard');
+      if (user.role === "coach") {
+        navigate("/coach-dashboard");
       } else {
-        navigate('/student-dashboard');
+        navigate("/student-dashboard");
       }
     }
   }, [user, navigate]);
 
-  // Show the popup after a 5-second delay
+  // Auto popup
   useEffect(() => {
-    // Optional: Don't show popup if user is logged in (though redirect happens fast)
-    if (user) return; 
+    if (user) return;
 
     const timer = setTimeout(() => {
       setIsAutoPopupOpen(true);
-    }, 5000); 
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [user]);
@@ -56,8 +53,91 @@ export default function Home() {
     setIsAutoPopupOpen(false);
   };
 
-  // Prevent rendering the Landing Page content if redirecting
-  if (user) return null; 
+  /* -------------------- OFFER BANNER -------------------- */
+
+  const OfferBanner = () => {
+    const navigate = useNavigate();
+
+    const offers = [
+      {
+        text: "♟ Advanced Chess Workshop: Attack & Defense",
+        link: "/special-offer",
+        img: sambitpandaIMG,
+      },
+      {
+        text: "📅 14 March 2026 | Live Online Workshop with IM Sambit Panda",
+        link: "/special-offer",
+        img: sambitpandaIMG,
+      },
+      {
+        text: "💰 Workshop Fee: ₹899 Only (Incl. GST)",
+        link: "/special-offer",
+        img: sambitpandaIMG,
+      },
+      {
+        text: "🏆 Top 3 Players Win FREE 3-Month Training Course",
+        link: "/special-offer",
+        img: sambitpandaIMG,
+      },
+      {
+        text: "🎁 Bonus: Free E-Books for all participants",
+        link: "/special-offer",
+        img: sambitpandaIMG,
+      },
+    ];
+
+    const [index, setIndex] = useState(0);
+
+    // Auto slider
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setIndex((prev) => (prev + 1) % offers.length);
+      }, 2500);
+
+      return () => clearInterval(interval);
+    }, []);
+
+    const current = offers[index];
+
+    return (
+      <div className="w-full flex justify-center mt-6">
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-10 px-10 rounded-2xl shadow-2xl border border-orange-400/30 w-[90%] max-w-5xl transition-all duration-700">
+          <div className="flex items-center justify-between">
+            {/* LEFT TEXT */}
+
+            <div className="flex flex-col gap-3">
+              <span className="font-bold text-lg md:text-xl flex items-center gap-3">
+                <span className="animate-pulse ring-2 ring-white/50 rounded-full w-3 h-3 bg-white"></span>
+
+                {current.text}
+              </span>
+
+              <button
+                onClick={() => navigate(current.link)}
+                className="bg-white text-orange-600 px-5 py-2 rounded-full text-sm font-black uppercase hover:bg-gray-100 transition w-fit"
+              >
+                View Details
+              </button>
+            </div>
+
+            {/* RIGHT IMAGE */}
+
+            <div className="hidden md:block">
+              <img
+                src={current.img}
+                alt="Coach"
+                className="h-24 md:h-32 object-cover rounded-xl shadow-xl"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* -------------------- UI -------------------- */
+
+  if (user) return null;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 text-white">
@@ -65,16 +145,20 @@ export default function Home() {
 
       <main className="flex-grow">
         <Hero onLoginClick={handleLoginClick} />
+
+        <OfferBanner />
+
         <Coaches />
+
         <Features />
-        
       </main>
-      <StudentGlory/>
+
+      <StudentGlory />
+
       <Footer />
 
       <AuthModal isOpen={isAuthModalOpen} onClose={handleCloseModal} />
-      
-      {/* Render the AutoPopup component */}
+
       <AutoPopup isOpen={isAutoPopupOpen} onClose={handleCloseAutoPopup} />
     </div>
   );
