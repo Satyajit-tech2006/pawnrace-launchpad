@@ -131,19 +131,20 @@ const OfferDetails = () => {
 
         {/* DETAILS */}
 
-        <div className="grid md:grid-cols-4 gap-6 mb-16">
+        <div className="grid md:grid-cols-5 gap-6 mb-16">
 
           {[
             ["DATE", "14 – 15 March"],
             ["TIME", "6:30 PM – 8:00 PM IST"],
             ["FORMAT", "Live Online"],
-            ["COACH", "IM Sambit Panda"]
+            ["INDIA PRICE", "₹999"],
+            ["FOREIGN PRICE", "$20"]
           ].map((item, i) => (
 
             <div
               key={i}
               ref={el => cardsRef.current[i] = el}
-              className="bg-zinc-900 p-6 rounded-xl border border-yellow-500/20"
+              className="bg-zinc-900 p-6 rounded-xl border border-yellow-500/20 text-center"
             >
 
               <p className="text-yellow-400 text-sm">{item[0]}</p>
@@ -231,6 +232,22 @@ const OfferDetails = () => {
           <p><b>Bank:</b> Union Bank</p>
           <p><b>Acc No:</b> 04581100000109</p>
           <p className="mb-6"><b>IFSC:</b> UBIN0804584</p>
+
+          <div className="bg-white/20 rounded-lg p-6 mb-6 text-left max-w-xl mx-auto">
+
+            <h3 className="font-bold mb-3 text-lg">Registration Steps</h3>
+
+            <ol className="list-decimal ml-5 space-y-2">
+
+              <li>Transfer the workshop fee to the bank account above.</li>
+              <li>Take a screenshot of the payment confirmation.</li>
+              <li>
+                Send <b>Name, Age, Chess Level, and Payment Screenshot</b> on WhatsApp.
+              </li>
+
+            </ol>
+
+          </div>
 
           <a
             href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`}
