@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-
+import ScrollToTop from "../components/ScrollToTop";
 // Import Page Components
 import Home from "../pages/Home.jsx";
 import CoursesPage from "../pages/CoursesPage.jsx";
@@ -51,7 +51,10 @@ import LiveGamePage from "../pages/LiveGamePage.jsx";
 
 const AppRoutes = () => {
   return (
+    <>
+    <ScrollToTop />
     <Routes>
+     
       {/* --- Public Routes --- */}
       <Route path="/" element={<Layout><Home /></Layout>} />
       <Route path="/courses" element={<Layout><CoursesPage /></Layout>} />
@@ -114,7 +117,7 @@ const AppRoutes = () => {
 
       {/* Not Found */}
       <Route path="*" element={<NotFound />} />
-    </Routes>
+    </Routes></>
   );
 };
 

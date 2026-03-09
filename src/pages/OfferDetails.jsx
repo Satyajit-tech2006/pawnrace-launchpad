@@ -12,18 +12,19 @@ const OfferDetails = () => {
 
   const whatsappNumber = "918984021185";
   const message =
-    "Hi PawnRace! I want to register for the Advanced Chess Workshop.";
+    "Hi PawnRace! I want to register for the Advanced Chess Training Session with IM Sambit Panda.";
 
-  const attack = [
-    "Recognizing critical moments",
-    "Piece coordination & King safety",
-    "Deep calculation drills"
+  const achievements = [
+    "National Under-7 Champion (2011)",
+    "2nd Runner-up – SOAI International Grandmasters Festival 2024",
+    "Best Player Award – Dubai Open International Chess Tournament",
+    "4th Place – Torino International Open Chess Tournament, Italy"
   ];
 
-  const defense = [
-    "Resilience techniques",
-    "Resourceful counter-attacking",
-    "Turning the tide of battle"
+  const topics = [
+    "Advanced Strategy & Calculation",
+    "Tournament Preparation",
+    "Practical Endgame Techniques"
   ];
 
   useEffect(() => {
@@ -59,6 +60,7 @@ const OfferDetails = () => {
   }, []);
 
   return (
+
     <div className="bg-black text-white min-h-screen py-16 px-6">
 
       <div className="max-w-6xl mx-auto">
@@ -69,15 +71,15 @@ const OfferDetails = () => {
 
           <div ref={heroRef}>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 leading-tight mb-6 pt-11">
-              Advanced Chess Workshop
+            <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 leading-tight mb-6 pt-6">
+              Advanced Chess Training Session
               <br />
-              Attack & Defense
+              with IM Sambit Panda
             </h1>
 
             <p className="text-gray-400 mb-6 text-lg">
-              Train with International Master level strategies and master
-              attacking and defensive techniques used by strong tournament players.
+              Train with International Master level strategies and learn advanced
+              tournament concepts used by professional chess players.
             </p>
 
             <a
@@ -105,13 +107,19 @@ const OfferDetails = () => {
               />
 
               <div className="text-center mt-4">
+
                 <h3 className="text-xl font-bold text-yellow-400">
-                  Sambit Panda
+                  IM Sambit Panda
                 </h3>
 
                 <p className="text-gray-400 text-sm">
-                  International Master | Peak Rating 2452
+                  Highest FIDE Rating: 2452
                 </p>
+
+                <p className="text-yellow-500 text-sm mt-1">
+                  ⭐ 9th International Master (IM) from Odisha
+                </p>
+
               </div>
 
             </div>
@@ -120,76 +128,71 @@ const OfferDetails = () => {
 
         </div>
 
+
         {/* DETAILS */}
 
         <div className="grid md:grid-cols-4 gap-6 mb-16">
 
           {[
-            ["DATE", "14 March 2026"],
-            ["TIME", "6:30 PM - 8:00 PM IST"],
+            ["DATE", "14 – 15 March"],
+            ["TIME", "6:30 PM – 8:00 PM IST"],
             ["FORMAT", "Live Online"],
-            ["FEE", "₹899 (Incl. GST)"]
+            ["COACH", "IM Sambit Panda"]
           ].map((item, i) => (
+
             <div
               key={i}
               ref={el => cardsRef.current[i] = el}
               className="bg-zinc-900 p-6 rounded-xl border border-yellow-500/20"
             >
+
               <p className="text-yellow-400 text-sm">{item[0]}</p>
               <h3 className="font-semibold text-lg">{item[1]}</h3>
+
             </div>
+
           ))}
 
         </div>
 
 
-        {/* EXCLUSIVE OPPORTUNITY */}
+        {/* MAJOR ACHIEVEMENTS */}
 
-        <div className="border border-yellow-500/40 p-8 rounded-xl mb-20 bg-zinc-900">
+        <div className="bg-zinc-900 p-8 rounded-xl border border-yellow-500/30 mb-16">
 
-          <h2 className="text-yellow-400 font-bold text-xl mb-4">
-            EXCLUSIVE OPPORTUNITY
+          <h2 className="text-2xl text-yellow-400 font-bold mb-6">
+            Major Achievements
           </h2>
 
-          <p className="text-gray-300">
-            Top performers win a <b>FREE 3-Month Training Course.</b>
-            Top <b>3 players pay NO fees</b> for the full course.
-          </p>
+          <ul className="space-y-3 text-gray-300">
+
+            {achievements.map((item, i) => (
+              <li key={i}>🏆 {item}</li>
+            ))}
+
+          </ul>
 
         </div>
 
 
-        {/* CURRICULUM */}
+        {/* WORKSHOP TOPICS */}
 
-        <div ref={curriculumRef} className="grid md:grid-cols-2 gap-10 mb-20">
+        <div
+          ref={curriculumRef}
+          className="bg-zinc-900 p-8 rounded-xl border border-yellow-500/20 mb-20"
+        >
 
-          <div className="bg-zinc-900 p-8 rounded-2xl border border-yellow-500/20">
+          <h2 className="text-2xl font-bold text-yellow-400 mb-6">
+            Workshop Topics
+          </h2>
 
-            <h2 className="text-2xl font-bold text-yellow-400 mb-6">
-              Attack
-            </h2>
+          <ul className="space-y-3 text-gray-300">
 
-            <ul className="space-y-3 text-gray-300">
-              {attack.map((item, i) => (
-                <li key={i}>♟ {item}</li>
-              ))}
-            </ul>
+            {topics.map((item, i) => (
+              <li key={i}>♟ {item}</li>
+            ))}
 
-          </div>
-
-          <div className="bg-zinc-900 p-8 rounded-2xl border border-yellow-500/20">
-
-            <h2 className="text-2xl font-bold text-yellow-400 mb-6">
-              Defense
-            </h2>
-
-            <ul className="space-y-3 text-gray-300">
-              {defense.map((item, i) => (
-                <li key={i}>♟ {item}</li>
-              ))}
-            </ul>
-
-          </div>
+          </ul>
 
         </div>
 
@@ -199,7 +202,18 @@ const OfferDetails = () => {
         <div className="text-center mb-16">
 
           <p className="text-yellow-400 font-semibold text-lg">
-            Bonus: Free E-Books for all participants
+            🎁 Bonus: Free E-Books for all participants
+          </p>
+
+        </div>
+
+
+        {/* LIMITED SEATS */}
+
+        <div className="text-center mb-16">
+
+          <p className="bg-red-600 inline-block px-6 py-3 rounded-lg font-bold text-lg">
+            ⚠ Limited Seats Available
           </p>
 
         </div>
@@ -224,8 +238,10 @@ const OfferDetails = () => {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold text-lg"
           >
+
             <MessageCircle />
             WhatsApp: +91 8984021185
+
           </a>
 
         </div>
@@ -233,6 +249,7 @@ const OfferDetails = () => {
       </div>
 
     </div>
+
   );
 };
 
