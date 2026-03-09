@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-
+import ScrollToTop from "../components/ScrollToTop";
 // Import Page Components
 import Home from "../pages/Home.jsx";
 import CoursesPage from "../pages/CoursesPage.jsx";
@@ -19,7 +19,7 @@ import Curriculum from "../components/Curriculum.jsx";
 import { Layout } from "../components/Layout";
 import AboutUs from "../components/AboutUs.jsx";
 import GameLobby from '../pages/GameLobby';
-
+import OfferDetails from "../pages/OfferDetails.jsx";
 // Coach Dashboard Pages
 import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
 import CoachSchedule from "../pages/dashboard/coach/CoachSchedule.tsx";
@@ -51,7 +51,10 @@ import LiveGamePage from "../pages/LiveGamePage.jsx";
 
 const AppRoutes = () => {
   return (
+    <>
+    <ScrollToTop />
     <Routes>
+     
       {/* --- Public Routes --- */}
       <Route path="/" element={<Layout><Home /></Layout>} />
       <Route path="/courses" element={<Layout><CoursesPage /></Layout>} />
@@ -66,7 +69,8 @@ const AppRoutes = () => {
       <Route path="/coaches" element={<Layout><Coaches /></Layout>} />
       <Route path="/aboutus" element={<Layout><AboutUs /></Layout>} />
       <Route path="/curriculum" element={<Layout><Curriculum /></Layout>} />
-
+      <Route path="/" element={<Layout><Home /></Layout>} />
+      <Route path="/special-offer" element={<Layout><OfferDetails /></Layout>} />
       {/* --- Dashboard Routes --- */}
       
       {/* Student Dashboard */}
@@ -113,7 +117,7 @@ const AppRoutes = () => {
 
       {/* Not Found */}
       <Route path="*" element={<NotFound />} />
-    </Routes>
+    </Routes></>
   );
 };
 
