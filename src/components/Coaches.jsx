@@ -10,42 +10,25 @@ import {
 } from "@mui/material";
 const coaches = [
   {
-    name: "Dipti Ranjan Nayak",
-    image:
-      "https://i.ibb.co/7J8hYpj0/857e4e5d-6b53-4911-b91e-da1a0635e5b0.jpg",
-    title: "Experienced Chess Coach & Player",
+    name: "Tapan Badamundi",
+    image: "https://i.ibb.co/RGGxB5kz/455e7661-1fc9-4385-94c2-717bbda15d27.jpg",
+    // ⬆️ Replace this with uploaded image URL (imgbb / cloudinary)
+    title: "FIDE Rated Chess Coach & Player",
     description:
-      "With over 8 years of playing experience and 3+ years of coaching experience, Dipti Ranjan Nayak is a highly accomplished chess coach and player.",
+      "Tapan Badamundi is a highly respected FIDE-rated chess player and coach with a peak FIDE rating of 2000. Known for his deep positional understanding and tournament experience, he brings elite-level training to his students.",
     achievements: [
-      "🏆 National Team Event: 2nd Runner-up",
-      "🥉 State School Championship: 3rd place",
-      "🌍 KIIT International Chess Tournament: Multiple top 10 finishes",
-      "🎯 Participated in various International Chess Tournaments",
+      "♟️ FIDE Rating: 2000",
+      "🏆 Multiple National & International Tournament Performances",
+      "🎯 Known for strong positional & endgame mastery",
+      "🌍 Active participant in FIDE-rated events",
     ],
     coaching: [
-      "S.R. Chess Centre – 1 year",
-      "Aryavant Academy, Khordha",
-      "PM Shri Navodaya Vidyalaya",
+      "Professional Chess Coaching",
+      "Advanced Tournament Preparation",
+      "Opening Repertoire & Endgame Training",
     ],
-    students: [
-      {
-        name: "Sanal Vaibhav",
-        achievement: "U-9 State Championship, 3rd place",
-        photo: "https://via.placeholder.com/100?text=Sanal",
-      },
-      {
-        name: "Amruta Priyalaxmi",
-        achievement: "U-13 State Champion",
-        photo:
-          "https://i.ibb.co/Swz8ZJPJ/Whats-App-Image-2025-08-31-at-00-25-49-960433d2.jpg",
-      },
-      {
-        name: "PM Shri Navodaya Vidyalaya Team",
-        achievement: "Bhopal Region Meet Champion",
-        photo: "https://via.placeholder.com/100?text=Team",
-      },
-    ],
-    fideId: "25638785",
+    students: [],
+    fideId: "XXXXXXX", // 👉 add real FIDE ID if available
   },
   {
     name: "Dikshant Dash",
@@ -176,29 +159,44 @@ const coaches = [
     rapidRating: "1687",
     languages: ["English", "Hindi", "Odia"],
   },
+
   {
-    name: "Tapan Badamundi",
-    image:
-      "https://i.ibb.co/RGGxB5kz/455e7661-1fc9-4385-94c2-717bbda15d27.jpg", 
-      // ⬆️ Replace this with uploaded image URL (imgbb / cloudinary)
-    title: "FIDE Rated Chess Coach & Player",
+    name: "Dipti Ranjan Nayak",
+    image: "https://i.ibb.co/7J8hYpj0/857e4e5d-6b53-4911-b91e-da1a0635e5b0.jpg",
+    title: "Experienced Chess Coach & Player",
     description:
-      "Tapan Badamundi is a highly respected FIDE-rated chess player and coach with a peak FIDE rating of 2000. Known for his deep positional understanding and tournament experience, he brings elite-level training to his students.",
+      "With over 8 years of playing experience and 3+ years of coaching experience, Dipti Ranjan Nayak is a highly accomplished chess coach and player.",
     achievements: [
-      "♟️ FIDE Rating: 2000",
-      "🏆 Multiple National & International Tournament Performances",
-      "🎯 Known for strong positional & endgame mastery",
-      "🌍 Active participant in FIDE-rated events",
+      "🏆 National Team Event: 2nd Runner-up",
+      "🥉 State School Championship: 3rd place",
+      "🌍 KIIT International Chess Tournament: Multiple top 10 finishes",
+      "🎯 Participated in various International Chess Tournaments",
     ],
     coaching: [
-      "Professional Chess Coaching",
-      "Advanced Tournament Preparation",
-      "Opening Repertoire & Endgame Training",
+      "S.R. Chess Centre – 1 year",
+      "Aryavant Academy, Khordha",
+      "PM Shri Navodaya Vidyalaya",
     ],
-    students: [],
-    fideId: "XXXXXXX", // 👉 add real FIDE ID if available
+    students: [
+      {
+        name: "Sanal Vaibhav",
+        achievement: "U-9 State Championship, 3rd place",
+        photo: "https://via.placeholder.com/100?text=Sanal",
+      },
+      {
+        name: "Amruta Priyalaxmi",
+        achievement: "U-13 State Champion",
+        photo:
+          "https://i.ibb.co/Swz8ZJPJ/Whats-App-Image-2025-08-31-at-00-25-49-960433d2.jpg",
+      },
+      {
+        name: "PM Shri Navodaya Vidyalaya Team",
+        achievement: "Bhopal Region Meet Champion",
+        photo: "https://via.placeholder.com/100?text=Team",
+      },
+    ],
+    fideId: "25638785",
   },
-  
 ];
 
 export default function Coaches() {
@@ -411,7 +409,6 @@ export default function Coaches() {
                   color: "black",
                   fontWeight: "bold",
                   borderColor: "black",
-                 
                 }}
               >
                 Close
