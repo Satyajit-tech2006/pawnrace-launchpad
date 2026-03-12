@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Users, Clock, Target, ChevronRight, Trophy, Zap, ShieldCheck, Microscope, Layers, Brain, Swords, MessageSquare, Repeat, Search, Activity, BarChart3, Star } from "lucide-react";
+import { BookOpen, Users, Clock, Target, Trophy, Zap, ShieldCheck, Microscope, Layers, Brain, Swords, MessageSquare, Repeat, Search, Activity, Star } from "lucide-react";
 
 const curriculumData = {
   beginner: {
@@ -184,13 +184,22 @@ const Curriculum = () => {
     return "bg-orange-400";
   };
 
-  // WhatsApp Integration Logic
+  // WhatsApp Integration Logic Optimized for Mobile & Desktop
   const handleWhatsAppRedirect = () => {
-    const phoneNumber = "8984021185";
-    const message = `Hello Madhu, I want to book a free trial for the ${currentLevel.title} (${activePlan}) chess coaching program.`;
+    const phoneNumber = "918984021185"; // Added 91 for proper API routing
+    const message = `Hello pawnrace, I want to book a free trial for the ${currentLevel.title} (${activePlan}) chess coaching program.`;
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, "_blank");
+    
+    // Check if device is mobile
+    const isMobile = /iPhone|Android|iPad/i.test(navigator.userAgent);
+    
+    // Use deep link for mobile and standard web link for desktop
+    const whatsappUrl = isMobile 
+      ? `whatsapp://send?phone=${phoneNumber}&text=${encodedMessage}`
+      : `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+    // Use location.href for better mobile redirection handling
+    window.location.href = whatsappUrl;
   };
 
   return (
@@ -199,7 +208,7 @@ const Curriculum = () => {
       {/* Header */}
       <div className="max-w-6xl mx-auto text-center mb-16">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter uppercase pt-11">
+          <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter uppercase pt pt-11">
             Chess <span className={getAccentColor()}>Expertise</span>
           </h1>
           <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto italic uppercase tracking-widest opacity-60">
