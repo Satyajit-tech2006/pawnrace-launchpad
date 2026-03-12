@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Users, Clock, Target, Trophy, Zap, ShieldCheck, Microscope, Layers, Brain, Swords, MessageSquare, Repeat, Search, Activity, Star } from "lucide-react";
+import { BookOpen, Users, Clock, Target, Trophy, Zap, ShieldCheck, Microscope, Layers, Brain, Swords, MessageSquare, Repeat, Search, Activity, BarChart3, Star } from "lucide-react";
 
 const curriculumData = {
   beginner: {
@@ -184,64 +184,59 @@ const Curriculum = () => {
     return "bg-orange-400";
   };
 
-  // WhatsApp Integration Logic Optimized for Mobile & Desktop
   const handleWhatsAppRedirect = () => {
-    const phoneNumber = "918984021185"; // Added 91 for proper API routing
-    const message = `Hello pawnrace, I want to book a free trial for the ${currentLevel.title} (${activePlan}) chess coaching program.`;
+    const phoneNumber = "918984021185";
+    const message = `Hello Madhu, I want to book a free trial for the ${currentLevel.title} (${activePlan}) chess coaching program.`;
     const encodedMessage = encodeURIComponent(message);
-    
-    // Check if device is mobile
     const isMobile = /iPhone|Android|iPad/i.test(navigator.userAgent);
-    
-    // Use deep link for mobile and standard web link for desktop
     const whatsappUrl = isMobile 
       ? `whatsapp://send?phone=${phoneNumber}&text=${encodedMessage}`
       : `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-
-    // Use location.href for better mobile redirection handling
     window.location.href = whatsappUrl;
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-1000 bg-gradient-to-br ${currentLevel.gradient} text-white px-4 py-16`}>
+    <div className={`min-h-screen transition-colors duration-1000 bg-gradient-to-br ${currentLevel.gradient} text-white px-4 py-10 md:py-16`}>
       
       {/* Header */}
-      <div className="max-w-6xl mx-auto text-center mb-16">
+      <div className="max-w-6xl mx-auto text-center mb-10 md:mb-16">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter uppercase pt pt-11">
+          <h1 className="text-4xl md:text-7xl font-black mb-4 tracking-tighter uppercase pt-10 md:pt-14">
             Chess <span className={getAccentColor()}>Expertise</span>
           </h1>
-          <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto italic uppercase tracking-widest opacity-60">
+          <p className="text-gray-400 text-sm md:text-xl max-w-2xl mx-auto italic uppercase tracking-widest opacity-60 px-4 leading-relaxed">
             Professional Individual Coaching Program
           </p>
         </motion.div>
       </div>
 
-      {/* Level Tabs */}
-      <div className="max-w-4xl mx-auto flex p-1 bg-white/5 backdrop-blur-md rounded-full border border-white/10 mb-12">
-        {Object.keys(curriculumData).map((lvl) => (
-          <button
-            key={lvl}
-            onClick={() => { setActiveLevel(lvl); setActivePlan("1 Month"); }}
-            className={`relative flex-1 py-4 rounded-full font-bold text-sm transition-colors duration-300 z-10 uppercase ${
-              activeLevel === lvl ? "text-[#050a1f]" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            {activeLevel === lvl && (
-              <motion.div layoutId="activeTab" className={`absolute inset-0 ${getBgAccent()} rounded-full -z-10`} transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-            )}
-            {curriculumData[lvl].title}
-          </button>
-        ))}
+      {/* Level Tabs - Scrollable on mobile if needed */}
+      <div className="max-w-4xl mx-auto mb-8 md:mb-12">
+        <div className="flex flex-col sm:flex-row p-1 bg-white/5 backdrop-blur-md rounded-2xl md:rounded-full border border-white/10 gap-1">
+          {Object.keys(curriculumData).map((lvl) => (
+            <button
+              key={lvl}
+              onClick={() => { setActiveLevel(lvl); setActivePlan("1 Month"); }}
+              className={`relative flex-1 py-3 md:py-4 rounded-xl md:rounded-full font-bold text-xs md:text-sm transition-colors duration-300 z-10 uppercase ${
+                activeLevel === lvl ? "text-[#050a1f]" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              {activeLevel === lvl && (
+                <motion.div layoutId="activeTab" className={`absolute inset-0 ${getBgAccent()} rounded-xl md:rounded-full -z-10`} transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+              )}
+              {curriculumData[lvl].title}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Plan Selection Buttons */}
-      <div className="max-w-md mx-auto flex justify-center gap-3 mb-16 bg-white/5 p-1.5 rounded-2xl border border-white/10">
+      <div className="max-w-md mx-auto flex justify-center gap-2 md:gap-3 mb-10 md:mb-16 bg-white/5 p-1.5 rounded-xl md:rounded-2xl border border-white/10">
         {["1 Month", "3 Months", "6 Months"].map((plan) => (
           <button
             key={plan}
             onClick={() => setActivePlan(plan)}
-            className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${activePlan === plan ? `${getBgAccent()} text-[#050a1f] shadow-lg` : "text-gray-500 hover:text-white"}`}
+            className={`flex-1 py-2.5 md:py-3 rounded-lg md:rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest transition-all ${activePlan === plan ? `${getBgAccent()} text-[#050a1f] shadow-lg` : "text-gray-500 hover:text-white"}`}
           >
             {plan}
           </button>
@@ -253,92 +248,92 @@ const Curriculum = () => {
         <motion.div key={`${activeLevel}-${activePlan}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }} className="max-w-6xl mx-auto">
           
           {/* Target Focus Section */}
-          <div className="mb-12 p-10 rounded-[40px] bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden group">
+          <div className="mb-8 md:mb-12 p-6 md:p-10 rounded-[30px] md:rounded-[40px] bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden group">
             <div className={`absolute top-0 right-0 w-64 h-64 ${getBgAccent()} opacity-5 blur-[80px] rounded-full`} />
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-10">
                {activeLevel === "beginner" && activePlan === "1 Month" ? (
                   currentPlan.headerStats.map((stat, i) => (
-                    <div key={i} className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>{stat.val}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{stat.label}</p>
+                    <div key={i} className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>{stat.val}</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">{stat.label}</p>
                     </div>
                   ))
                ) : activeLevel === "intermediate" && activePlan === "3 Months" ? (
                   <>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>30</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Sessions</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>30</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">Sessions</p>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>24</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tournaments</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>24</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">Tournaments</p>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>Weekly</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Doubt-Clearing</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>Weekly</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">Doubt-Clearing</p>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>1800+</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Target Rating</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>1800+</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">Target Rating</p>
                     </div>
                   </>
                ) : (activePlan === "6 Months" || activePlan === "3 Months") && (
                  <>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '60' : '30'}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Sessions</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '60' : '30'}</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">Sessions</p>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '48' : '24'}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{activePlan === "6 Months" ? 'Clinics' : 'Core'}</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '48' : '24'}</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">{activePlan === "6 Months" ? 'Clinics' : 'Core'}</p>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '24' : '12'}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tournaments</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '24' : '12'}</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">Tournaments</p>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                      <p className={`text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '6+6' : '3'}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{activePlan === "6 Months" ? 'Train & Test' : 'Doubt Support'}</p>
+                    <div className="bg-white/5 p-3 md:p-4 rounded-xl md:rounded-2xl border border-white/10 text-center">
+                      <p className={`text-2xl md:text-3xl font-black ${getAccentColor()}`}>{activePlan === "6 Months" ? '6+6' : '3'}</p>
+                      <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-wider text-gray-400">{activePlan === "6 Months" ? 'Train & Test' : 'Doubt Support'}</p>
                     </div>
                  </>
                )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center text-center md:text-left">
-              <div className="md:col-span-2">
-                <div className="flex items-center gap-2 mb-4 justify-center md:justify-start">
-                   <Trophy className={getAccentColor()} size={24} /> 
-                   <span className="text-xs font-black tracking-widest uppercase opacity-60">Objective Goal</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-center text-center md:text-left">
+              <div className="md:col-span-2 px-2">
+                <div className="flex items-center gap-2 mb-3 justify-center md:justify-start">
+                   <Trophy className={getAccentColor()} size={20} /> 
+                   <span className="text-[10px] font-black tracking-widest uppercase opacity-60">Objective Goal</span>
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black leading-tight tracking-tight uppercase">{currentPlan.target}</h2>
+                <h2 className="text-xl md:text-3xl font-black leading-snug uppercase tracking-tight">{currentPlan.target}</h2>
               </div>
-              <div className="bg-white/5 p-6 rounded-3xl border border-white/10 text-center">
-                 <p className="text-gray-400 text-xs font-bold uppercase mb-1">Recommended Rating</p>
-                 <p className={`text-4xl font-black ${getAccentColor()}`}>{currentLevel.rating}</p>
+              <div className="bg-white/5 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-white/10 text-center">
+                 <p className="text-gray-400 text-[10px] font-bold uppercase mb-1">Recommended Rating</p>
+                 <p className={`text-3xl md:text-4xl font-black ${getAccentColor()}`}>{currentLevel.rating}</p>
                  <div className="flex items-center justify-center gap-2 mt-3 text-gray-300">
-                    <Clock size={16} /> <span className="text-sm font-bold tracking-tighter uppercase">{currentPlan.sessions} Classes</span>
+                    <Clock size={16} /> <span className="text-xs font-bold tracking-tighter uppercase">{currentPlan.sessions} Classes</span>
                  </div>
               </div>
             </div>
           </div>
 
-          {/* Core Modules Section */}
-          <div className="mb-16">
-            <h3 className={`text-2xl font-black mb-8 flex items-center gap-3 uppercase tracking-wider ${getAccentColor()}`}>
-              <Layers size={28} /> Core Learning Curriculum
+          {/* Core Modules */}
+          <div className="mb-12 md:mb-16 px-2">
+            <h3 className={`text-xl md:text-2xl font-black mb-6 md:mb-8 flex items-center gap-3 uppercase tracking-wider ${getAccentColor()}`}>
+              <Layers size={24} /> Core Curriculum
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {currentPlan.modules.map((module, idx) => (
-                <motion.div key={idx} whileHover={{ y: -8 }} className="relative bg-white/5 p-8 rounded-[35px] border border-white/10 group hover:border-white/20 transition-all overflow-hidden">
-                  <div className="absolute -top-4 -right-4 text-8xl font-black text-white/[0.03] group-hover:text-white/[0.07] transition-colors pointer-events-none">
+                <motion.div key={idx} whileHover={{ y: -5 }} className="relative bg-white/5 p-6 md:p-8 rounded-[25px] md:rounded-[35px] border border-white/10 group overflow-hidden">
+                  <div className="absolute -top-3 -right-3 text-6xl md:text-8xl font-black text-white/[0.03] group-hover:text-white/[0.07] pointer-events-none">
                     {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
                   </div>
-                  <div className={`w-10 h-10 rounded-xl ${getBgAccent()} bg-opacity-10 flex items-center justify-center mb-6`}>
-                     <BookOpen className={getAccentColor()} size={18} />
+                  <div className={`w-9 h-9 rounded-xl ${getBgAccent()} bg-opacity-10 flex items-center justify-center mb-5`}>
+                     <BookOpen className={getAccentColor()} size={16} />
                   </div>
-                  <h3 className="text-lg font-bold mb-4 z-10 relative leading-tight uppercase tracking-tighter">{module.title}</h3>
-                  <ul className="space-y-2 z-10 relative text-gray-400 text-[11px] leading-relaxed">
+                  <h3 className="text-md md:text-lg font-bold mb-3 z-10 relative leading-tight uppercase tracking-tighter">{module.title}</h3>
+                  <ul className="space-y-2 z-10 relative text-gray-400 text-[10px] md:text-[11px] leading-relaxed">
                     {module.points.map((p, i) => (
                       <li key={i} className="flex items-start gap-2 group-hover:text-gray-300 transition-colors">
                         <Zap className={`${getAccentColor()} mt-1 flex-shrink-0`} size={10} /> {p}
@@ -350,69 +345,66 @@ const Curriculum = () => {
             </div>
           </div>
 
-          {/* BEGINNER 1-MONTH SPECIFIC */}
-          {activeLevel === "beginner" && activePlan === "1 Month" && (
-             <>
-               {currentPlan.specialSessions && (
-                  <div className="mb-16">
-                    <h3 className={`text-2xl font-black mb-8 flex items-center gap-3 uppercase tracking-wider ${getAccentColor()}`}>
-                      <Microscope size={28} /> Special Coaching Sessions
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {currentPlan.specialSessions.map((s, i) => (
-                        <div key={i} className="bg-gradient-to-br from-white/5 to-transparent border border-white/10 p-10 rounded-[40px] backdrop-blur-sm">
-                          <h4 className="text-2xl font-bold mb-4">{s.title}</h4>
-                          <p className="text-gray-400 text-base leading-relaxed">{s.desc}</p>
-                        </div>
-                      ))}
+          {/* Plan Specific Extras (Special Sessions / Methodology) */}
+          <div className="px-2">
+            {activeLevel === "beginner" && activePlan === "1 Month" && (
+               <>
+                 <h3 className={`text-xl md:text-2xl font-black mb-6 flex items-center gap-3 uppercase tracking-wider ${getAccentColor()}`}>
+                    <Microscope size={24} /> Special Coaching
+                 </h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-12">
+                   {currentPlan.specialSessions?.map((s, i) => (
+                     <div key={i} className="bg-gradient-to-br from-white/5 to-transparent border border-white/10 p-6 md:p-10 rounded-[25px] md:rounded-[40px] backdrop-blur-sm">
+                       <h4 className="text-lg md:text-2xl font-bold mb-3">{s.title}</h4>
+                       <p className="text-gray-400 text-xs md:text-base leading-relaxed">{s.desc}</p>
+                     </div>
+                   ))}
+                 </div>
+                 {currentPlan.benefits && (
+                    <div className="mt-8 p-6 md:p-10 rounded-[25px] md:rounded-[40px] bg-green-500/5 border border-green-500/20 flex flex-col md:flex-row items-center gap-6">
+                      <ShieldCheck className="text-green-400" size={50} />
+                      <div className="text-center md:text-left">
+                        <h4 className="text-green-400 font-black text-sm md:text-xl mb-1 tracking-wider uppercase italic">4 Monthly Practice Tournaments</h4>
+                        <p className="text-gray-400 text-[10px] md:text-sm leading-relaxed">{currentPlan.benefits}</p>
+                      </div>
                     </div>
-                  </div>
-               )}
-               {currentPlan.benefits && (
-                  <div className="mt-12 p-10 rounded-[40px] bg-green-500/5 border border-green-500/20 flex flex-col md:flex-row items-center gap-8">
-                    <ShieldCheck className="text-green-400" size={60} />
-                    <div>
-                      <h4 className="text-green-400 font-black text-xl mb-2 tracking-wider uppercase italic">Additional Benefits: 4 Monthly Practice Tournaments</h4>
-                      <p className="text-gray-400 text-sm leading-relaxed italic">{currentPlan.benefits}</p>
-                    </div>
-                  </div>
-               )}
-             </>
-          )}
+                 )}
+               </>
+            )}
 
-          {/* Intermediate 3-Month Specific methodology */}
-          {activeLevel === "intermediate" && activePlan === "3 Months" && currentPlan.eliteResources && (
-            <div className="mb-16">
-               <h3 className={`text-2xl font-black mb-8 flex items-center gap-3 uppercase tracking-wider ${getAccentColor()}`}>
-                <Star size={28} /> Training Methodology & Elite Resources
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 {currentPlan.eliteResources.map((res, i) => (
-                   <div key={i} className="bg-white/5 border border-white/10 p-8 rounded-[35px] backdrop-blur-sm text-center">
-                      <div className={`w-12 h-12 rounded-2xl mx-auto mb-5 flex items-center justify-center ${getBgAccent()} text-[#050a1f]`}>{res.icon}</div>
-                      <h4 className="text-xl font-bold mb-3 uppercase tracking-tighter">{res.title}</h4>
-                      <p className="text-gray-400 text-sm leading-relaxed">{res.desc}</p>
-                   </div>
-                 ))}
-              </div>
-              <div className="mt-10 p-10 rounded-[40px] bg-white/5 border border-white/10 text-center">
-                 <h4 className={`text-3xl font-black mb-2 ${getAccentColor()}`}>Target Performance: 1800+ Lichess Rapid</h4>
-                 <p className="text-gray-400 font-black text-xs uppercase tracking-[0.3em] mb-6">Beginner → Intermediate → <span className={getAccentColor()}>Advanced</span> → Tournament Pro</p>
-                 <p className="text-gray-300 text-lg italic font-medium max-w-2xl mx-auto leading-relaxed">"Developing the ability to analyze positions independently and execute tactics with surgical precision."</p>
-              </div>
-            </div>
-          )}
+            {activeLevel === "intermediate" && activePlan === "3 Months" && (
+               <div className="mb-16">
+                  <h3 className={`text-xl md:text-2xl font-black mb-6 flex items-center gap-3 uppercase tracking-wider ${getAccentColor()}`}>
+                    <Star size={24} /> Methodology & Resources
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-10">
+                    {currentPlan.eliteResources.map((res, i) => (
+                      <div key={i} className="bg-white/5 border border-white/10 p-6 rounded-[25px] text-center">
+                        <div className={`w-10 h-10 rounded-xl mx-auto mb-4 flex items-center justify-center ${getBgAccent()} text-[#050a1f]`}>{res.icon}</div>
+                        <h4 className="text-md md:text-lg font-bold mb-2 uppercase tracking-tighter">{res.title}</h4>
+                        <p className="text-gray-400 text-[10px] leading-relaxed px-2">{res.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-8 md:p-12 rounded-[30px] md:rounded-[40px] border border-white/10 bg-white/5 text-center">
+                     <h4 className={`text-2xl md:text-3xl font-black mb-3 ${getAccentColor()}`}>Target Performance: 1800+</h4>
+                     <p className="text-gray-500 font-black text-[10px] uppercase tracking-[0.2em] mb-4 opacity-50">Intermediate → Advanced → Tournament Pro</p>
+                     <p className="text-gray-300 text-sm md:text-lg italic font-medium max-w-2xl mx-auto">"Developing the ability to analyze positions independently."</p>
+                  </div>
+               </div>
+            )}
+          </div>
 
-          {/* Special Action Button Section (WhatsApp Integration) */}
-          <div className={`mt-20 p-1 rounded-[45px] bg-gradient-to-r ${activeLevel === 'beginner' ? 'from-yellow-400 to-yellow-600' : activeLevel === 'intermediate' ? 'from-purple-500 to-purple-700' : 'from-orange-500 to-orange-700'}`}>
-            <div className="bg-[#050a1f] px-10 py-16 rounded-[42px] flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+          {/* Action Banner */}
+          <div className={`mt-16 md:mt-24 p-0.5 rounded-[30px] md:rounded-[45px] bg-gradient-to-r ${activeLevel === 'beginner' ? 'from-yellow-400 to-yellow-600' : activeLevel === 'intermediate' ? 'from-purple-500 to-purple-700' : 'from-orange-500 to-orange-700'}`}>
+            <div className="bg-[#050a1f] px-6 md:px-10 py-12 md:py-16 rounded-[29px] md:rounded-[42px] flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
               <div>
-                <h2 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter uppercase italic leading-none">Unlock Expert <br/> Coaching</h2>
-                <p className="text-gray-400 text-lg font-medium uppercase tracking-[0.2em] opacity-80">Slots available for new cohort enrollment.</p>
+                <h2 className="text-3xl md:text-5xl font-black mb-3 md:mb-4 tracking-tighter uppercase italic leading-none">Unlock Expert <br className="hidden md:block"/> Coaching</h2>
+                <p className="text-gray-400 text-xs md:text-lg font-medium uppercase tracking-[0.1em] opacity-80">Slots available for new cohort enrollment.</p>
               </div>
               <button 
                 onClick={handleWhatsAppRedirect}
-                className={`${getBgAccent()} text-[#050a1f] px-16 py-6 rounded-2xl font-black text-xl hover:scale-105 transition-all shadow-[0_20px_50px_rgba(0,0,0,0.4)] active:scale-95 whitespace-nowrap uppercase tracking-widest`}
+                className={`${getBgAccent()} text-[#050a1f] w-full md:w-auto px-10 md:px-16 py-5 md:py-6 rounded-xl md:rounded-2xl font-black text-lg md:text-xl hover:scale-105 transition-all shadow-[0_15px_40px_rgba(0,0,0,0.4)] active:scale-95 whitespace-nowrap uppercase tracking-widest`}
               >
                 Book Trial
               </button>
@@ -421,20 +413,20 @@ const Curriculum = () => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Footer Ecosystem */}
-      <div className="mt-40 max-w-6xl mx-auto border-t border-white/5 pt-20 text-center">
-         <h2 className="text-4xl md:text-5xl font-black mb-20 flex items-center justify-center gap-6 uppercase tracking-tighter">
-            <Users size={50} className={getAccentColor()} /> Training Ecosystem
+      {/* Footer Grid */}
+      <div className="mt-24 md:mt-40 max-w-6xl mx-auto border-t border-white/5 pt-16 md:pt-20 text-center">
+         <h2 className="text-3xl md:text-5xl font-black mb-12 md:mb-20 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 uppercase tracking-tighter">
+            <Users size={40} className={getAccentColor()} /> Training Ecosystem
          </h2>
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-12 px-2">
             {[
-              { title: "Live Analysis", desc: "Practical training games with real-time coach feedback and post-mortem analysis sessions." },
-              { title: "Pattern Recognition", desc: "Systematic Woodpecker method integration to burn tactical motifs into your muscle memory." },
-              { title: "Doubt Clearing", desc: "Dedicated 1-on-1 support to fix recurring strategic mistakes and clarify advanced theory." }
+              { title: "Live Analysis", desc: "Practical training games with real-time coach feedback sessions." },
+              { title: "Pattern Recognition", desc: "Systematic Woodpecker method integration for muscle memory." },
+              { title: "Doubt Clearing", desc: "Dedicated 1-on-1 support to fix recurring strategic mistakes." }
             ].map((item, i) => (
-              <div key={i} className="p-10 rounded-[40px] bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all duration-500 group">
-                <h4 className={`font-black text-2xl mb-5 uppercase tracking-tighter ${getAccentColor()} group-hover:scale-110 transition-transform`}>{item.title}</h4>
-                <p className="text-gray-500 text-base leading-relaxed">{item.desc}</p>
+              <div key={i} className="p-8 md:p-10 rounded-[30px] md:rounded-[40px] bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all group">
+                <h4 className={`font-black text-xl md:text-2xl mb-4 uppercase tracking-tighter ${getAccentColor()}`}>{item.title}</h4>
+                <p className="text-gray-500 text-xs md:text-base leading-relaxed">{item.desc}</p>
               </div>
             ))}
          </div>
