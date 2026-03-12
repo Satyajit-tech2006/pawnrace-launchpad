@@ -137,8 +137,8 @@ const OfferDetails = () => {
             ["DATE", "14 – 15 March"],
             ["TIME", "6:30 PM – 8:00 PM IST"],
             ["FORMAT", "Live Online"],
-            ["INDIA PRICE", "₹999"],
-            ["FOREIGN PRICE", "$20"]
+           
+            
           ].map((item, i) => (
 
             <div
