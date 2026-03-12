@@ -199,7 +199,7 @@ const Curriculum = () => {
       {/* Header */}
       <div className="max-w-6xl mx-auto text-center mb-16">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter uppercase">
+          <h1 className="text-5xl md:text-7xl font-black mb-4 tracking-tighter uppercase pt-11">
             Chess <span className={getAccentColor()}>Expertise</span>
           </h1>
           <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto italic uppercase tracking-widest opacity-60">
