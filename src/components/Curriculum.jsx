@@ -186,7 +186,7 @@ const Curriculum = () => {
 
   const handleWhatsAppRedirect = () => {
     const phoneNumber = "918984021185";
-    const message = `Hello Madhu, I want to book a free trial for the ${currentLevel.title} (${activePlan}) chess coaching program.`;
+    const message = `Hello👋 pawnrace, I want to book a free trial for the ${currentLevel.title} (${activePlan}) chess coaching program.`;
     const encodedMessage = encodeURIComponent(message);
     const isMobile = /iPhone|Android|iPad/i.test(navigator.userAgent);
     const whatsappUrl = isMobile 
