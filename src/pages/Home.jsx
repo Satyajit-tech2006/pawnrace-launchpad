@@ -146,7 +146,7 @@ export default function Home() {
       <main className="flex-grow">
         <Hero onLoginClick={handleLoginClick} />
 
-        <OfferBanner />
+        {/* <OfferBanner /> */}
 
         <Coaches />
 

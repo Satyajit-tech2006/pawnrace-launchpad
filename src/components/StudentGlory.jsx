@@ -2,12 +2,17 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Users } from "lucide-react";
 
-// IMAGES
+// IMAGES (Aap apne path ke according inhe adjust kar lena)
 import hariselvan from "../assets/hariselvan.jpg";
 import dibyesh from "../assets/dibyesh.jpg";
 import sharwin from "../assets/sharwin.jpg";
+import abhudoyaU11 from "../assets/abhudoyaU11.jpg"; // Image 54
+import abhudoyaU19 from "../assets/abhudoyaU19.jpg"; // Image 55
+import izian from "../assets/izian.jpg"; // Image 33
+import joshua from "../assets/joshua.jpg"; // Image 51
 
 const students = [
+  // --- OLD DATA ---
   {
     name: "Hariselvan P",
     achievement: "U-11 State Champion 🏆 (6.5/7)",
@@ -37,6 +42,38 @@ const students = [
     name: "PM Shri",
     achievement: "Navodaya Vidyalaya Champion",
     image: null,
+  },
+
+  // --- NEW DATA ADDED FROM IMAGES ---
+  {
+    name: "Abhudoya",
+    achievement: "U-19 District Champion! 🏆",
+    image: abhudoyaU19,
+  },
+  {
+    name: "Abhudoya",
+    achievement: "3rd Position - Jorhat District U-11 Tournament (5/6 pts)",
+    image: abhudoyaU11,
+  },
+  {
+    name: "Izian",
+    achievement: "U-9 School Tournament 2nd Place, Uttar Pradesh 🥈",
+    image: izian,
+  },
+  {
+    name: "Hari Selvan",
+    achievement: "Runner's Up - 1st HIET State Level Chess Tournament 🥈",
+    image: hariselvan,
+  },
+  {
+    name: "Sharwin",
+    achievement: "U12 Winner - Tamil Vizha Cup, Malaysia 2026 🏆",
+    image: sharwin,
+  },
+  {
+    name: "Joshua Lobo",
+    achievement: "Best Improvement: Beginner to Intermediate in 3 months 📈",
+    image: joshua,
   },
 ];
 
