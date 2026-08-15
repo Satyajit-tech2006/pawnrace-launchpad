@@ -48,6 +48,7 @@ import StudentClassesNew from "../pages/dashboard/student/StudentClassesNew.jsx"
 import StudentVideoClassroom from "../pages/dashboard/student/StudentVideoClassroom.jsx"; 
 import StudentDatabase from "../pages/dashboard/student/StudentDatabase.jsx";
 import StudentAssignmentSolver from "../pages/dashboard/student/StudentAssignmentSolver.jsx";
+import Leaderboard from "../pages/dashboard/student/Leaderboard.jsx";
 // --- GAME & CLASSROOM PAGES ---
 import LiveGamePage from "../pages/LiveGamePage.jsx"; 
 
@@ -90,6 +91,8 @@ const AppRoutes = () => {
         <Route path="classes" element={<StudentClassesNew />} />
         <Route path="database" element={<StudentDatabase />} />
         <Route path="settings" element={<ComingSoon />} />
+        <Route path="leaderboard" element={<Leaderboard />} />
+
       </Route>
 
       {/* Coach Dashboard */}

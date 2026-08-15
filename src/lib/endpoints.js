@@ -8,6 +8,7 @@ export const ENDPOINTS = {
     FORGOT_PASSWORD: '/users/forgot-password',
     RESET_PASSWORD: (token) => `/users/reset-password/${token}`,
     UPDATE_PROFILE: '/users/update-profile',
+    GET_LEADERBOARD: '/users/leaderboard',
   },
   COURSES: {
     CREATE: '/courses',
