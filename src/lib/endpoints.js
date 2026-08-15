@@ -56,10 +56,14 @@ export const ENDPOINTS = {
     GET_CHAT_HISTORY: (receiverId) => `/chats/conversation/${receiverId}`,
   },
   TESTS: {
-    CREATE: (courseId) => `/tests/course/${courseId}`,
     GET_BY_COURSE: (courseId) => `/tests/course/${courseId}`,
+    CREATE: (courseId) => `/tests/course/${courseId}`,
     DELETE: (testId) => `/tests/${testId}`,
-  },
+},
+  // In your src/lib/endpoints.js file
+TEST_SUBMISSIONS: {
+    GET_ALL_FOR_TEST: (testId) => `/test-submissions/${testId}/attempts`,
+},
   SYLLABUS: {
     // Global Access (Database View & Modal)
     ADD: '/syllabus/add',

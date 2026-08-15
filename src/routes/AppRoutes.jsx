@@ -27,12 +27,13 @@ import CoachStudents from "../pages/dashboard/coach/CoachStudents.tsx";
 import { CoachClasses } from "../pages/dashboard/coach/CoachClasses.jsx";
 import CoachAssignment from "../pages/dashboard/coach/CoachAssignment.jsx";
 import CoachTournament from "../pages/dashboard/coach/CoachTournament.jsx";
-import CoachTestResults from "../pages/dashboard/coach/CoachTestResults.jsx";
+import CoachTest from "../pages/dashboard/coach/CoachTest.jsx";
 import CoachChat from "../pages/dashboard/coach/CoachChat.jsx";
 import MyStudents from "../pages/dashboard/coach/MyStudents.jsx";
 import CoachClassesNew from "../pages/dashboard/coach/CoachClassesNew.jsx";
 import VideoClassroom from "../pages/dashboard/coach/VideoClassroom.jsx";
 import CoachDatabase from "../pages/dashboard/coach/CoachDatabase.jsx"; 
+
 
 // Student Dashboard Pages
 import StudentDashboard from "../pages/dashboard/student/StudentDashboard.tsx";
@@ -40,7 +41,8 @@ import StudentSchedule from "../pages/dashboard/student/StudentSchedule.tsx";
 import Classes from "../pages/dashboard/student/Classes.jsx";
 import StudentAssignment from "../pages/dashboard/student/StudentAssignments.jsx";
 import StudentTournament from "../pages/dashboard/student/StudentTournament.jsx";
-import StudentTestResults from "../pages/dashboard/student/StudentTestResults.jsx";
+import StudentTest from "../pages/dashboard/student/StudentTest.jsx";
+import StudentTestSolver from "../pages/dashboard/student/StudentTestSolver.jsx";
 import StudentChat from "../pages/dashboard/student/StudentChat.jsx";
 import StudentClassesNew from "../pages/dashboard/student/StudentClassesNew.jsx"; 
 import StudentVideoClassroom from "../pages/dashboard/student/StudentVideoClassroom.jsx"; 
@@ -81,7 +83,8 @@ const AppRoutes = () => {
         <Route path="assignment/:assignmentId" element={<StudentAssignmentSolver />} />
         <Route path="training-sessions" element={<Classes />} />
         <Route path="tournaments" element={<StudentTournament />} />
-        <Route path="test-results" element={<StudentTestResults />} />
+        <Route path="test" element={<StudentTest />} />
+        <Route path="test/:testId" element={<StudentTestSolver />} />
         <Route path="chats" element={<StudentChat />} />
         <Route path="iqpuzzles" element={<ComingSoon />} />
         <Route path="classes" element={<StudentClassesNew />} />
@@ -98,7 +101,7 @@ const AppRoutes = () => {
         <Route path="classes" element={<CoachClassesNew />} />
         <Route path="assignments" element={<CoachAssignment />} />
         <Route path="tournaments" element={<CoachTournament />} />
-        <Route path="test-results" element={<CoachTestResults />} />
+        <Route path="test" element={<CoachTest />} />
         <Route path="chats" element={<CoachChat />} />
         <Route path="my-students" element={<MyStudents />} />
         

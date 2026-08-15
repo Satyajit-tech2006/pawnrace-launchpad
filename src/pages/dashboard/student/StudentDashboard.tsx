@@ -100,7 +100,7 @@ const menuItems = [
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
   {
-    name: "Test Results",
+    name: "Test",
     icon: FileBarChart,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
