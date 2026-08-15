@@ -7,15 +7,13 @@ import { toast } from "sonner";
 import { 
   Trash2, Plus, CheckCircle, 
   XCircle, Loader2, User, Filter,
-  Search, GitBranch, ArrowLeft, Lightbulb // Added new icons for the review flow
+  Search, GitBranch, ArrowLeft, Lightbulb, Trophy
 } from "lucide-react";
 import { Button } from "../../../components/ui/button.tsx";
 
-// [NEW] Added Chess imports for the detailed review board
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 
-// Constant matching CoachDatabase.jsx
 const LEVELS = [
   'Beginner 1', 'Beginner 2', 'Beginner 3', 
   'Intermediate 1', 'Intermediate 2', 'Intermediate 3', 
@@ -34,13 +32,13 @@ const CoachAssignment = () => {
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
+  const [formRewardPoints, setFormRewardPoints] = useState(50); // NEW: Default 50 points
   
   // Syllabus & Task Selection State
   const [syllabus, setSyllabus] = useState([]); 
   const [loadingSyllabus, setLoadingSyllabus] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState([]); 
   
-  // Filter State defaults to first level to match Database behavior
   const [filterLevel, setFilterLevel] = useState("Beginner 1");
 
   // --- Review Modal State ---
@@ -49,12 +47,12 @@ const CoachAssignment = () => {
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
-  // --- [NEW] Detailed Review State ---
-  const [detailedSubmission, setDetailedSubmission] = useState(null); // The specific student being reviewed
-  const [activeTaskReview, setActiveTaskReview] = useState(null); // The specific task being viewed on the board
+  // --- Detailed Review State ---
+  const [detailedSubmission, setDetailedSubmission] = useState(null); 
+  const [activeTaskReview, setActiveTaskReview] = useState(null); 
   const [reviewGame, setReviewGame] = useState(new Chess());
 
-  // --- Feedback Inputs (Map by submissionId) ---
+  // --- Feedback Inputs ---
   const [feedbackMap, setFeedbackMap] = useState({}); 
 
   // ==================== 1. INITIAL DATA FETCHING ====================
@@ -63,12 +61,10 @@ const CoachAssignment = () => {
     try {
       setLoading(true);
       
-      // 1. Get Coach's Courses
       const coursesRes = await apiClient.get(ENDPOINTS.COURSES.GET_MY_COURSES_AS_COACH);
       const myCourses = coursesRes.data.data || [];
       setCourses(myCourses);
 
-      // 2. Get Assignments for each course
       const assignMap = {};
       if (myCourses.length > 0) {
         await Promise.all(myCourses.map(async (course) => {
@@ -97,7 +93,6 @@ const CoachAssignment = () => {
 
   // ==================== 2. SYLLABUS & TASK SELECTION ====================
 
-  // Fetch syllabus depends on Course AND Level (Server-side filter)
   useEffect(() => {
     if (!selectedCourseId) {
       setSyllabus([]);
@@ -159,14 +154,15 @@ const CoachAssignment = () => {
       await apiClient.post(ENDPOINTS.ASSIGNMENTS.CREATE(selectedCourseId), {
         title: formTitle,
         description: formDesc,
-        tasks: selectedTasks
+        tasks: selectedTasks,
+        rewardPoints: parseInt(formRewardPoints || 0) // NEW
       });
       
       toast.success("Assignment created!");
       
-      // Reset Form
       setFormTitle("");
       setFormDesc("");
+      setFormRewardPoints(50);
       setSelectedTasks([]);
       setSelectedCourseId(""); 
       fetchDashboardData(); 
@@ -187,11 +183,9 @@ const CoachAssignment = () => {
     }
   };
 
-  // --- REVIEW LOGIC ---
-
   const openReviewModal = async (assignment) => {
     setCurrentAssignment(assignment);
-    setDetailedSubmission(null); // Reset detailed view state
+    setDetailedSubmission(null); 
     setActiveTaskReview(null);
     setReviewModalOpen(true);
     setLoadingSubmissions(true);
@@ -220,13 +214,12 @@ const CoachAssignment = () => {
         feedback: feedbackText
       });
       
-      toast.success(`Marked as ${status}`);
+      toast.success(`Marked as ${status}. Points awarded if passed.`);
       
       setSubmissions(prev => prev.map(sub => 
         sub._id === submissionId ? { ...sub, status, feedback: feedbackText } : sub
       ));
 
-      // Auto-back to list if they review from detailed view
       if (detailedSubmission) {
           setDetailedSubmission(null);
           setActiveTaskReview(null);
@@ -237,23 +230,17 @@ const CoachAssignment = () => {
     }
   };
 
-  // --- [NEW] Detailed Task Helper ---
-  // --- [NEW] Detailed Task Helper ---
   const getTaskSubmissionData = (task) => {
     if (!detailedSubmission) return null;
-    
-    // Look for a match against either the sub-document ID or the Syllabus Chapter ID
     const matchId1 = task._id;
     const matchId2 = task.chapterId;
     
-    // Check if the backend uses the updated schema (solvedTasks array of objects)
     if (detailedSubmission.solvedTasks) {
         return detailedSubmission.solvedTasks.find(t => 
             t.taskId === matchId1 || t.taskId === matchId2
         );
     }
     
-    // Fallback if backend is still sending array of IDs
     if (detailedSubmission.solvedTaskIds) {
         if (detailedSubmission.solvedTaskIds.includes(matchId1) || detailedSubmission.solvedTaskIds.includes(matchId2)) {
             return { isCorrect: true }; 
@@ -266,11 +253,9 @@ const CoachAssignment = () => {
       setActiveTaskReview(taskData);
       try {
           const game = new Chess();
-          // If the student submitted an override PGN, load it to see their exact final position
           if (taskData.overridePgn) {
               game.loadPgn(taskData.overridePgn);
           } else if (assignmentTaskData.fen && assignmentTaskData.fen !== 'start') {
-              // Fallback to the starting position of the puzzle if no override
               game.load(assignmentTaskData.fen);
           }
           setReviewGame(game);
@@ -303,14 +288,11 @@ const CoachAssignment = () => {
               </h2>
 
               <form onSubmit={handleCreateAssignment} className="space-y-4">
-                {/* 1. Select Course */}
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Course</label>
                   <select 
                     value={selectedCourseId}
-                    onChange={(e) => {
-                      setSelectedCourseId(e.target.value);
-                    }}
+                    onChange={(e) => setSelectedCourseId(e.target.value)}
                     className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-violet-500 outline-none"
                   >
                     <option value="">Select a Course...</option>
@@ -318,7 +300,6 @@ const CoachAssignment = () => {
                   </select>
                 </div>
 
-                {/* 2. Basic Info */}
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Title</label>
                   <input 
@@ -340,7 +321,20 @@ const CoachAssignment = () => {
                   />
                 </div>
 
-                {/* 3. Task Selection (Syllabus Tree) */}
+                {/* NEW: Reward Points Input */}
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
+                    <Trophy className="w-3 h-3 text-yellow-400"/> Reward Pts
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={formRewardPoints}
+                    onChange={e => setFormRewardPoints(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-yellow-500 outline-none text-yellow-100 font-mono"
+                  />
+                </div>
+
                 <div className="border-t border-white/10 pt-4">
                   <div className="flex flex-col gap-2 mb-2">
                     <label className="text-xs font-bold text-violet-400 uppercase flex justify-between items-center">
@@ -348,7 +342,6 @@ const CoachAssignment = () => {
                       <span className="text-white bg-violet-600 px-2 py-0.5 rounded-full text-[10px]">{selectedTasks.length} Selected</span>
                     </label>
 
-                    {/* Filter Dropdown */}
                     <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/10">
                         <Filter className="w-4 h-4 text-gray-400" />
                         <select 
@@ -363,8 +356,7 @@ const CoachAssignment = () => {
                     </div>
                   </div>
                   
-                  {/* EXPANDED LIST CONTAINER */}
-                  <div className="h-[600px] overflow-y-auto bg-black/30 rounded-lg border border-white/5 p-2 custom-scrollbar relative">
+                  <div className="h-[500px] overflow-y-auto bg-black/30 rounded-lg border border-white/5 p-2 custom-scrollbar relative">
                     {!selectedCourseId ? (
                       <p className="text-xs text-gray-400 text-center py-10">Select a course to view syllabus.</p>
                     ) : loadingSyllabus ? (
@@ -482,9 +474,15 @@ const CoachAssignment = () => {
                             {assign.description && (
                               <p className="text-sm text-gray-400 line-clamp-1">{assign.description}</p>
                             )}
-                            <p className="text-xs text-gray-500 mt-2 font-mono">
-                              Created: {new Date(assign.createdAt).toLocaleDateString()}
-                            </p>
+                            
+                            {/* NEW: Points & Date Meta Info */}
+                            <div className="flex items-center gap-4 text-xs font-mono text-gray-400 mt-2">
+                              <span className="flex items-center gap-1.5">
+                                <Trophy className="w-3.5 h-3.5 text-yellow-500"/>
+                                {assign.rewardPoints || 0} Pts
+                              </span>
+                              <span>Created: {new Date(assign.createdAt).toLocaleDateString()}</span>
+                            </div>
                           </div>
 
                           <div className="flex items-center gap-3">
@@ -529,7 +527,6 @@ const CoachAssignment = () => {
               initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
               className="bg-[#121212] border border-white/10 w-full max-w-5xl h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden"
             >
-              {/* Modal Header */}
               <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#181818]">
                 <div className="flex items-center gap-4">
                   {detailedSubmission && (
@@ -545,7 +542,10 @@ const CoachAssignment = () => {
                       {detailedSubmission ? `Reviewing: ${detailedSubmission.student?.fullname}` : "Submissions:"} 
                       {!detailedSubmission && <span className="text-violet-400">{currentAssignment.title}</span>}
                     </h2>
-                    <p className="text-xs text-gray-500 mt-1">Total Tasks: {currentAssignment.tasks.length}</p>
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-3">
+                        <span>Total Tasks: {currentAssignment.tasks.length}</span>
+                        <span>Max Score: {currentAssignment.rewardPoints || 0} Pts</span>
+                    </p>
                   </div>
                 </div>
                 <button onClick={() => setReviewModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white">
@@ -553,7 +553,6 @@ const CoachAssignment = () => {
                 </button>
               </div>
 
-              {/* Modal Content */}
               <div className="flex-1 overflow-y-auto bg-[#0a0a0a]">
                 {loadingSubmissions ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -565,9 +564,7 @@ const CoachAssignment = () => {
                     <p className="text-gray-500">No students have started this assignment yet.</p>
                   </div>
                 ) : detailedSubmission ? (
-                  /* --- [NEW] DETAILED REVIEW VIEW --- */
                   <div className="flex flex-col md:flex-row h-full">
-                      {/* Left Side: Task List & Feedback */}
                       <div className="w-full md:w-1/2 p-6 overflow-y-auto border-r border-white/10 flex flex-col">
                           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Task Breakdown</h3>
                           
@@ -611,7 +608,6 @@ const CoachAssignment = () => {
                               })}
                           </div>
 
-                          {/* Final Grading Box attached to Detailed View */}
                           <div className="bg-[#181818] p-4 rounded-xl border border-white/10">
                               <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 block">Issue Final Grade</label>
                               <textarea
@@ -623,7 +619,7 @@ const CoachAssignment = () => {
                               />
                               <div className="flex gap-2">
                                 <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-500" onClick={() => submitReview(detailedSubmission._id, 'pass')}>
-                                  Pass Student
+                                  Pass Student (+{currentAssignment.rewardPoints} Pts)
                                 </Button>
                                 <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-500" onClick={() => submitReview(detailedSubmission._id, 'fail')}>
                                   Fail / Redo
@@ -632,7 +628,6 @@ const CoachAssignment = () => {
                           </div>
                       </div>
 
-                      {/* Right Side: Chessboard */}
                       <div className="w-full md:w-1/2 p-6 flex flex-col items-center justify-center bg-black/50">
                           {activeTaskReview ? (
                               <div className="w-full max-w-[400px]">
@@ -660,7 +655,6 @@ const CoachAssignment = () => {
                       </div>
                   </div>
                 ) : (
-                  /* --- [EXISTING] OVERVIEW GRID --- */
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
                     {submissions.map(sub => {
                       const progressStr = sub.progress || "0 / 0"; 
@@ -670,7 +664,6 @@ const CoachAssignment = () => {
                       return (
                         <div key={sub._id} className="bg-[#161616] border border-white/5 rounded-xl p-5 flex flex-col gap-4">
                           
-                          {/* Student Info & Progress */}
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-violet-600/20 text-violet-400 flex items-center justify-center">
@@ -678,7 +671,12 @@ const CoachAssignment = () => {
                               </div>
                               <div>
                                 <h4 className="font-bold text-white">{sub.student?.fullname || "Unknown"}</h4>
-                                <p className="text-xs text-gray-500">@{sub.student?.username}</p>
+                                <p className="text-xs text-gray-500 flex gap-2">
+                                    <span>@{sub.student?.username}</span>
+                                    {sub.student?.totalPoints !== undefined && (
+                                        <span className="text-yellow-500">({sub.student.totalPoints} Global Pts)</span>
+                                    )}
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
@@ -691,7 +689,6 @@ const CoachAssignment = () => {
                             </div>
                           </div>
 
-                          {/* Status Badge */}
                           <div className="flex items-center gap-2 text-xs">
                             Status: 
                             <span className={`px-2 py-0.5 rounded uppercase font-bold ${
@@ -703,10 +700,8 @@ const CoachAssignment = () => {
                             </span>
                           </div>
 
-                          {/* Feedback Section */}
                           <div className="mt-auto pt-4 border-t border-white/5">
                             
-                            {/* [NEW] Inspect Button */}
                             <Button 
                                 variant="outline" 
                                 className="w-full mb-4 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors"
@@ -730,7 +725,7 @@ const CoachAssignment = () => {
                                 className={`flex-1 ${sub.status === 'pass' ? 'bg-green-600 hover:bg-green-500' : 'bg-white/5 hover:bg-green-500/20 text-green-400'}`}
                                 onClick={() => submitReview(sub._id, 'pass')}
                               >
-                                Pass
+                                Pass (+{currentAssignment.rewardPoints || 0} Pts)
                               </Button>
                               <Button 
                                 size="sm" 
