@@ -105,11 +105,7 @@ const menuItems = [
     icon: FileBarChart,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
-  {
-    name: "Contact Coach",
-    icon: Phone,
-    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
-  },
+  
   {
     name: "Settings",
     icon: Settings,

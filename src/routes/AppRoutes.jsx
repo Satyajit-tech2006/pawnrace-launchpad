@@ -49,6 +49,7 @@ import StudentVideoClassroom from "../pages/dashboard/student/StudentVideoClassr
 import StudentDatabase from "../pages/dashboard/student/StudentDatabase.jsx";
 import StudentAssignmentSolver from "../pages/dashboard/student/StudentAssignmentSolver.jsx";
 import Leaderboard from "../pages/dashboard/student/Leaderboard.jsx";
+import IqPuzzle from "../pages/dashboard/student/Iq_puzzle.jsx";
 // --- GAME & CLASSROOM PAGES ---
 import LiveGamePage from "../pages/LiveGamePage.jsx"; 
 
@@ -87,12 +88,11 @@ const AppRoutes = () => {
         <Route path="test" element={<StudentTest />} />
         <Route path="test/:testId" element={<StudentTestSolver />} />
         <Route path="chats" element={<StudentChat />} />
-        <Route path="iqpuzzles" element={<ComingSoon />} />
+        <Route path="iqpuzzles" element={<IqPuzzle/>} />
         <Route path="classes" element={<StudentClassesNew />} />
         <Route path="database" element={<StudentDatabase />} />
         <Route path="settings" element={<ComingSoon />} />
         <Route path="leaderboard" element={<Leaderboard />} />
-
       </Route>
 
       {/* Coach Dashboard */}

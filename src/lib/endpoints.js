@@ -22,7 +22,10 @@ export const ENDPOINTS = {
     ADD_STUDENT: (courseId) => `/courses/${courseId}/students`,
     REMOVE_STUDENT: (courseId, studentId) => `/courses/${courseId}/students/${studentId}`,
   },
-  
+  IQ: {
+    SUBMIT_SCORE: '/iq-puzzles/submit',
+    GET_STATS: '/iq-puzzles/stats'
+  },
   
   ASSIGNMENTS: {
     CREATE: (courseId) => `/assignments/course/${courseId}`,
