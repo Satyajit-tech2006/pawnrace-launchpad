@@ -150,11 +150,11 @@ export default function Home() {
 
         <Coaches />
 
-        <Features />
+        
       </main>
 
       <StudentGlory />
-
+<Features />
       <Footer />
 
       <AuthModal isOpen={isAuthModalOpen} onClose={handleCloseModal} />

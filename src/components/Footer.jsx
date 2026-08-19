@@ -1,150 +1,270 @@
-// Footer Component for PawnRace Chess Academy
-// Contains site links, social media, newsletter signup, and company information
-// Updated to use Link from react-router-dom for navigation
-
-import React from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Crown, Facebook, Twitter, Instagram, Youtube, Linkedin } from 'lucide-react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Sparkles, Float } from '@react-three/drei';
+import * as THREE from 'three';
+import { motion } from 'framer-motion';
+import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, ArrowRight } from 'lucide-react';
 
-function Footer() {
-  // Organized footer navigation links using 'to' for react-router-dom
+/* -------------------------------------------------------------------------- */
+/* 3D Background Elements                                                     */
+/* -------------------------------------------------------------------------- */
+
+// Procedural high-detail 3D Pawn
+function BackgroundPawn({ isMobile }) {
+  const groupRef = useRef();
+
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.elapsedTime * 0.15;
+      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.2 - (isMobile ? 1.5 : 2);
+    }
+  });
+
+  const { bodyGeo, headGeo } = useMemo(() => {
+    const profile = [
+      new THREE.Vector2(0.48, 0),
+      new THREE.Vector2(0.48, 0.08),
+      new THREE.Vector2(0.38, 0.12),
+      new THREE.Vector2(0.28, 0.38),
+      new THREE.Vector2(0.32, 0.42),
+      new THREE.Vector2(0.18, 0.65),
+      new THREE.Vector2(0.18, 0.72),
+      new THREE.Vector2(0.28, 0.76),
+      new THREE.Vector2(0.22, 0.8),
+    ];
+    return {
+      bodyGeo: new THREE.LatheGeometry(profile, 64),
+      headGeo: new THREE.SphereGeometry(0.24, 48, 48),
+    };
+  }, []);
+
+  return (
+    <group ref={groupRef} position={[isMobile ? 0 : 5, -2, -3]} scale={isMobile ? 4.5 : 6.5}>
+      <mesh geometry={bodyGeo}>
+        <meshPhysicalMaterial
+          color="#0f172a"
+          metalness={0.9}
+          roughness={0.2}
+          clearcoat={1}
+          clearcoatRoughness={0.1}
+          emissive="#ca8a04"
+          emissiveIntensity={0.1}
+        />
+      </mesh>
+      <mesh geometry={headGeo} position={[0, 0.99, 0]}>
+        <meshPhysicalMaterial
+          color="#facc15"
+          metalness={0.8}
+          roughness={0.15}
+          clearcoat={1}
+          emissive="#facc15"
+          emissiveIntensity={0.2}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function Footer3DScene() {
+  const { size } = useThree();
+  const isMobile = size.width < 768;
+
+  return (
+    <>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[10, 10, 5]} intensity={2} color="#facc15" />
+      <pointLight position={[-10, -10, -5]} intensity={1.5} color="#38bdf8" />
+      
+      <BackgroundPawn isMobile={isMobile} />
+      
+      <Sparkles 
+        count={isMobile ? 40 : 80} 
+        scale={15} 
+        size={isMobile ? 2 : 3} 
+        speed={0.3} 
+        color="#facc15" 
+        opacity={0.4} 
+      />
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Main HTML Footer Component                                                 */
+/* -------------------------------------------------------------------------- */
+
+const ChessPawnIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className={className} fill="currentColor">
+    <path d="M320 96c0-53-43-96-96-96S128 43 128 96s43 96 96 96 96-43 96-96zM224 224c-79.5 0-144 64.5-144 144v32h288v-32c0-79.5-64.5-144-144-144zm-96 96c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16v32H128v-32zm192 64H128v64h192v-64z"/>
+  </svg>
+);
+
+export default function Footer() {
   const footerNavigationLinks = {
     'Company': [
       { name: 'About Us', to: '/aboutus' },
-      // { name: 'Our Team', to: '/team' },
-      // { name: 'Careers', to: '/careers' },
-      // { name: 'Press', to: '/press' }
     ],
     'Contact Us': [
-      { name: '+91 78945 89238', to: '' },
-      { name: 'academy@pawnrace.com', to: '' },
-      { name: 'Puri , Odisha , India', to: '' },
-     
+      { name: '+91 78945 89238', icon: Phone },
+      { name: 'academy@pawnrace.com', icon: Mail },
+      { name: 'Puri, Odisha, India', icon: MapPin },
     ],
-    // 'For Coaches': [
-    //   { name: 'Become a Coach', to: '/become-a-coach' },
-    //   { name: 'Coach Resources', to: '/coach-resources' },
-    //   { name: 'Coach Community', to: '/coach-community' },
-    //   { name: 'Earnings', to: '/earnings' }
-    // ],
-    // 'Resources': [
-    //   { name: 'Chess Blog', to: '/blog' },
-    //   { name: 'Learning Center', to: '/learn' },
-    //   { name: 'Tournament Calendar', to: '/tournaments' },
-    //   { name: 'Chess Rules', to: '/rules' }
-    // ]
   };
 
-  // Social media links remain as anchor tags for external sites
   const socialMediaLinks = [
     { icon: Facebook, href: 'https://www.facebook.com/share/1FqjqyDeNH/', label: 'Facebook' },
     { icon: Instagram, href: 'https://www.instagram.com/pawnrace/', label: 'Instagram' },
     { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' }
   ];
 
+  const handleSubscribe = () => {
+    window.open("https://docs.google.com/forms/d/e/1FAIpQLSdiz9pqLM32FBZHNBh6EQPeAnOG5K3qevs9JhgGvqptWU8P4w/viewform?usp=dialog", "_blank");
+  };
 
-const ChessPawnIcon = ({ className }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 448 512" 
-    className={className} 
-    fill="currentColor"
-  >
-    <path d="M320 96c0-53-43-96-96-96S128 43 128 96s43 96 96 96 96-43 96-96zM224 224c-79.5 0-144 64.5-144 144v32h288v-32c0-79.5-64.5-144-144-144zm-96 96c0-8.8 7.2-16 16-16h160c8.8 0 16 7.2 16 16v32H128v-32zm192 64H128v64h192v-64z"/>
-  </svg>
-);
-
+  // Framer Motion Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  };
 
   return (
-    <footer className="bg-gray-900 text-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Main Footer Content */}
-        <div className="py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
-            
-            {/* Brand and Social Media Section */}
-            <div className="lg:col-span-2">
-              <div className="flex items-center space-x-2 mb-6">
-                <ChessPawnIcon className="h-8 w-8 text-yellow-400" />
-                <span className="text-2xl font-bold text-white">PawnRace</span>
-              </div>
-              
-              <p className="text-gray-400 mb-6 max-w-md">
-                The world's leading online chess academy connecting students 
-                with FIDE-rated coaches for personalized chess education.
-              </p>
-
-              {/* Social Media Icons */}
-              <div className="flex space-x-4">
-                {socialMediaLinks.map((socialLink) => (
-                  <a
-                    key={socialLink.label}
-                    href={socialLink.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 p-2 rounded-lg transition-colors duration-200"
-                    aria-label={socialLink.label}
-                  >
-                    <socialLink.icon className="h-5 w-5" />
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer Navigation Links */}
-            {Object.entries(footerNavigationLinks).map(([category, links]) => (
-              <div key={category}>
-                <h3 className="font-semibold text-white mb-4">
-                  {category}
-                </h3>
-                <ul className="space-y-3">
-                  {links.map((link) => (
-                    <li key={link.name}>
-                      <Link
-                        to={link.to}
-                        className="text-gray-400 hover:text-white transition-colors duration-200"
-                      >
-                        {link.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Newsletter Signup Section */}
-        <div className="border-t border-gray-800 py-8">
-          <div className="text-center">
-            <h3 className="text-xl font-semibold mb-2 text-white">Stay Updated</h3>
-            <p className="text-gray-400 mb-6">
-              Get chess tips, tournament updates, and exclusive offers
-            </p>
-            
-              <button type="submit" className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-6 py-2 rounded-lg font-semibold transition-colors duration-200" onClick={() => window.open("https://docs.google.com/forms/d/e/1FAIpQLSdiz9pqLM32FBZHNBh6EQPeAnOG5K3qevs9JhgGvqptWU8P4w/viewform?usp=dialog", "_blank")}>
-                Subscribe
-              </button>
-           
-          </div>
-        </div>
-
-        {/* Bottom Footer */}
-        <div className="border-t border-gray-800 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-gray-500 text-sm">
-              © {new Date().getFullYear()} PawnRace CHESS ACADEMY All rights reserved.
-            </div>
-            
-            <div className="flex space-x-6 text-sm">
-           
-            </div>
-          </div>
-        </div>
+    <footer className="relative bg-[#070b14] text-slate-300 overflow-hidden border-t border-yellow-500/20">
+      
+      {/* 3D Background Canvas (Pointer events disabled so users can click HTML links) */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
+        <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
+          <Footer3DScene />
+        </Canvas>
       </div>
+
+      {/* Radial Gradient Overlays for blending */}
+      <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#070b14] to-transparent z-0" />
+      <div className="absolute bottom-0 left-0 w-full h-full bg-gradient-to-t from-[#070b14] via-[#070b14]/80 to-transparent z-0" />
+
+      {/* Main Content Container */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 pt-20 pb-10"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
+          
+          {/* Brand Column */}
+          <motion.div variants={itemVariants} className="lg:col-span-4">
+            <Link to="/" className="flex items-center space-x-3 mb-6 group w-fit">
+              <div className="p-2.5 bg-slate-900/80 rounded-xl border border-yellow-500/30 group-hover:border-yellow-400 transition-colors shadow-lg shadow-yellow-500/10">
+                <ChessPawnIcon className="h-7 w-7 text-yellow-400" />
+              </div>
+              <span className="text-3xl font-black text-white tracking-tight">PawnRace</span>
+            </Link>
+            
+            <p className="text-slate-400 mb-8 max-w-sm leading-relaxed text-sm sm:text-base">
+              The world's leading online chess academy connecting ambitious students 
+              with elite FIDE-rated grandmasters for personalized, data-driven chess education.
+            </p>
+
+            {/* Social Links */}
+            <div className="flex space-x-4">
+              {socialMediaLinks.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="group relative p-3 bg-slate-900/80 rounded-full border border-slate-700/50 hover:border-yellow-400 hover:bg-yellow-400/10 transition-all duration-300 hover:-translate-y-1"
+                >
+                  <social.icon className="h-5 w-5 text-slate-400 group-hover:text-yellow-400 transition-colors" />
+                </a>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Navigation Links Column */}
+          <motion.div variants={itemVariants} className="lg:col-span-2 lg:col-start-6">
+            <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
+              Company
+              <div className="h-0.5 w-6 bg-yellow-400 rounded-full"></div>
+            </h3>
+            <ul className="space-y-4">
+              {footerNavigationLinks['Company'].map((link) => (
+                <li key={link.name}>
+                  <Link
+                    to={link.to}
+                    className="group flex items-center text-sm text-slate-400 hover:text-yellow-400 transition-colors duration-200 w-fit"
+                  >
+                    <ArrowRight className="h-3.5 w-3.5 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300 mr-2" />
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Contact Us Column */}
+          <motion.div variants={itemVariants} className="lg:col-span-3">
+            <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
+              Contact Us
+              <div className="h-0.5 w-6 bg-yellow-400 rounded-full"></div>
+            </h3>
+            <ul className="space-y-4">
+              {footerNavigationLinks['Contact Us'].map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <li key={idx} className="flex items-start gap-3 text-sm text-slate-400">
+                    <div className="p-1.5 bg-slate-900 rounded-md border border-slate-800 mt-0.5">
+                      <Icon className="h-4 w-4 text-yellow-400" />
+                    </div>
+                    <span className="mt-1">{item.name}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </motion.div>
+
+          {/* Newsletter Column */}
+          <motion.div variants={itemVariants} className="lg:col-span-3">
+            <div className="p-6 bg-slate-900/60 rounded-2xl border border-slate-800 backdrop-blur-md">
+              <h3 className="text-lg font-bold text-white mb-2">Stay Updated</h3>
+              <p className="text-xs text-slate-400 mb-5 leading-relaxed">
+                Get grandmaster tips, tournament updates, and exclusive coaching offers delivered directly.
+              </p>
+              
+              <button 
+                onClick={handleSubscribe}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/40 active:scale-95"
+              >
+                Subscribe Now
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+
+        </div>
+
+        {/* Bottom Bar */}
+        <motion.div 
+          variants={itemVariants}
+          className="pt-8 border-t border-slate-800/80 flex flex-col md:flex-row justify-between items-center gap-4"
+        >
+          <div className="text-slate-500 text-xs sm:text-sm text-center md:text-left">
+            © {new Date().getFullYear()} <span className="text-slate-300 font-semibold">PawnRace Chess Academy</span>. All rights reserved.
+          </div>
+          
+          <div className="flex space-x-6 text-xs sm:text-sm text-slate-500">
+            <Link to="#" className="hover:text-yellow-400 transition-colors">Privacy Policy</Link>
+            <Link to="#" className="hover:text-yellow-400 transition-colors">Terms of Service</Link>
+          </div>
+        </motion.div>
+      </motion.div>
+
     </footer>
   );
 }
-
-export default Footer;
