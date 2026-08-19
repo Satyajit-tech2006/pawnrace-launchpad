@@ -7,12 +7,15 @@ import {
   Button,
   Dialog,
   DialogContent,
+  IconButton,
 } from "@mui/material";
+
+
+
 const coaches = [
   {
     name: "Tapan Badamundi",
     image: "https://i.ibb.co/RGGxB5kz/455e7661-1fc9-4385-94c2-717bbda15d27.jpg",
-    // ⬆️ Replace this with uploaded image URL (imgbb / cloudinary)
     title: "FIDE Rated Chess Coach & Player",
     description:
       "Tapan Badamundi is a highly respected FIDE-rated chess player and coach with a peak FIDE rating of 2000. Known for his deep positional understanding and tournament experience, he brings elite-level training to his students.",
@@ -28,7 +31,7 @@ const coaches = [
       "Opening Repertoire & Endgame Training",
     ],
     students: [],
-    fideId: "XXXXXXX", // 👉 add real FIDE ID if available
+    fideId: "XXXXXXX",
   },
   {
     name: "Dikshant Dash",
@@ -131,7 +134,7 @@ const coaches = [
   {
     name: "Anshuman Barik",
     image:
-      "https://i.ibb.co/Cp9Fst6H/Whats-App-Image-2025-09-07-at-03-25-57-01220eea.jpg", // <-- Replace with actual image link if available
+      "https://i.ibb.co/Cp9Fst6H/Whats-App-Image-2025-09-07-at-03-25-57-01220eea.jpg",
     title:
       "International Rated Chess Player | FIDE Arena International Master & Certified Instructor",
     description:
@@ -159,7 +162,6 @@ const coaches = [
     rapidRating: "1687",
     languages: ["English", "Hindi", "Odia"],
   },
-
   {
     name: "Dipti Ranjan Nayak",
     image: "https://i.ibb.co/7J8hYpj0/857e4e5d-6b53-4911-b91e-da1a0635e5b0.jpg",
@@ -214,209 +216,255 @@ export default function Coaches() {
   };
 
   return (
-    <>
-      <div className="flex flex-col items-center p-4 sm:p-6 bg-gradient-to-b from-zinc-50">
-        <Typography
-          variant="h4"
-          className="text-center font-extrabold text-gray-900 pb-12 sm:mb-8"
-        >
-          Our{" "}
-          <span className="bg-gradient-to-r text-black bg-clip-text ">
-            Star Coaches
-          </span>
-        </Typography>
+    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 p-4 sm:p-6 flex flex-col items-center">
+      <Typography
+        variant="h4"
+        className="text-center font-extrabold text-gray-900 mb-8 pt-4"
+      >
+        Our <span className="text-black">Star Coaches</span>
+      </Typography>
 
-        {/* Coaches Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
-          {coaches.map((coach, index) => (
-            <Card
-              key={index}
-              className="rounded-2xl shadow-lg hover:shadow-2xl transition-transform duration-300 hover:-translate-y-2"
-              sx={{
-                borderRadius: "20px",
-                background: "linear-gradient(135deg, #1e293b, #0f172a)",
-                border: "2px solid yellow",
-                padding: "10px",
-                color: "white",
-              }}
-            >
+      {/* Coaches Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
+        {coaches.map((coach, index) => (
+          <Card
+            key={index}
+            className="rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between"
+            sx={{
+              borderRadius: "20px",
+              background: "linear-gradient(135deg, #1e293b, #0f172a)",
+              border: "2px solid #EAB308",
+              padding: "12px",
+              color: "white",
+            }}
+          >
+            <div>
               <CardMedia
                 component="img"
                 image={coach.image}
                 alt={coach.name}
                 sx={{
-                  height: { xs: 280, sm: 220, md: 300, lg: 360 }, // more height in desktop
+                  height: { xs: 280, sm: 240, md: 300 },
                   objectFit: "cover",
                   borderRadius: "15px",
-                  border: "2px solid yellow",
+                  border: "2px solid #EAB308",
                 }}
               />
-              <CardContent className="text-center space-y-3">
+              <CardContent className="text-center space-y-2 px-2 py-4">
                 <Typography
                   variant="h6"
                   className="font-extrabold text-white"
-                  gutterBottom
                 >
                   {coach.name}
                 </Typography>
                 <Typography
-                  variant="body1"
+                  variant="body2"
                   className="text-gray-300 font-semibold"
                 >
                   {coach.title}
                 </Typography>
-                <Button
-                  variant="contained"
-                  size="medium"
-                  sx={{
-                    background: "yellow",
-                    color: "black",
-                    textTransform: "none",
-                    fontWeight: "bold",
-                    borderRadius: "10px",
-                    padding: "8px 20px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                    },
-                  }}
-                  onClick={() => handleOpen(coach)}
-                >
-                  Know More
-                </Button>
               </CardContent>
-            </Card>
-          ))}
-        </div>
+            </div>
 
-        {/* Modal */}
-        <Dialog
-          open={open}
-          onClose={handleClose}
-          fullWidth
-          maxWidth="sm"
-          PaperProps={{
-            sx: {
-              borderRadius: "20px",
-              background: "linear-gradient(180deg, #1e293b, #0f172a)",
-              border: "2px solid yellow",
-              p: { xs: 1, sm: 2 },
-              color: "white",
-            },
-          }}
-        >
-          {selectedCoach && (
-            <DialogContent className="flex flex-col items-center space-y-4">
-              {/* Main Coach Photo */}
-              <img
-                src={selectedCoach.image}
-                alt={selectedCoach.name}
-                className="rounded-xl shadow-lg w-44 sm:w-56 border-4 border-yellow-500"
-              />
+            <div className="text-center pb-2">
+              <Button
+                variant="contained"
+                size="medium"
+                sx={{
+                  background: "#EAB308",
+                  color: "black",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  borderRadius: "10px",
+                  padding: "8px 24px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                  "&:hover": {
+                    background: "#CA8A04",
+                    transform: "scale(1.03)",
+                  },
+                }}
+                onClick={() => handleOpen(coach)}
+              >
+                Know More
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Fixed Scrollable Modal */}
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: "20px",
+            background: "linear-gradient(180deg, #1e293b, #0f172a)",
+            border: "2px solid #EAB308",
+            color: "white",
+            maxHeight: "90vh", // Key fix: Viewport overflow restrict karega
+            margin: "16px",
+          },
+        }}
+      >
+        {selectedCoach && (
+          <div className="relative flex flex-col max-h-[90vh]">
+            {/* Top Close Icon */}
+            <IconButton
+              onClick={handleClose}
+              sx={{
+                position: "absolute",
+                right: 12,
+                top: 12,
+                color: "#EAB308",
+                backgroundColor: "rgba(0,0,0,0.4)",
+                "&:hover": { backgroundColor: "rgba(0,0,0,0.7)" },
+                zIndex: 10,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+
+            {/* Scrollable Content Container */}
+            <DialogContent className="overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
+              <div className="flex justify-center pt-2">
+                <img
+                  src={selectedCoach.image}
+                  alt={selectedCoach.name}
+                  className="rounded-xl shadow-lg w-40 sm:w-48 h-48 sm:h-56 object-cover border-4 border-yellow-500"
+                />
+              </div>
 
               <Typography
-                variant="h6"
-                className="font-extrabold text-transparent bg-clip-text text-yellow-400 text-center"
+                variant="h5"
+                className="font-extrabold text-yellow-400 text-center"
               >
                 {selectedCoach.name}
               </Typography>
+
               <Typography
-                variant="body1"
-                className="text-center text-gray-300 font-medium"
+                variant="body2"
+                className="text-center text-gray-300 font-medium leading-relaxed"
               >
                 {selectedCoach.description}
               </Typography>
 
-              <div className="w-full space-y-3 mt-2 text-gray-200">
-                <Typography
-                  variant="subtitle1"
-                  className="font-bold text-white"
-                >
-                  Achievements:
-                </Typography>
-                <ul className="list-disc pl-5">
-                  {selectedCoach.achievements.map((ach, idx) => (
-                    <li key={idx}>{ach}</li>
-                  ))}
-                </ul>
-
-                <Typography
-                  variant="subtitle1"
-                  className="font-bold text-white mt-3"
-                >
-                  Coaching Experience:
-                </Typography>
-                <ul className="list-disc pl-5">
-                  {selectedCoach.coaching.map((c, idx) => (
-                    <li key={idx}>{c}</li>
-                  ))}
-                </ul>
-
-                <Typography
-                  variant="subtitle1"
-                  className="font-bold text-white mt-3"
-                >
-                  Students' Glory:
-                </Typography>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                  {selectedCoach.students.map((s, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center space-x-4 bg-gray-800 rounded-lg p-3"
+              <div className="w-full space-y-3 mt-4 text-gray-200">
+                {/* Achievements List */}
+                {selectedCoach.achievements?.length > 0 && (
+                  <div>
+                    <Typography
+                      variant="subtitle1"
+                      className="font-bold text-yellow-400 mb-1"
                     >
-                      <img
-                        src={s.photo}
-                        alt={s.name}
-                        className="w-20 h-20 rounded-full border-2 border-yellow-400 object-cover shadow-md"
-                      />
-                      <div>
-                        <p className="font-semibold text-white">{s.name}</p>
-                        <p className="text-gray-400 text-sm">{s.achievement}</p>
-                      </div>
+                      Key Achievements:
+                    </Typography>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-200">
+                      {selectedCoach.achievements.map((ach, idx) => (
+                        <li key={idx}>{ach}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Coaching Experience */}
+                {selectedCoach.coaching?.length > 0 && (
+                  <div className="pt-2">
+                    <Typography
+                      variant="subtitle1"
+                      className="font-bold text-yellow-400 mb-1"
+                    >
+                      Coaching Experience:
+                    </Typography>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-200">
+                      {selectedCoach.coaching.map((c, idx) => (
+                        <li key={idx}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Student Glory Section */}
+                {selectedCoach.students?.length > 0 && (
+                  <div className="pt-2">
+                    <Typography
+                      variant="subtitle1"
+                      className="font-bold text-yellow-400 mb-2"
+                    >
+                      Students' Glory:
+                    </Typography>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedCoach.students.map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center space-x-3 bg-slate-800/80 border border-slate-700 rounded-lg p-2.5"
+                        >
+                          <img
+                            src={s.photo}
+                            alt={s.name}
+                            className="w-12 h-12 rounded-full border-2 border-yellow-400 object-cover flex-shrink-0"
+                          />
+                          <div>
+                            <p className="font-semibold text-white text-sm">
+                              {s.name}
+                            </p>
+                            <p className="text-gray-400 text-xs">
+                              {s.achievement}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
 
-              {/* FIDE Profile Button */}
-              {selectedCoach.fideId && (
-                <Button
-                  variant="contained"
-                  component="a"
-                  href={`https://ratings.fide.com/profile/${selectedCoach.fideId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{
-                    mt: 2,
-                    borderRadius: "10px",
-                    fontWeight: "bold",
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3 justify-center pt-4 border-t border-slate-700/60">
+                {selectedCoach.fideId && (
+                  <Button
+                    variant="contained"
+                    component="a"
+                    href={`https://ratings.fide.com/profile/${selectedCoach.fideId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      borderRadius: "10px",
+                      fontWeight: "bold",
+                      background: "#EAB308",
+                      color: "black",
+                      textTransform: "none",
+                      "&:hover": { background: "#CA8A04" },
+                    }}
+                  >
+                    View FIDE Profile
+                  </Button>
+                )}
 
-                    background: "yellow",
-                    color: "black",
+                <Button
+                  onClick={handleClose}
+                  variant="outlined"
+                  sx={{
+                    borderRadius: "10px",
+                    color: "#EAB308",
+                    fontWeight: "bold",
+                    borderColor: "#EAB308",
+                    textTransform: "none",
+                    "&:hover": {
+                      borderColor: "#CA8A04",
+                      backgroundColor: "rgba(234, 179, 8, 0.1)",
+                    },
                   }}
                 >
-                  View FIDE Profile
+                  Close
                 </Button>
-              )}
-
-              <Button
-                onClick={handleClose}
-                variant="outlined"
-                sx={{
-                  mt: 2,
-                  background: "yellow",
-                  borderRadius: "10px",
-                  color: "black",
-                  fontWeight: "bold",
-                  borderColor: "black",
-                }}
-              >
-                Close
-              </Button>
+              </div>
             </DialogContent>
-          )}
-        </Dialog>
-      </div>
-    </>
+          </div>
+        )}
+      </Dialog>
+    </div>
   );
 }
