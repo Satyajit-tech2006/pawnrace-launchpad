@@ -186,7 +186,6 @@ const StudentAssignmentSolver = () => {
   // --- Handle Final Assignment Submission ---
   const handleFinalSubmit = async () => {
       try {
-          // Send a request to a theoretical endpoint that changes submission status to 'submitted'
           await apiClient.patch(`/submissions/${assignmentId}/submit`);
           setAssignmentStatus('submitted');
           toast.success("Assignment submitted to your coach!");
@@ -346,6 +345,16 @@ const StudentAssignmentSolver = () => {
                             </span>
                         )}
                     </div>
+
+                    {/* NEW: Turn Indicator */}
+                    {(!isTaskCompleted && !isLocked) && (
+                        <div className="flex items-center gap-2 bg-black/40 border border-white/10 px-3 py-1.5 rounded-lg shadow-sm">
+                            <div className={`w-3.5 h-3.5 rounded-sm border ${game.turn() === 'w' ? 'bg-[#E4EBF2] border-gray-400' : 'bg-[#47638A] border-black shadow-inner'}`}></div>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-300">
+                                {game.turn() === 'w' ? 'White to play' : 'Black to play'}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Board Container */}

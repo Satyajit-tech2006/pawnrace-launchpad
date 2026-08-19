@@ -8,6 +8,7 @@ export const ENDPOINTS = {
     FORGOT_PASSWORD: '/users/forgot-password',
     RESET_PASSWORD: (token) => `/users/reset-password/${token}`,
     UPDATE_PROFILE: '/users/update-profile',
+    GET_LEADERBOARD: '/users/leaderboard',
   },
   COURSES: {
     CREATE: '/courses',
@@ -21,7 +22,10 @@ export const ENDPOINTS = {
     ADD_STUDENT: (courseId) => `/courses/${courseId}/students`,
     REMOVE_STUDENT: (courseId, studentId) => `/courses/${courseId}/students/${studentId}`,
   },
-  
+  IQ: {
+    SUBMIT_SCORE: '/iq-puzzles/submit',
+    GET_STATS: '/iq-puzzles/stats'
+  },
   
   ASSIGNMENTS: {
     CREATE: (courseId) => `/assignments/course/${courseId}`,
@@ -56,10 +60,14 @@ export const ENDPOINTS = {
     GET_CHAT_HISTORY: (receiverId) => `/chats/conversation/${receiverId}`,
   },
   TESTS: {
-    CREATE: (courseId) => `/tests/course/${courseId}`,
     GET_BY_COURSE: (courseId) => `/tests/course/${courseId}`,
+    CREATE: (courseId) => `/tests/course/${courseId}`,
     DELETE: (testId) => `/tests/${testId}`,
-  },
+},
+  // In your src/lib/endpoints.js file
+TEST_SUBMISSIONS: {
+    GET_ALL_FOR_TEST: (testId) => `/test-submissions/${testId}/attempts`,
+},
   SYLLABUS: {
     // Global Access (Database View & Modal)
     ADD: '/syllabus/add',

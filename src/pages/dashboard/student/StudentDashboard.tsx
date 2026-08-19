@@ -16,7 +16,8 @@ import {
   LucideIcon,
   Brain,
   Calendar,
-  Gamepad2, 
+  Gamepad2,
+  Medal // Added for Leaderboard
 } from "lucide-react";
 
 // --- BACKGROUND ANIMATION COMPONENTS ---
@@ -100,15 +101,11 @@ const menuItems = [
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
   {
-    name: "Test Results",
+    name: "Test",
     icon: FileBarChart,
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
-  {
-    name: "Contact Coach",
-    icon: Phone,
-    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
-  },
+  
   {
     name: "Settings",
     icon: Settings,
@@ -125,6 +122,11 @@ const menuItems = [
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
   },
   {
+    name: "Leaderboard",
+    icon: Medal,
+    color: "bg-gradient-to-br from-yellow-400 to-orange-500",
+  },
+  {
     name: "Play Game",
     icon: Gamepad, 
     color: "bg-gradient-to-br from-yellow-400 to-orange-500",
@@ -137,15 +139,7 @@ const menuItems = [
   },
 ].map((item) => ({ ...item, path: item.name.toLowerCase().replace(" ", "-") }));
 
-interface MenuCardProps {
-  name: string;
-  icon: LucideIcon;
-  color: string;
-  index: number;
-  onClick: () => void;
-}
-
-const MenuCard: React.FC<MenuCardProps> = ({
+const MenuCard = ({
   name,
   icon: Icon,
   color,
@@ -176,10 +170,10 @@ const MenuCard: React.FC<MenuCardProps> = ({
   );
 };
 
-const StudentDashboard: React.FC = () => {
+const StudentDashboard = () => {
   const navigate = useNavigate();
 
-  const handleMenuClick = (path: string) => {
+  const handleMenuClick = (path) => {
     if (path === "play-game") {
       navigate(`/play`);
     } else {
@@ -229,5 +223,5 @@ const StudentDashboard: React.FC = () => {
     </div>
   );
 };
-//
+
 export default StudentDashboard;
