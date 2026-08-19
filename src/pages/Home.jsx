@@ -10,7 +10,7 @@ import Coaches from "@/components/Coaches";
 import Footer from "@/components/Footer";
 import AuthModal from "@/components/AuthModal";
 import StudentGlory from "../components/StudentGlory";
-import AutoPopup from "@/components/AutoPopup";
+// import AutoPopup from "@/components/AutoPopup";
 
 export default function Home() {
   const { user } = useAuth();
@@ -159,7 +159,7 @@ export default function Home() {
 
       <AuthModal isOpen={isAuthModalOpen} onClose={handleCloseModal} />
 
-      <AutoPopup isOpen={isAutoPopupOpen} onClose={handleCloseAutoPopup} />
+      {/* <AutoPopup isOpen={isAutoPopupOpen} onClose={handleCloseAutoPopup} /> */}
     </div>
   );
 }
