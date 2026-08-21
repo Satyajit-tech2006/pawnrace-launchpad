@@ -28,8 +28,8 @@ const DIFF_MODIFIERS = {
     minefield: { easy: '4 Mines (Safe Paths)', medium: '8 Mines (Complex)', hard: '12 Mines (Brutal)' },
     memory: { easy: '6 Second Flash', medium: '4 Second Flash', hard: '2 Second Flash' },
     detective: { easy: 'Open Positions', medium: 'Standard Positions', hard: 'Crowded Middle-games' },
-    queens: { easy: 'Target: 5 Queens | No Time Penalty', medium: 'Target: 5-7 Queens | No Time Penalty', hard: 'Target: 6-8 Queens | Timeout = STRIKE' },
-    tour: { easy: 'Target: 10 Jumps', medium: 'Target: 25 Jumps', hard: 'Target: 40 Jumps' }
+    queens: { easy: 'Target: 5 Queens | 10s Timer', medium: 'Target: 5-7 Queens | 6s Timer', hard: 'Target: 6-8 Queens | 3s Timer (Timeout = Strike)' },
+    tour: { easy: 'Target: 15 Jumps', medium: 'Target: 25 Jumps', hard: 'Target: 40 Jumps' }
 };
 
 const MODE_RULES = {
@@ -54,9 +54,9 @@ const MODE_RULES = {
         "Select the correct number from the options."
     ],
     queens: [
-        "The board spawns with Queens already placed.",
-        "Quickly click ONE safe square where a new Queen cannot be attacked.",
-        "If the 6-second timer runs out, the pattern resets. (Hard Mode: Timeout = Strike!)"
+        "The board spawns with N-1 Queens already placed.",
+        "Quickly scan and click ONE safe square where a new Queen cannot be attacked.",
+        "If the timer runs out, the pattern resets. In Hard Mode, timeouts cost a strike!"
     ],
     tour: [
         "Move the Knight using standard 'L' shaped jumps.",
@@ -480,23 +480,25 @@ const IqPuzzle = () => {
         setQueensPlaced(prePlaced);
         setQueensPos(posObj);
         setQueensN(n);
-        setQueensTaskKey(Date.now()); // Resets the 6-second timer effect
+        setQueensTaskKey(Date.now()); // Resets the dynamic timer
     }, [difficulty]);
 
-    // Independent 6-Second Timer just for N-Queens
+    // Independent Dynamic Timer just for N-Queens
     useEffect(() => {
         if (view !== 'playing' || selectedMode !== 'queens' || strikes >= 3) return;
 
+        const timeLimit = difficulty === 'hard' ? 3000 : difficulty === 'medium' ? 6000 : 10000;
+
         const timerId = setTimeout(() => {
             if (difficulty === 'hard') {
-                toast.error("Time's Up!", { position: 'top-center', duration: 800 });
+                toast.error("Time's Up! Strike recorded.", { position: 'top-center', duration: 800 });
                 handleStrike();
                 generateQueensTask(); // Refresh pattern on strike
             } else {
                 toast.info("Time's up! Refreshing Pattern.", { position: 'top-center', duration: 800 });
                 generateQueensTask(); // Refresh pattern penalty-free
             }
-        }, 6000); 
+        }, timeLimit); 
 
         return () => clearTimeout(timerId);
     }, [queensTaskKey, view, selectedMode, difficulty, generateQueensTask, handleStrike, strikes]);
@@ -551,7 +553,7 @@ const IqPuzzle = () => {
             setTourCurrent(square);
             setTourPos({ [square]: 'wN' });
 
-            const targetJumps = difficulty === 'hard' ? 40 : difficulty === 'medium' ? 25 : 10;
+            const targetJumps = difficulty === 'hard' ? 40 : difficulty === 'medium' ? 25 : 15;
             const jumpsMade = newVisited.length - 1;
 
             if (jumpsMade === targetJumps) {
@@ -890,7 +892,9 @@ const IqPuzzle = () => {
                         )}
 
                         {/* 5. N-QUEENS DYNAMIC SEARCH MODE */}
-                        {selectedMode === 'queens' && (
+                        {selectedMode === 'queens' && (() => {
+                            const timerDuration = difficulty === 'hard' ? 3 : difficulty === 'medium' ? 6 : 10;
+                            return (
                             <div className="flex flex-col items-center w-full">
                                 <div className="mb-6 text-center">
                                     <h2 className="text-pink-400 font-bold uppercase tracking-widest text-sm mb-1 flex items-center justify-center gap-2">
@@ -912,22 +916,22 @@ const IqPuzzle = () => {
                                     />
                                 </div>
 
-                                {/* Dynamic 6-Second Timer Bar */}
+                                {/* Dynamic Scaled Timer Bar */}
                                 <div className="w-full max-w-[500px] bg-slate-800 h-2 rounded-full mt-6 overflow-hidden shadow-inner">
                                     <motion.div 
                                         key={queensTaskKey}
                                         initial={{ width: "100%" }}
                                         animate={{ width: "0%" }}
-                                        transition={{ duration: 6, ease: "linear" }}
-                                        className={`h-full ${difficulty === 'hard' ? 'bg-red-500' : 'bg-pink-500'}`}
+                                        transition={{ duration: timerDuration, ease: "linear" }}
+                                        className={`h-full ${difficulty === 'hard' ? 'bg-red-500' : difficulty === 'medium' ? 'bg-pink-500' : 'bg-emerald-400'}`}
                                     />
                                 </div>
                             </div>
-                        )}
+                        )})()}
 
                         {/* 6. KNIGHT'S TOUR MODE */}
                         {selectedMode === 'tour' && (() => {
-                            const targetJumps = difficulty === 'hard' ? 40 : difficulty === 'medium' ? 25 : 10;
+                            const targetJumps = difficulty === 'hard' ? 40 : difficulty === 'medium' ? 25 : 15;
                             return (
                             <div className="flex flex-col items-center w-full">
                                 <div className="mb-6 text-center">
