@@ -16,8 +16,27 @@ import {
 } from 'lucide-react';
 import Navbar from './Navbar';
 
+/* -------------------------------------------------------------------------- */
+/* GLOBAL 3D ASSETS (Created once to save massive GPU memory)                 */
+/* -------------------------------------------------------------------------- */
+
+// Geometries (Reduced segment counts for background elements)
+const baseGeo = new THREE.CylinderGeometry(0.6, 0.75, 0.25, 24);
+const midGeo = new THREE.CylinderGeometry(0.45, 0.6, 0.25, 24);
+const stemGeo = new THREE.CylinderGeometry(0.25, 0.45, 0.9, 16);
+const collarGeo = new THREE.TorusGeometry(0.3, 0.08, 12, 24);
+const headGeo = new THREE.SphereGeometry(0.38, 24, 24);
+
+// Materials (Shared across all pawn instances)
+const pawnProps = { metalness: 0.8, roughness: 0.2 };
+const matYellow = new THREE.MeshStandardMaterial({ color: "#EAB308", ...pawnProps });
+const matBlue = new THREE.MeshStandardMaterial({ color: "#38BDF8", ...pawnProps });
+const matDarkGold = new THREE.MeshStandardMaterial({ color: "#CA8A04", ...pawnProps });
+const matSlate = new THREE.MeshStandardMaterial({ color: "#1E293B", ...pawnProps });
+const matCollar = new THREE.MeshStandardMaterial({ color: "#FACC15", metalness: 0.9, roughness: 0.1 });
+
 // --- 3D Chess Pawn Geometry Helper ---
-function PawnMesh({ position, color = "#EAB308", scale = 1, rotationSpeed = 1 }) {
+function PawnMesh({ position, material, scale = 1, rotationSpeed = 1 }) {
   const meshRef = useRef();
 
   useFrame((state, delta) => {
@@ -30,29 +49,14 @@ function PawnMesh({ position, color = "#EAB308", scale = 1, rotationSpeed = 1 })
     <Float speed={2} rotationIntensity={0.6} floatIntensity={0.8} position={position}>
       <group ref={meshRef} scale={scale}>
         {/* Base */}
-        <mesh position={[0, -0.9, 0]}>
-          <cylinderGeometry args={[0.6, 0.75, 0.25, 32]} />
-          <meshStandardMaterial color={color} metalness={0.8} roughness={0.2} />
-        </mesh>
-        <mesh position={[0, -0.65, 0]}>
-          <cylinderGeometry args={[0.45, 0.6, 0.25, 32]} />
-          <meshStandardMaterial color={color} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[0, -0.9, 0]} geometry={baseGeo} material={material} />
+        <mesh position={[0, -0.65, 0]} geometry={midGeo} material={material} />
         {/* Body stem */}
-        <mesh position={[0, -0.1, 0]}>
-          <cylinderGeometry args={[0.25, 0.45, 0.9, 32]} />
-          <meshStandardMaterial color={color} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[0, -0.1, 0]} geometry={stemGeo} material={material} />
         {/* Collar ring */}
-        <mesh position={[0, 0.4, 0]}>
-          <torusGeometry args={[0.3, 0.08, 16, 32]} />
-          <meshStandardMaterial color="#FACC15" metalness={0.9} roughness={0.1} />
-        </mesh>
+        <mesh position={[0, 0.4, 0]} geometry={collarGeo} material={matCollar} />
         {/* Head sphere */}
-        <mesh position={[0, 0.75, 0]}>
-          <sphereGeometry args={[0.38, 32, 32]} />
-          <meshStandardMaterial color={color} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[0, 0.75, 0]} geometry={headGeo} material={material} />
       </group>
     </Float>
   );
@@ -81,20 +85,20 @@ function Background3DScene() {
       <pointLight position={[-8, -5, 5]} intensity={2.5} color="#EAB308" />
       <pointLight position={[8, 5, -5]} intensity={2} color="#38BDF8" />
 
-      {/* Floating Gold & Slate Chess Pieces in 3D Space */}
-      <PawnMesh position={[-4.5, 2.2, -2]} scale={0.75} color="#EAB308" rotationSpeed={1.2} />
-      <PawnMesh position={[4.6, 2.8, -3]} scale={0.9} color="#38BDF8" rotationSpeed={-0.8} />
-      <PawnMesh position={[-5.2, -2.5, -1.5]} scale={0.8} color="#CA8A04" rotationSpeed={0.9} />
-      <PawnMesh position={[5, -2, -2]} scale={0.85} color="#EAB308" rotationSpeed={-1.1} />
-      <PawnMesh position={[0, -3.8, -4]} scale={1.2} color="#1E293B" rotationSpeed={0.5} />
+      {/* Floating Gold & Slate Chess Pieces using Shared Materials */}
+      <PawnMesh position={[-4.5, 2.2, -2]} scale={0.75} material={matYellow} rotationSpeed={1.2} />
+      <PawnMesh position={[4.6, 2.8, -3]} scale={0.9} material={matBlue} rotationSpeed={-0.8} />
+      <PawnMesh position={[-5.2, -2.5, -1.5]} scale={0.8} material={matDarkGold} rotationSpeed={0.9} />
+      <PawnMesh position={[5, -2, -2]} scale={0.85} material={matYellow} rotationSpeed={-1.1} />
+      <PawnMesh position={[0, -3.8, -4]} scale={1.2} material={matSlate} rotationSpeed={0.5} />
 
       {/* 3D Wireframe Cyber Chess Floor */}
       <group position={[0, -4, -6]} rotation={[-Math.PI / 2.5, 0, 0]} ref={gridRef}>
         <gridHelper args={[30, 30, 0xEAB308, 0x1E293B]} />
       </group>
 
-      {/* Atmospheric Star/Gold Dust Particles */}
-      <Sparkles count={80} scale={12} size={2.5} speed={0.4} color="#FACC15" opacity={0.6} />
+      {/* Atmospheric Star/Gold Dust Particles (Optimized count to 45) */}
+      <Sparkles count={45} scale={12} size={2.5} speed={0.4} color="#FACC15" opacity={0.6} />
     </>
   );
 }
@@ -157,9 +161,13 @@ export default function Features() {
     <div className="min-h-screen bg-[#070b14] text-white relative overflow-hidden flex flex-col justify-between">
       <Navbar />
 
-      {/* 3D Background Canvas */}
+      {/* 3D Background Canvas with Optimizations */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <Canvas camera={{ position: [0, 0, 7], fov: 45 }}>
+        <Canvas 
+          camera={{ position: [0, 0, 7], fov: 45 }}
+          dpr={[1, 1.5]} 
+          gl={{ powerPreference: "low-power", antialias: true }}
+        >
           <Background3DScene />
         </Canvas>
       </div>

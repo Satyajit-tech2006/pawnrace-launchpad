@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowRight, CheckCircle2, Award, Sparkles, ChevronDown } from "lucide-react";
+import { ArrowRight, CheckCircle2, Award, ChevronDown } from "lucide-react";
 import * as THREE from "three";
 
 import sambitImg from "../assets/sambit-panda.jpg";
@@ -20,6 +20,25 @@ function bookDemo() {
 /* Enhanced Procedural 3D Geometry Builders                             */
 /* -------------------------------------------------------------------- */
 
+// OPTIMIZATION: Pass materials in so they are created once, not 64 times.
+function buildBoardHalf(colStart, colCount, lightMat, darkMat, tileGeo) {
+  const half = new THREE.Group();
+
+  for (let col = 0; col < colCount; col++) {
+    for (let row = 0; row < 8; row++) {
+      const globalCol = colStart + col;
+      const isLight = (globalCol + row) % 2 === 0;
+
+      // Share the exact same material instance across all tiles
+      const tile = new THREE.Mesh(tileGeo, isLight ? lightMat : darkMat);
+      tile.position.set(globalCol - 3.5, 0, row - 3.5);
+      tile.receiveShadow = true;
+      half.add(tile);
+    }
+  }
+  return half;
+}
+
 function buildPawn() {
   const group = new THREE.Group();
 
@@ -35,7 +54,8 @@ function buildPawn() {
     new THREE.Vector2(0.22, 0.8),
   ];
   
-  const bodyGeo = new THREE.LatheGeometry(profile, 64);
+  // OPTIMIZATION: Dropped segments from 64 to 32. Visually identical, half the geometry.
+  const bodyGeo = new THREE.LatheGeometry(profile, 32); 
   const material = new THREE.MeshStandardMaterial({
     color: 0xf59e0b,
     metalness: 0.88,
@@ -49,37 +69,15 @@ function buildPawn() {
   body.receiveShadow = true;
   group.add(body);
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 48, 48), material);
+  // OPTIMIZATION: Dropped from 48x48 to 32x32.
+  const headGeo = new THREE.SphereGeometry(0.24, 32, 32);
+  const head = new THREE.Mesh(headGeo, material);
   head.position.y = 0.8 + 0.19;
   head.castShadow = true;
   head.receiveShadow = true;
   group.add(head);
 
   return group;
-}
-
-function buildBoardHalf(colStart, colCount, lightColor, darkColor) {
-  const half = new THREE.Group();
-  const tileGeo = new THREE.BoxGeometry(0.96, 0.12, 0.96);
-
-  for (let col = 0; col < colCount; col++) {
-    for (let row = 0; row < 8; row++) {
-      const globalCol = colStart + col;
-      const isLight = (globalCol + row) % 2 === 0;
-
-      const mat = new THREE.MeshStandardMaterial({
-        color: isLight ? lightColor : darkColor,
-        roughness: isLight ? 0.25 : 0.45,
-        metalness: isLight ? 0.35 : 0.15,
-      });
-
-      const tile = new THREE.Mesh(tileGeo, mat);
-      tile.position.set(globalCol - 3.5, 0, row - 3.5);
-      tile.receiveShadow = true;
-      half.add(tile);
-    }
-  }
-  return half;
 }
 
 /* -------------------------------------------------------------------- */
@@ -112,7 +110,9 @@ function ChessHero3D({ progress }) {
       alpha: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
+    // OPTIMIZATION: Capped at 1.5 to prevent 4K/Retina displays from choking the GPU.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); 
     renderer.setSize(width, height);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -127,8 +127,9 @@ function ChessHero3D({ progress }) {
     const keyLight = new THREE.DirectionalLight(0xfff1d6, 2.8);
     keyLight.position.set(6, 12, 7);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
+    // OPTIMIZATION: Lowered shadow map from 2048 to 1024. Massive performance boost.
+    keyLight.shadow.mapSize.width = 1024; 
+    keyLight.shadow.mapSize.height = 1024;
     keyLight.shadow.bias = -0.0001;
     scene.add(keyLight);
 
@@ -140,18 +141,29 @@ function ChessHero3D({ progress }) {
     fillLight.position.set(-4, -2, 4);
     scene.add(fillLight);
 
-    /* --- BOARD GROUP --- */
+    /* --- SHARED BOARD ASSETS --- */
     const boardGroup = new THREE.Group();
-    const lightColor = 0xfef3c7;
-    const darkColor = 0x0f172a;
+    
+    // Create Geometries and Materials exactly once
+    const tileGeo = new THREE.BoxGeometry(0.96, 0.12, 0.96);
+    const lightMat = new THREE.MeshStandardMaterial({
+      color: 0xfef3c7,
+      roughness: 0.25,
+      metalness: 0.35,
+    });
+    const darkMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.45,
+      metalness: 0.15,
+    });
 
-    const leftHalf = buildBoardHalf(0, 4, lightColor, darkColor);
+    const leftHalf = buildBoardHalf(0, 4, lightMat, darkMat, tileGeo);
     const leftPivot = new THREE.Group();
     leftHalf.position.x = 2;
     leftPivot.position.x = -2;
     leftPivot.add(leftHalf);
 
-    const rightHalf = buildBoardHalf(4, 4, lightColor, darkColor);
+    const rightHalf = buildBoardHalf(4, 4, lightMat, darkMat, tileGeo);
     boardGroup.add(leftPivot);
     boardGroup.add(rightHalf);
     boardGroup.position.y = -0.4;
@@ -180,7 +192,8 @@ function ChessHero3D({ progress }) {
     scene.add(pawn);
 
     /* --- DUST PARTICLES --- */
-    const sparkleCount = isMobile ? 60 : 120;
+    // OPTIMIZATION: Dropped max particles slightly to save render passes.
+    const sparkleCount = isMobile ? 40 : 80; 
     const sparklePositions = new Float32Array(sparkleCount * 3);
     for (let i = 0; i < sparkleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -204,25 +217,15 @@ function ChessHero3D({ progress }) {
     const sparkles = new THREE.Points(sparkleGeo, sparkleMat);
     scene.add(sparkles);
 
-    // Initial camera
     camera.position.set(0, isMobile ? 11 : 9, isMobile ? 15 : 13);
     camera.lookAt(0, -0.4, 0);
 
     const clock = new THREE.Clock();
 
     engineRef.current = {
-      leftPivot,
-      boardGroup,
-      pawn,
-      camera,
-      sparkles,
-      sparkleMat,
-      renderer,
-      scene,
-      clock,
-      targetProgress: 0,
-      currentProgress: 0,
-      isMobile,
+      leftPivot, boardGroup, pawn, camera, sparkles, 
+      sparkleMat, renderer, scene, clock,
+      targetProgress: 0, currentProgress: 0, isMobile,
     };
 
     function onResize() {
@@ -231,9 +234,7 @@ function ChessHero3D({ progress }) {
       const h = mount.clientHeight;
       const mobileCheck = w < 768;
 
-      if (engineRef.current) {
-        engineRef.current.isMobile = mobileCheck;
-      }
+      if (engineRef.current) engineRef.current.isMobile = mobileCheck;
 
       camera.fov = mobileCheck ? 48 : 38;
       camera.aspect = w / h;
@@ -248,6 +249,8 @@ function ChessHero3D({ progress }) {
         mount.removeChild(renderer.domElement);
       }
       renderer.dispose();
+      
+      // Cleanup all materials and geometries to prevent memory leaks
       scene.traverse((obj) => {
         if (obj.geometry) obj.geometry.dispose();
         if (obj.material) {
@@ -276,16 +279,8 @@ function ChessHero3D({ progress }) {
     const renderLoop = () => {
       if (engineRef.current) {
         const {
-          leftPivot,
-          boardGroup,
-          pawn,
-          camera,
-          sparkles,
-          sparkleMat,
-          renderer,
-          scene,
-          clock,
-          isMobile,
+          leftPivot, boardGroup, pawn, camera, sparkles,
+          sparkleMat, renderer, scene, clock, isMobile,
         } = engineRef.current;
 
         const t = clock.getElapsedTime();
@@ -381,6 +376,7 @@ function Hero() {
       setScrollProgress(progress);
     }
 
+    // Passive listener ensures the scroll thread isn't blocked by React
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
@@ -405,22 +401,16 @@ function Hero() {
 
   return (
     <div className="bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950 pt-10">
-      {/* Background ambient lighting */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-1/4 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-blue-600/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/3 right-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-amber-500/10 rounded-full blur-3xl" />
       </div>
 
-      {/* ---------------- 3D HERO CONTAINER ---------------- */}
       <section ref={containerRef} className="relative h-[240vh] sm:h-[260vh] lg:h-[280vh] z-10 ">
         <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
           <div className="container mx-auto px-4 sm:px-6 h-full grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-center">
             
-            {/* LEFT / TOP SIDE CONTENT */}
             <div className="lg:col-span-6 z-20 flex flex-col justify-center space-y-4 sm:space-y-6 pt-16 sm:pt-20 lg:pt-0">
-              
-               
-
               <h1 className="text-3xl sm:text-5xl xl:text-6xl font-extrabold tracking-tight leading-[1.15]">
                 Train with FIDE Masters &{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-500">
@@ -442,7 +432,6 @@ function Hero() {
                 </button>
               </div>
 
-              {/* Feature Pills */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-1 text-xs sm:text-sm text-slate-300">
                 <div className="flex items-center space-x-2">
                   <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
@@ -458,7 +447,6 @@ function Hero() {
                 </div>
               </div>
 
-              {/* Stats Bar */}
               <div className="grid grid-cols-3 gap-3 sm:gap-6 pt-4 sm:pt-6 border-t border-slate-800">
                 <div>
                   <div className="text-xl sm:text-3xl font-bold text-amber-400">50+</div>
@@ -475,11 +463,9 @@ function Hero() {
               </div>
             </div>
 
-            {/* RIGHT / BOTTOM SIDE (3D CANVAS VIEWPORT) */}
             <div className="lg:col-span-6 h-[40vh] sm:h-[50vh] lg:h-[85vh] relative z-10 w-full">
               <ChessHero3D progress={scrollProgress} />
               
-              {/* Scroll Overlay Indicator */}
               <div 
                 className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 text-[11px] sm:text-xs text-amber-300/80 bg-slate-900/80 border border-amber-500/20 px-3 sm:px-4 py-1.5 rounded-full backdrop-blur-md transition-opacity duration-300 pointer-events-none flex items-center gap-1.5 whitespace-nowrap"
                 style={{ opacity: scrollProgress > 0.85 ? 0 : 1 }}
@@ -493,7 +479,6 @@ function Hero() {
         </div>
       </section>
 
-      {/* ---------------- COACHES SECTION ---------------- */}
       <section className="relative z-20 bg-slate-900/90 border-t border-slate-800 py-16 sm:py-24 backdrop-blur-xl">
         <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
           <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-2 sm:space-y-3">

@@ -20,19 +20,14 @@ const coaches = [
     image: "https://i.ibb.co/RGGxB5kz/455e7661-1fc9-4385-94c2-717bbda15d27.jpg",
     title: "FIDE Rated Chess Coach & Player",
     rating: "Peak FIDE: 2000",
-    description:
-      "Tapan Badamundi is a highly respected FIDE-rated chess player and coach with a peak FIDE rating of 2000. Known for his deep positional understanding and tournament experience, he brings elite-level training to his students.",
+    description: "Tapan Badamundi is a highly respected FIDE-rated chess player and coach with a peak FIDE rating of 2000. Known for his deep positional understanding and tournament experience, he brings elite-level training to his students.",
     achievements: [
       "♟️ Peak FIDE Rating: 2000",
       "🏆 Multiple National & International Tournament Performances",
       "🎯 Known for strong positional & endgame mastery",
       "🌍 Active participant in FIDE-rated events",
     ],
-    coaching: [
-      "Professional Chess Coaching",
-      "Advanced Tournament Preparation",
-      "Opening Repertoire & Endgame Training",
-    ],
+    coaching: ["Professional Chess Coaching", "Advanced Tournament Preparation", "Opening Repertoire & Endgame Training"],
     fideId: "XXXXXXX",
   },
   {
@@ -40,8 +35,7 @@ const coaches = [
     image: "https://i.ibb.co/21kBv1dK/Whats-App-Image-2025-09-08-at-19-51-53-ab248d0c.jpg",
     title: "International Chess Sensation",
     rating: "FIDE Rating: 1800+",
-    description:
-      "With over 14 years of playing experience and a remarkable rating of 1800+, Dikshant Dash is a force to be reckoned with in the competitive chess circuit.",
+    description: "With over 14 years of playing experience and a remarkable rating of 1800+, Dikshant Dash is a force to be reckoned with in the competitive chess circuit.",
     achievements: [
       "🏆 U-7 National Champion: 7th place",
       "🏆 U-9 National Championship: 10th place",
@@ -58,8 +52,7 @@ const coaches = [
     image: "https://i.ibb.co/CKw1bJf7/Whats-App-Image-2025-08-31-at-00-39-39-ef66f27e.jpg",
     title: "Renowned Chess Coach & Player",
     rating: "State Champion",
-    description:
-      "With over 10 years of playing experience and a stellar coaching record, Pratyush Mohapatra is a highly sought-after chess coach across India.",
+    description: "With over 10 years of playing experience and a stellar coaching record, Pratyush Mohapatra is a highly sought-after chess coach across India.",
     achievements: [
       "🏆 SGFI U-17 Champion (2019)",
       "🏆 State School Champion (2018)",
@@ -74,8 +67,7 @@ const coaches = [
     image: "https://i.ibb.co/DX7xbkf/Whats-App-Image-2025-09-07-at-03-33-15-a8445611.jpg",
     title: "FIDE-Rated Coach & Player",
     rating: "FIDE Rating: 1900",
-    description:
-      "With over 10 years of playing experience and a FIDE rating of 1900, Majhi Fakir is a senior competitive tournament player and experienced trainer.",
+    description: "With over 10 years of playing experience and a FIDE rating of 1900, Majhi Fakir is a senior competitive tournament player and experienced trainer.",
     achievements: [
       "🏆 Odisha Inter University Games 2024: Champion",
       "🥈 Odisha State Blitz Chess Championship: 1st Runner-up",
@@ -90,8 +82,7 @@ const coaches = [
     image: "https://i.ibb.co/k62M2sN7/Whats-App-Image-2025-08-31-at-00-51-47-eecaec59.jpg",
     title: "Experienced Chess Coach & Player",
     rating: "International Veteran",
-    description:
-      "Over 12 years of playing experience with international representation and multiple state championship podium finishes.",
+    description: "Over 12 years of playing experience with international representation and multiple state championship podium finishes.",
     achievements: [
       "🥈 SGFI U-17 Runners-up (2019)",
       "🏆 RSP State Open Champion (2024)",
@@ -105,8 +96,7 @@ const coaches = [
     image: "https://i.ibb.co/Cp9Fst6H/Whats-App-Image-2025-09-07-at-03-25-57-01220eea.jpg",
     title: "FIDE Arena International Master",
     rating: "AIM / Rapid: 1687",
-    description:
-      "Certified instructor recognized by AICF & FIDE, specializing in high-level opening preparation and structured tactical training for junior players.",
+    description: "Certified instructor recognized by AICF & FIDE, specializing in high-level opening preparation and structured tactical training for junior players.",
     achievements: [
       "🏆 SGFI National Representative (3 times)",
       "⭐ Best Player in UT of DNH & Daman & Diu (2022)",
@@ -120,8 +110,7 @@ const coaches = [
     image: "https://i.ibb.co/7J8hYpj0/857e4e5d-6b53-4911-b91e-da1a0635e5b0.jpg",
     title: "Experienced Chess Coach & Player",
     rating: "Certified Mentor",
-    description:
-      "Over 8 years of competitive playing experience and 3+ years of coaching rising state champions across regional academies.",
+    description: "Over 8 years of competitive playing experience and 3+ years of coaching rising state champions across regional academies.",
     achievements: [
       "🏆 National Team Event: 2nd Runner-up",
       "🥉 State School Championship: 3rd place",
@@ -131,6 +120,19 @@ const coaches = [
     fideId: "25638785",
   },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* GLOBAL 3D MATERIALS (Created once to save massive GPU memory)              */
+/* -------------------------------------------------------------------------- */
+const borderIdleMat = new THREE.MeshBasicMaterial({ color: "#B45309" });
+const borderHoverMat = new THREE.MeshBasicMaterial({ color: "#FACC15" });
+
+const bodyIdleMat = new THREE.MeshStandardMaterial({ 
+  color: "#0c1322", metalness: 0.75, roughness: 0.25 
+});
+const bodyHoverMat = new THREE.MeshStandardMaterial({ 
+  color: "#162033", metalness: 0.75, roughness: 0.25 
+});
 
 function Card3D({ coach, index, total, onSelect, isMobile }) {
   const meshRef = useRef();
@@ -164,12 +166,7 @@ function Card3D({ coach, index, total, onSelect, isMobile }) {
     );
 
     meshRef.current.rotation.y = THREE.MathUtils.damp(meshRef.current.rotation.y, targetRotY, 5, delta);
-
-    if (hovered) {
-      meshRef.current.rotation.x = THREE.MathUtils.damp(meshRef.current.rotation.x, -0.06, 4, delta);
-    } else {
-      meshRef.current.rotation.x = THREE.MathUtils.damp(meshRef.current.rotation.x, 0, 4, delta);
-    }
+    meshRef.current.rotation.x = THREE.MathUtils.damp(meshRef.current.rotation.x, hovered ? -0.06 : 0, 4, delta);
   });
 
   return (
@@ -180,29 +177,23 @@ function Card3D({ coach, index, total, onSelect, isMobile }) {
       onClick={() => onSelect(coach)}
     >
       <Float speed={hovered ? 0 : 2} rotationIntensity={0.12} floatIntensity={0.2}>
-        {/* Outer Glowing Border */}
+        {/* Outer Glowing Border - OPTIMIZED smoothness from 4 to 2 and shared materials */}
         <RoundedBox
           args={[cardW + 0.08, cardH + 0.08, 0.05]}
           radius={0.18}
-          smoothness={4}
+          smoothness={2} 
           position={[0, 0, -0.02]}
-        >
-          <meshBasicMaterial color={hovered ? "#FACC15" : "#B45309"} />
-        </RoundedBox>
+          material={hovered ? borderHoverMat : borderIdleMat}
+        />
 
-        {/* Card Body */}
+        {/* Card Body - OPTIMIZED smoothness from 4 to 2 and shared materials */}
         <RoundedBox
           args={[cardW, cardH, 0.07]}
           radius={0.16}
-          smoothness={4}
+          smoothness={2}
           position={[0, 0, 0]}
-        >
-          <meshStandardMaterial
-            color={hovered ? "#162033" : "#0c1322"}
-            metalness={0.75}
-            roughness={0.25}
-          />
-        </RoundedBox>
+          material={hovered ? bodyHoverMat : bodyIdleMat}
+        />
 
         {/* Coach Photo */}
         <DreiImage
@@ -238,11 +229,6 @@ function Card3D({ coach, index, total, onSelect, isMobile }) {
         >
           {coach.title}
         </Text>
-
-        {/* CTA Button Overlay */}
-        <Html transform position={[0, isMobile ? -1.25 : -1.42, 0.08]} scale={isMobile ? 0.14 : 0.16} center>
-           
-        </Html>
       </Float>
     </group>
   );
@@ -274,7 +260,8 @@ function Scene({ onSelectCoach }) {
         </group>
       </ScrollControls>
 
-      <Sparkles count={isMobile ? 45 : 85} scale={10} size={2.5} speed={0.4} color="#FACC15" opacity={0.6} />
+      {/* OPTIMIZATION: Dropped max sparkles to save render passes */}
+      <Sparkles count={isMobile ? 30 : 60} scale={10} size={2.5} speed={0.4} color="#FACC15" opacity={0.6} />
     </>
   );
 }
@@ -290,18 +277,19 @@ export default function Coaches() {
 
       {/* Header */}
       <header className="relative z-10 pt-6 sm:pt-8 flex flex-col items-center pointer-events-none text-center px-4 space-y-2">
-         
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
           Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-500">Star Coaches</span>
         </h1>
-        
       </header>
 
       {/* 3D Canvas */}
       <div className="relative w-full flex-1 cursor-grab active:cursor-grabbing">
+        {/* OPTIMIZATION: Added dpr cap and low-power preference */}
         <Canvas
           camera={{ position: [0, 0, 4.4], fov: 48 }}
           className="w-full h-full"
+          dpr={[1, 1.5]}
+          gl={{ powerPreference: "low-power", antialias: true }}
         >
           <Scene onSelectCoach={setSelectedCoach} />
         </Canvas>

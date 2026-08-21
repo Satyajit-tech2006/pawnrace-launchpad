@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Menu, X, LogOut, User, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink } from "react-router-dom";
@@ -11,55 +11,85 @@ import AuthModal from "./AuthModal";
 import { Button } from "@/components/ui/button";
 
 /* -------------------------------------------------------------------------- */
+/* GLOBAL 3D ASSETS (Created once, zero React overhead)                       */
+/* -------------------------------------------------------------------------- */
+
+// Low-poly profile for a tiny 40px screen element
+const pawnProfile = [
+  new THREE.Vector2(0.48, 0),
+  new THREE.Vector2(0.48, 0.08),
+  new THREE.Vector2(0.38, 0.12),
+  new THREE.Vector2(0.28, 0.38),
+  new THREE.Vector2(0.32, 0.42),
+  new THREE.Vector2(0.18, 0.65),
+  new THREE.Vector2(0.18, 0.72),
+  new THREE.Vector2(0.28, 0.76),
+  new THREE.Vector2(0.22, 0.8),
+];
+
+// Extremely low segment count since it's tiny on the screen
+const pawnBodyGeo = new THREE.LatheGeometry(pawnProfile, 16);
+const pawnHeadGeo = new THREE.SphereGeometry(0.24, 16, 16);
+
+/* -------------------------------------------------------------------------- */
 /* 3D Mini Logo Piece Component                                               */
 /* -------------------------------------------------------------------------- */
 
 function Mini3DPawn({ isHovered }) {
   const meshRef = useRef();
+  const bodyMatRef = useRef();
+  const headMatRef = useRef();
 
-  const { bodyGeo, headGeo } = useMemo(() => {
-    const profile = [
-      new THREE.Vector2(0.48, 0),
-      new THREE.Vector2(0.48, 0.08),
-      new THREE.Vector2(0.38, 0.12),
-      new THREE.Vector2(0.28, 0.38),
-      new THREE.Vector2(0.32, 0.42),
-      new THREE.Vector2(0.18, 0.65),
-      new THREE.Vector2(0.18, 0.72),
-      new THREE.Vector2(0.28, 0.76),
-      new THREE.Vector2(0.22, 0.8),
-    ];
-    return {
-      bodyGeo: new THREE.LatheGeometry(profile, 32),
-      headGeo: new THREE.SphereGeometry(0.24, 24, 24),
-    };
-  }, []);
+  // Target colors for the butter-smooth GPU lerp effect
+  const idleColor = new THREE.Color("#FACC15");
+  const hoverColor = new THREE.Color("#FDE047");
 
   useFrame((_, delta) => {
+    // 1. Handle spinning
     if (meshRef.current) {
-      meshRef.current.rotation.y += delta * (isHovered ? 3.5 : 1.2);
+      meshRef.current.rotation.y += delta * (isHovered ? 3.5 : 0.8);
+    }
+
+    // 2. Handle smooth color & glow transitions directly on the GPU
+    const targetColor = isHovered ? hoverColor : idleColor;
+    const targetEmissive = isHovered ? 0.6 : 0.2;
+
+    if (bodyMatRef.current) {
+      bodyMatRef.current.color.lerp(targetColor, 0.1);
+      bodyMatRef.current.emissiveIntensity = THREE.MathUtils.lerp(
+        bodyMatRef.current.emissiveIntensity, targetEmissive, 0.1
+      );
+    }
+    
+    if (headMatRef.current) {
+      headMatRef.current.color.lerp(targetColor, 0.1);
+      headMatRef.current.emissiveIntensity = THREE.MathUtils.lerp(
+        headMatRef.current.emissiveIntensity, targetEmissive, 0.1
+      );
     }
   });
 
   return (
-    <Float speed={2} rotationIntensity={0.2} floatIntensity={0.3}>
+    <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.2}>
       <group ref={meshRef} position={[0, -0.45, 0]} scale={0.9}>
-        <mesh geometry={bodyGeo}>
+        <mesh geometry={pawnBodyGeo}>
           <meshStandardMaterial
-            color={isHovered ? "#FDE047" : "#FACC15"}
-            metalness={0.9}
+            ref={bodyMatRef}
+            color="#FACC15"
+            metalness={0.8}
             roughness={0.2}
             emissive="#CA8A04"
-            emissiveIntensity={isHovered ? 0.4 : 0.2}
+            emissiveIntensity={0.2}
           />
         </mesh>
-        <mesh geometry={headGeo} position={[0, 0.99, 0]}>
+        <mesh geometry={pawnHeadGeo} position={[0, 0.99, 0]}>
           <meshStandardMaterial
-            color={isHovered ? "#FDE047" : "#FACC15"}
-            metalness={0.9}
+            ref={headMatRef}
+            color="#FACC15"
+            metalness={0.8}
             roughness={0.15}
             emissive="#EAB308"
-            emissiveIntensity={isHovered ? 0.5 : 0.25}
+            emissiveIntensity={0.25}
           />
         </mesh>
       </group>
@@ -70,7 +100,12 @@ function Mini3DPawn({ isHovered }) {
 function Logo3DCanvas({ isHovered }) {
   return (
     <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex items-center justify-center pointer-events-none">
-      <Canvas camera={{ position: [0, 0, 2.5], fov: 45 }} className="w-full h-full">
+      <Canvas 
+        camera={{ position: [0, 0, 2.5], fov: 45 }} 
+        className="w-full h-full"
+        dpr={[1, 1.5]} // Caps pixel ratio
+        gl={{ powerPreference: "low-power", antialias: true }} // Requests integrated graphics (saves battery)
+      >
         <ambientLight intensity={1.2} />
         <directionalLight position={[3, 5, 2]} intensity={2.5} color="#fff" />
         <pointLight position={[-3, -2, -1]} intensity={1.5} color="#38BDF8" />
@@ -101,7 +136,6 @@ const Navbar = () => {
 
   const navLinks = [
     { title: "Home", href: "/" },
-    // { title: "Coaches", href: "/coaches" },
     { title: "Contact", href: "/contact" },
     { title: "Our Vision", href: "/ourvission" },
     { title: "About Us", href: "/aboutus" },
@@ -293,7 +327,6 @@ const Navbar = () => {
         </AnimatePresence>
       </motion.nav>
 
-      {/* Auth Modal */}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}

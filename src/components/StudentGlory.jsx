@@ -15,81 +15,35 @@ import izian from "../assets/izian.jpg";
 import joshua from "../assets/joshua.jpg";
 
 const students = [
-  {
-    name: "Hariselvan P",
-    achievement: "U-11 State Champion 🏆 (6.5/7)",
-    image: hariselvan,
-    tag: "State Champion",
-  },
-  {
-    name: "Dibyesh",
-    achievement: "State Chess Tournament Winner 🏆",
-    image: dibyesh,
-    tag: "State Winner",
-  },
-  {
-    name: "Sharwin",
-    achievement: "Malaysia District Champion 🏆",
-    image: sharwin,
-    tag: "International",
-  },
-  {
-    name: "Sanal Vaibhav",
-    achievement: "Under 9 State Championship - 3rd Place",
-    image: null,
-    tag: "U-9 State",
-  },
-  {
-    name: "Amruta Priyalaxmi",
-    achievement: "Under 13 State Champion",
-    image: null,
-    tag: "U-13 Champion",
-  },
-  {
-    name: "PM Shri",
-    achievement: "Navodaya Vidyalaya Champion",
-    image: null,
-    tag: "School Meet",
-  },
-  {
-    name: "Abhudoya",
-    achievement: "U-19 District Champion! 🏆",
-    image: abhudoyaU19,
-    tag: "U-19 Champion",
-  },
-  {
-    name: "Abhudoya",
-    achievement: "3rd Position - Jorhat District U-11 (5/6 pts)",
-    image: abhudoyaU11,
-    tag: "District 3rd",
-  },
-  {
-    name: "Izian",
-    achievement: "U-9 School Tournament 2nd Place, UP 🥈",
-    image: izian,
-    tag: "U-9 Silver",
-  },
-  {
-    name: "Hari Selvan",
-    achievement: "Runner's Up - 1st HIET State Level 🥈",
-    image: hariselvan,
-    tag: "State Runner-up",
-  },
-  {
-    name: "Sharwin",
-    achievement: "U12 Winner - Tamil Vizha Cup, Malaysia 🏆",
-    image: sharwin,
-    tag: "Malaysia 2026",
-  },
-  {
-    name: "Joshua Lobo",
-    achievement: "Best Improvement: Beg to Intermediate in 3mo 📈",
-    image: joshua,
-    tag: "Rising Star",
-  },
+  { name: "Hariselvan P", achievement: "U-11 State Champion 🏆 (6.5/7)", image: hariselvan, tag: "State Champion" },
+  { name: "Dibyesh", achievement: "State Chess Tournament Winner 🏆", image: dibyesh, tag: "State Winner" },
+  { name: "Sharwin", achievement: "Malaysia District Champion 🏆", image: sharwin, tag: "International" },
+  { name: "Sanal Vaibhav", achievement: "Under 9 State Championship - 3rd Place", image: null, tag: "U-9 State" },
+  { name: "Amruta Priyalaxmi", achievement: "Under 13 State Champion", image: null, tag: "U-13 Champion" },
+  { name: "PM Shri", achievement: "Navodaya Vidyalaya Champion", image: null, tag: "School Meet" },
+  { name: "Abhudoya", achievement: "U-19 District Champion! 🏆", image: abhudoyaU19, tag: "U-19 Champion" },
+  { name: "Abhudoya", achievement: "3rd Position - Jorhat District U-11 (5/6 pts)", image: abhudoyaU11, tag: "District 3rd" },
+  { name: "Izian", achievement: "U-9 School Tournament 2nd Place, UP 🥈", image: izian, tag: "U-9 Silver" },
+  { name: "Hari Selvan", achievement: "Runner's Up - 1st HIET State Level 🥈", image: hariselvan, tag: "State Runner-up" },
+  { name: "Sharwin", achievement: "U12 Winner - Tamil Vizha Cup, Malaysia 🏆", image: sharwin, tag: "Malaysia 2026" },
+  { name: "Joshua Lobo", achievement: "Best Improvement: Beg to Intermediate in 3mo 📈", image: joshua, tag: "Rising Star" },
 ];
 
-// Individual 3D Student Card with perfect RoundedBox Geometry
+/* -------------------------------------------------------------------------- */
+/* GLOBAL 3D MATERIALS & GEOMETRIES (Created once, shared by 12 cards)        */
+/* -------------------------------------------------------------------------- */
+const frameActiveMat = new THREE.MeshBasicMaterial({ color: "#FACC15" });
+const frameHoverMat = new THREE.MeshBasicMaterial({ color: "#EAB308" });
+const frameIdleMat = new THREE.MeshBasicMaterial({ color: "#713F12" });
+
+const bodyActiveMat = new THREE.MeshStandardMaterial({ color: "#0f172a", metalness: 0.7, roughness: 0.3 });
+const bodyIdleMat = new THREE.MeshStandardMaterial({ color: "#080d1a", metalness: 0.7, roughness: 0.3 });
+
+// Shared fallback circle for students without photos
+const fallbackCircleGeo = new THREE.CircleGeometry(1, 24);
+const fallbackCircleMat = new THREE.MeshStandardMaterial({ color: "#CA8A04", metalness: 0.8, roughness: 0.2 });
+
+// Individual 3D Student Card
 function StudentCard3D({ student, index, activeIndex, total, onSelect, isMobile }) {
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
@@ -128,29 +82,23 @@ function StudentCard3D({ student, index, activeIndex, total, onSelect, isMobile 
       onClick={() => onSelect(index)}
     >
       <Float speed={isCurrent ? 2 : 0} rotationIntensity={0.08} floatIntensity={0.15}>
-        {/* Glowing Golden Outer Frame */}
+        {/* Glowing Golden Outer Frame - OPTIMIZED smoothness from 4 to 2 */}
         <RoundedBox
           args={[cardW + 0.08, cardH + 0.08, 0.06]}
           radius={0.16}
-          smoothness={4}
+          smoothness={2}
           position={[0, 0, -0.02]}
-        >
-          <meshBasicMaterial color={isCurrent ? "#FACC15" : hovered ? "#EAB308" : "#713F12"} />
-        </RoundedBox>
+          material={isCurrent ? frameActiveMat : hovered ? frameHoverMat : frameIdleMat}
+        />
 
-        {/* Card Dark Body */}
+        {/* Card Dark Body - OPTIMIZED smoothness from 4 to 2 */}
         <RoundedBox
           args={[cardW, cardH, 0.08]}
           radius={0.14}
-          smoothness={4}
+          smoothness={2}
           position={[0, 0, 0]}
-        >
-          <meshStandardMaterial
-            color={isCurrent ? "#0f172a" : "#080d1a"}
-            metalness={0.7}
-            roughness={0.3}
-          />
-        </RoundedBox>
+          material={isCurrent ? bodyActiveMat : bodyIdleMat}
+        />
 
         {/* Photo or Monogram */}
         {student.image ? (
@@ -163,10 +111,12 @@ function StudentCard3D({ student, index, activeIndex, total, onSelect, isMobile 
           />
         ) : (
           <group position={[0, isMobile ? 0.65 : 0.75, 0.08]}>
-            <mesh>
-              <circleGeometry args={[isMobile ? 0.75 : 0.85, 32]} />
-              <meshStandardMaterial color="#CA8A04" metalness={0.8} roughness={0.2} />
-            </mesh>
+            {/* OPTIMIZED: Shared geometry and material */}
+            <mesh 
+              geometry={fallbackCircleGeo} 
+              material={fallbackCircleMat} 
+              scale={isMobile ? 0.75 : 0.85} 
+            />
             <Text
               position={[0, 0, 0.02]}
               fontSize={isMobile ? 0.55 : 0.65}
@@ -251,7 +201,8 @@ function Scene({ activeIndex, onSelect }) {
         ))}
       </group>
 
-      <Sparkles count={isMobile ? 45 : 85} scale={10} size={2.5} speed={0.4} color="#FACC15" opacity={0.6} />
+      {/* OPTIMIZATION: Reduced max sparkles to save render passes */}
+      <Sparkles count={isMobile ? 25 : 50} scale={10} size={2.5} speed={0.4} color="#FACC15" opacity={0.6} />
     </>
   );
 }
@@ -300,8 +251,6 @@ export default function StudentGlory() {
 
       {/* Header */}
       <div className="relative z-10 text-center max-w-4xl mx-auto space-y-2.5 px-2">
-        
-
         <motion.h1
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -326,7 +275,12 @@ export default function StudentGlory() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <Canvas camera={{ position: [0, 0, 5.5], fov: 50 }}>
+        {/* OPTIMIZED: DPR Cap and Low-Power Preference */}
+        <Canvas 
+          camera={{ position: [0, 0, 5.5], fov: 50 }}
+          dpr={[1, 1.5]}
+          gl={{ powerPreference: "low-power", antialias: true }}
+        >
           <Scene activeIndex={index} onSelect={(i) => setIndex(i)} />
         </Canvas>
 

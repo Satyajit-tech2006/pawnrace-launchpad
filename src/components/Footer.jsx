@@ -1,10 +1,51 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Sparkles, Float } from '@react-three/drei';
+import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion } from 'framer-motion';
 import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, ArrowRight } from 'lucide-react';
+
+/* -------------------------------------------------------------------------- */
+/* GLOBAL 3D ASSETS (Created once to save massive GPU memory)                 */
+/* -------------------------------------------------------------------------- */
+
+const pawnProfile = [
+  new THREE.Vector2(0.48, 0),
+  new THREE.Vector2(0.48, 0.08),
+  new THREE.Vector2(0.38, 0.12),
+  new THREE.Vector2(0.28, 0.38),
+  new THREE.Vector2(0.32, 0.42),
+  new THREE.Vector2(0.18, 0.65),
+  new THREE.Vector2(0.18, 0.72),
+  new THREE.Vector2(0.28, 0.76),
+  new THREE.Vector2(0.22, 0.8),
+];
+
+// OPTIMIZATION: Reduced segments drastically. Visually identical in the background.
+const bodyGeo = new THREE.LatheGeometry(pawnProfile, 24); 
+const headGeo = new THREE.SphereGeometry(0.24, 24, 24);
+
+// OPTIMIZATION: MeshPhysicalMaterial is very heavy. Declaring it globally means 
+// the GPU only compiles this complex clearcoat shader exactly once.
+const bodyMat = new THREE.MeshPhysicalMaterial({
+  color: "#0f172a",
+  metalness: 0.9,
+  roughness: 0.2,
+  clearcoat: 1,
+  clearcoatRoughness: 0.1,
+  emissive: "#ca8a04",
+  emissiveIntensity: 0.1
+});
+
+const headMat = new THREE.MeshPhysicalMaterial({
+  color: "#facc15",
+  metalness: 0.8,
+  roughness: 0.15,
+  clearcoat: 1,
+  emissive: "#facc15",
+  emissiveIntensity: 0.2
+});
 
 /* -------------------------------------------------------------------------- */
 /* 3D Background Elements                                                     */
@@ -21,47 +62,10 @@ function BackgroundPawn({ isMobile }) {
     }
   });
 
-  const { bodyGeo, headGeo } = useMemo(() => {
-    const profile = [
-      new THREE.Vector2(0.48, 0),
-      new THREE.Vector2(0.48, 0.08),
-      new THREE.Vector2(0.38, 0.12),
-      new THREE.Vector2(0.28, 0.38),
-      new THREE.Vector2(0.32, 0.42),
-      new THREE.Vector2(0.18, 0.65),
-      new THREE.Vector2(0.18, 0.72),
-      new THREE.Vector2(0.28, 0.76),
-      new THREE.Vector2(0.22, 0.8),
-    ];
-    return {
-      bodyGeo: new THREE.LatheGeometry(profile, 64),
-      headGeo: new THREE.SphereGeometry(0.24, 48, 48),
-    };
-  }, []);
-
   return (
     <group ref={groupRef} position={[isMobile ? 0 : 5, -2, -3]} scale={isMobile ? 4.5 : 6.5}>
-      <mesh geometry={bodyGeo}>
-        <meshPhysicalMaterial
-          color="#0f172a"
-          metalness={0.9}
-          roughness={0.2}
-          clearcoat={1}
-          clearcoatRoughness={0.1}
-          emissive="#ca8a04"
-          emissiveIntensity={0.1}
-        />
-      </mesh>
-      <mesh geometry={headGeo} position={[0, 0.99, 0]}>
-        <meshPhysicalMaterial
-          color="#facc15"
-          metalness={0.8}
-          roughness={0.15}
-          clearcoat={1}
-          emissive="#facc15"
-          emissiveIntensity={0.2}
-        />
-      </mesh>
+      <mesh geometry={bodyGeo} material={bodyMat} />
+      <mesh geometry={headGeo} material={headMat} position={[0, 0.99, 0]} />
     </group>
   );
 }
@@ -78,8 +82,9 @@ function Footer3DScene() {
       
       <BackgroundPawn isMobile={isMobile} />
       
+      {/* OPTIMIZATION: Lowered max sparkles slightly */}
       <Sparkles 
-        count={isMobile ? 40 : 80} 
+        count={isMobile ? 25 : 50} 
         scale={15} 
         size={isMobile ? 2 : 3} 
         speed={0.3} 
@@ -137,7 +142,12 @@ export default function Footer() {
       
       {/* 3D Background Canvas (Pointer events disabled so users can click HTML links) */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
-        <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
+        {/* OPTIMIZATION: Added dpr cap and low-power preference */}
+        <Canvas 
+          camera={{ position: [0, 0, 8], fov: 45 }}
+          dpr={[1, 1.5]}
+          gl={{ powerPreference: "low-power", antialias: true }}
+        >
           <Footer3DScene />
         </Canvas>
       </div>

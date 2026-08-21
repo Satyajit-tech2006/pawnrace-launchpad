@@ -5,6 +5,50 @@ import * as THREE from "three";
 import { motion } from "framer-motion";
 
 /* -------------------------------------------------------------------------- */
+/* GLOBAL 3D ASSETS (Created once to save GPU memory)                         */
+/* -------------------------------------------------------------------------- */
+
+const pawnProfile = [
+  new THREE.Vector2(0.52, 0.0),
+  new THREE.Vector2(0.52, 0.08),
+  new THREE.Vector2(0.48, 0.12),
+  new THREE.Vector2(0.44, 0.14),
+  new THREE.Vector2(0.38, 0.22),
+  new THREE.Vector2(0.24, 0.52),
+  new THREE.Vector2(0.23, 0.56),
+  new THREE.Vector2(0.34, 0.62),
+  new THREE.Vector2(0.34, 0.70),
+  new THREE.Vector2(0.22, 0.74),
+  new THREE.Vector2(0.18, 0.78),
+];
+
+// OPTIMIZATION: Halved the segment counts. Visually identical on a spinning object.
+const bodyGeo = new THREE.LatheGeometry(pawnProfile, 32);
+const headGeo = new THREE.SphereGeometry(0.25, 24, 24);
+const ring1Geo = new THREE.TorusGeometry(1.3, 0.02, 8, 32);
+const ring2Geo = new THREE.TorusGeometry(1.5, 0.015, 8, 32);
+
+// OPTIMIZATION: Shared materials prevent shader recompilation
+const bodyMat = new THREE.MeshStandardMaterial({
+  color: "#F5C042",
+  metalness: 0.92,
+  roughness: 0.14,
+  emissive: "#D97706",
+  emissiveIntensity: 0.35,
+});
+
+const headMat = new THREE.MeshStandardMaterial({
+  color: "#FDE047",
+  metalness: 0.9,
+  roughness: 0.12,
+  emissive: "#EAB308",
+  emissiveIntensity: 0.45,
+});
+
+const ring1Mat = new THREE.MeshBasicMaterial({ color: "#FACC15", transparent: true, opacity: 0.65 });
+const ring2Mat = new THREE.MeshBasicMaterial({ color: "#38BDF8", transparent: true, opacity: 0.45 });
+
+/* -------------------------------------------------------------------------- */
 /* 3D Gold Pawn with Glowing Orbit Rings                                      */
 /* -------------------------------------------------------------------------- */
 
@@ -12,23 +56,6 @@ function LoadingScene3D() {
   const pawnRef = useRef();
   const ring1Ref = useRef();
   const ring2Ref = useRef();
-
-  const profile = [
-    new THREE.Vector2(0.52, 0.0),
-    new THREE.Vector2(0.52, 0.08),
-    new THREE.Vector2(0.48, 0.12),
-    new THREE.Vector2(0.44, 0.14),
-    new THREE.Vector2(0.38, 0.22),
-    new THREE.Vector2(0.24, 0.52),
-    new THREE.Vector2(0.23, 0.56),
-    new THREE.Vector2(0.34, 0.62),
-    new THREE.Vector2(0.34, 0.70),
-    new THREE.Vector2(0.22, 0.74),
-    new THREE.Vector2(0.18, 0.78),
-  ];
-
-  const bodyGeo = new THREE.LatheGeometry(profile, 64);
-  const headGeo = new THREE.SphereGeometry(0.25, 36, 36);
 
   useFrame((_, delta) => {
     if (pawnRef.current) {
@@ -48,37 +75,15 @@ function LoadingScene3D() {
     <Float speed={3} rotationIntensity={0.25} floatIntensity={0.5}>
       {/* Centered Rotating Pawn */}
       <group ref={pawnRef} position={[0, -0.42, 0]} scale={1.25}>
-        <mesh geometry={bodyGeo} castShadow>
-          <meshStandardMaterial
-            color="#F5C042"
-            metalness={0.92}
-            roughness={0.14}
-            emissive="#D97706"
-            emissiveIntensity={0.35}
-          />
-        </mesh>
-        <mesh geometry={headGeo} position={[0, 0.98, 0]} castShadow>
-          <meshStandardMaterial
-            color="#FDE047"
-            metalness={0.9}
-            roughness={0.12}
-            emissive="#EAB308"
-            emissiveIntensity={0.45}
-          />
-        </mesh>
+        <mesh geometry={bodyGeo} material={bodyMat} castShadow />
+        <mesh geometry={headGeo} material={headMat} position={[0, 0.98, 0]} castShadow />
       </group>
 
       {/* Cybernetic Gyro Halo Ring 1 */}
-      <mesh ref={ring1Ref} position={[0, 0.2, 0]}>
-        <torusGeometry args={[1.3, 0.02, 16, 64]} />
-        <meshBasicMaterial color="#FACC15" transparent opacity={0.65} />
-      </mesh>
+      <mesh ref={ring1Ref} position={[0, 0.2, 0]} geometry={ring1Geo} material={ring1Mat} />
 
       {/* Cybernetic Gyro Halo Ring 2 */}
-      <mesh ref={ring2Ref} position={[0, 0.2, 0]}>
-        <torusGeometry args={[1.5, 0.015, 16, 64]} />
-        <meshBasicMaterial color="#38BDF8" transparent opacity={0.45} />
-      </mesh>
+      <mesh ref={ring2Ref} position={[0, 0.2, 0]} geometry={ring2Geo} material={ring2Mat} />
     </Float>
   );
 }
@@ -153,13 +158,18 @@ export default function Loader() {
 
       {/* 3D Floating Canvas Stage */}
       <div className="w-52 h-52 sm:w-64 sm:h-64 lg:w-72 lg:h-72 relative flex items-center justify-center">
-        <Canvas camera={{ position: [0, 0, 3.4], fov: 45 }}>
+        {/* OPTIMIZATION: Added dpr cap and low-power preference */}
+        <Canvas 
+          camera={{ position: [0, 0, 3.4], fov: 45 }}
+          dpr={[1, 1.5]} 
+          gl={{ powerPreference: "low-power", antialias: true }}
+        >
           <ambientLight intensity={1.4} />
           <directionalLight position={[5, 8, 4]} intensity={2.8} color="#ffffff" />
           <pointLight position={[-4, -2, -1]} intensity={2.5} color="#FBBF24" />
           <pointLight position={[3, -2, 2]} intensity={2.0} color="#38BDF8" />
           <LoadingScene3D />
-          <Sparkles count={45} scale={5} size={2.5} speed={0.4} color="#FACC15" opacity={0.7} />
+          <Sparkles count={35} scale={5} size={2.5} speed={0.4} color="#FACC15" opacity={0.7} />
         </Canvas>
       </div>
 
