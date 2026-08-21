@@ -17,7 +17,7 @@ const MODES = [
     { id: 'minefield', name: 'Minefield', icon: Bomb, desc: 'Navigate the Knight safely.', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/50', locked: false },
     { id: 'memory', name: 'Photo Memory', icon: Camera, desc: 'Memorize positions in seconds.', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/50', locked: false },
     { id: 'detective', name: 'Detective', icon: Search, desc: 'Calculate legal moves instantly.', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/50', locked: false },
-    { id: 'queens', name: '8 Queens', icon: Crown, desc: 'Place non-attacking Queens.', color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/50', locked: false },
+    { id: 'queens', name: 'Safe Square', icon: Crown, desc: 'Find the missing Queen spot.', color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/50', locked: false },
     { id: 'tour', name: "Knight's Tour", icon: Route, desc: 'Jump without revisiting squares.', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', locked: false },
 ];
 
@@ -28,11 +28,10 @@ const DIFF_MODIFIERS = {
     minefield: { easy: '4 Mines (Safe Paths)', medium: '8 Mines (Complex)', hard: '12 Mines (Brutal)' },
     memory: { easy: '6 Second Flash', medium: '4 Second Flash', hard: '2 Second Flash' },
     detective: { easy: 'Open Positions', medium: 'Standard Positions', hard: 'Crowded Middle-games' },
-    queens: { easy: 'Target: 5 Queens', medium: 'Target: 6 Queens', hard: 'Target: 8 Queens (Full Solve)' },
+    queens: { easy: 'Target: 5 Queens | No Time Penalty', medium: 'Target: 5-7 Queens | No Time Penalty', hard: 'Target: 6-8 Queens | Timeout = STRIKE' },
     tour: { easy: 'Target: 10 Jumps', medium: 'Target: 25 Jumps', hard: 'Target: 40 Jumps' }
 };
 
-// --- RULES CONFIG ---
 const MODE_RULES = {
     vision: [
         "Locate and click the exact coordinate called out.",
@@ -55,9 +54,9 @@ const MODE_RULES = {
         "Select the correct number from the options."
     ],
     queens: [
-        "Place Queens on the board one by one.",
-        "No two Queens can share the same row, column, or diagonal.",
-        "Clicking an attacked square will result in an immediate strike."
+        "The board spawns with Queens already placed.",
+        "Quickly click ONE safe square where a new Queen cannot be attacked.",
+        "If the 6-second timer runs out, the pattern resets. (Hard Mode: Timeout = Strike!)"
     ],
     tour: [
         "Move the Knight using standard 'L' shaped jumps.",
@@ -66,7 +65,6 @@ const MODE_RULES = {
     ]
 };
 
-// --- FEN DATABASES FOR DETECTIVE/MEMORY ---
 const FENS = {
     easy: [
         "8/8/8/4k3/8/8/4K3/8 w - - 0 1", 
@@ -84,6 +82,18 @@ const FENS = {
         "r2q1rk1/1b2bppp/p1n1pn2/1p1p4/3P4/1PN1PN2/PB2BPPP/R2Q1RK1 w - - 0 1"
     ]
 };
+
+// Valid 8-Queens configurations used for generating mathematical safe spots
+const EIGHT_QUEENS_SOLUTIONS = [
+    ["a4", "b6", "c8", "d2", "e7", "f1", "g3", "h5"],
+    ["a5", "b7", "c1", "d4", "e2", "f8", "g6", "h3"],
+    ["a3", "b6", "c2", "d7", "e1", "f4", "g8", "h5"],
+    ["a4", "b2", "c7", "d3", "e6", "f8", "g1", "h5"],
+    ["a2", "b5", "c7", "d1", "e3", "f8", "g6", "h4"],
+    ["a8", "b2", "c4", "d1", "e7", "f5", "g3", "h6"],
+    ["a6", "b3", "c1", "d8", "e4", "f2", "g7", "h5"],
+    ["a7", "b3", "c8", "d2", "e5", "f1", "g6", "h4"]
+];
 
 const PIECE_NAMES = { 'p': 'Pawn', 'n': 'Knight', 'b': 'Bishop', 'r': 'Rook', 'q': 'Queen', 'k': 'King' };
 
@@ -121,6 +131,8 @@ const IqPuzzle = () => {
 
     const [queensPos, setQueensPos] = useState({});
     const [queensPlaced, setQueensPlaced] = useState([]);
+    const [queensN, setQueensN] = useState(5);
+    const [queensTaskKey, setQueensTaskKey] = useState(0);
 
     const [tourPos, setTourPos] = useState({});
     const [tourCurrent, setTourCurrent] = useState('');
@@ -163,7 +175,7 @@ const IqPuzzle = () => {
         setTimeout(() => setFeedbackState(null), 300);
     };
 
-    const handleStrike = () => {
+    const handleStrike = useCallback(() => {
         triggerFeedback('error');
         setStrikes(prev => {
             const next = prev + 1;
@@ -174,9 +186,9 @@ const IqPuzzle = () => {
             }
             return next;
         });
-    };
+    }, [score]);
 
-    const handleSuccess = () => {
+    const handleSuccess = useCallback(() => {
         triggerFeedback('success');
         setScore(prev => prev + 1);
         
@@ -186,8 +198,9 @@ const IqPuzzle = () => {
         if (selectedMode === 'detective') generateDetectiveTask();
         if (selectedMode === 'queens') generateQueensTask();
         if (selectedMode === 'tour') generateTourTask();
-    };
+    }, [selectedMode]);
 
+    // Main 60-second game timer
     useEffect(() => {
         let timer;
         const isTimerActive = view === 'playing' && !(selectedMode === 'memory' && memoryPhase === 'question');
@@ -238,11 +251,8 @@ const IqPuzzle = () => {
         const ranks = '12345678';
         setTargetSquare(`${files[Math.floor(Math.random() * 8)]}${ranks[Math.floor(Math.random() * 8)]}`);
         
-        if (difficulty === 'hard') {
-            setBoardOrientation(Math.random() > 0.5 ? 'white' : 'black');
-        } else {
-            setBoardOrientation('white');
-        }
+        if (difficulty === 'hard') setBoardOrientation(Math.random() > 0.5 ? 'white' : 'black');
+        else setBoardOrientation('white');
     }, [difficulty]);
 
     const handleVisionClick = (square) => {
@@ -398,9 +408,7 @@ const IqPuzzle = () => {
         });
 
         const delay = difficulty === 'hard' ? 2000 : difficulty === 'medium' ? 4000 : 6000;
-        setTimeout(() => {
-            setMemoryPhase('question');
-        }, delay);
+        setTimeout(() => setMemoryPhase('question'), delay);
     }, [difficulty]);
 
     const handleMemoryAnswer = (ans) => {
@@ -454,12 +462,44 @@ const IqPuzzle = () => {
     };
 
     // ==========================================
-    // 5. N-QUEENS
+    // 5. N-QUEENS (Dynamic Recognition)
     // ==========================================
     const generateQueensTask = useCallback(() => {
-        setQueensPos({});
-        setQueensPlaced([]);
-    }, []);
+        let n;
+        if (difficulty === 'easy') n = 5;
+        else if (difficulty === 'medium') n = Math.floor(Math.random() * 3) + 5; // 5, 6, 7
+        else n = Math.floor(Math.random() * 3) + 6; // 6, 7, 8
+
+        const sol = EIGHT_QUEENS_SOLUTIONS[Math.floor(Math.random() * EIGHT_QUEENS_SOLUTIONS.length)];
+        const shuffledSol = [...sol].sort(() => Math.random() - 0.5);
+        const prePlaced = shuffledSol.slice(0, n - 1);
+        
+        const posObj = {};
+        prePlaced.forEach(sq => posObj[sq] = 'wQ');
+
+        setQueensPlaced(prePlaced);
+        setQueensPos(posObj);
+        setQueensN(n);
+        setQueensTaskKey(Date.now()); // Resets the 6-second timer effect
+    }, [difficulty]);
+
+    // Independent 6-Second Timer just for N-Queens
+    useEffect(() => {
+        if (view !== 'playing' || selectedMode !== 'queens' || strikes >= 3) return;
+
+        const timerId = setTimeout(() => {
+            if (difficulty === 'hard') {
+                toast.error("Time's Up!", { position: 'top-center', duration: 800 });
+                handleStrike();
+                generateQueensTask(); // Refresh pattern on strike
+            } else {
+                toast.info("Time's up! Refreshing Pattern.", { position: 'top-center', duration: 800 });
+                generateQueensTask(); // Refresh pattern penalty-free
+            }
+        }, 6000); 
+
+        return () => clearTimeout(timerId);
+    }, [queensTaskKey, view, selectedMode, difficulty, generateQueensTask, handleStrike, strikes]);
 
     const isAttackedByQueen = (sq, placedQueens) => {
         const f1 = sq.charCodeAt(0);
@@ -467,7 +507,6 @@ const IqPuzzle = () => {
         for (let q of placedQueens) {
             const f2 = q.charCodeAt(0);
             const r2 = parseInt(q[1]);
-            // Check Row, Column, or Diagonals
             if (f1 === f2 || r1 === r2 || Math.abs(f1 - f2) === Math.abs(r1 - r2)) {
                 return true;
             }
@@ -481,14 +520,7 @@ const IqPuzzle = () => {
         if (isAttackedByQueen(square, queensPlaced)) {
             handleStrike();
         } else {
-            const newPlaced = [...queensPlaced, square];
-            setQueensPlaced(newPlaced);
-            setQueensPos({ ...queensPos, [square]: 'wQ' });
-
-            const target = difficulty === 'hard' ? 8 : difficulty === 'medium' ? 6 : 5;
-            if (newPlaced.length === target) {
-                setTimeout(() => handleSuccess(), 300);
-            }
+            handleSuccess(); // Registers point & triggers generateQueensTask automatically
         }
     };
 
@@ -857,20 +889,19 @@ const IqPuzzle = () => {
                             </div>
                         )}
 
-                        {/* 5. N-QUEENS MODE */}
-                        {selectedMode === 'queens' && (() => {
-                            const target = difficulty === 'hard' ? 8 : difficulty === 'medium' ? 6 : 5;
-                            return (
+                        {/* 5. N-QUEENS DYNAMIC SEARCH MODE */}
+                        {selectedMode === 'queens' && (
                             <div className="flex flex-col items-center w-full">
                                 <div className="mb-6 text-center">
                                     <h2 className="text-pink-400 font-bold uppercase tracking-widest text-sm mb-1 flex items-center justify-center gap-2">
-                                        <Crown className="w-4 h-4"/> Queen Placement
+                                        <Crown className="w-4 h-4"/> Safe Square Search
                                     </h2>
                                     <p className="text-white font-bold text-xl">
-                                        Safe Queens: <span className="text-pink-400">{queensPlaced.length} / {target}</span>
+                                        Quickly Place Queen <span className="text-pink-400">#{queensN}</span>
                                     </p>
                                 </div>
-                                <div className={`w-full max-w-[500px] aspect-square rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-4 transition-colors duration-300 relative cursor-pointer ${feedbackState === 'error' ? 'border-red-500' : feedbackState === 'success' ? 'border-green-500' : 'border-pink-900/50'}`}>
+                                
+                                <div className={`w-full max-w-[500px] aspect-square rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-4 transition-colors duration-300 relative cursor-crosshair ${feedbackState === 'error' ? 'border-red-500' : feedbackState === 'success' ? 'border-green-500' : 'border-pink-900/50'}`}>
                                     <Chessboard 
                                         position={queensPos} 
                                         onSquareClick={handleQueensClick}
@@ -880,8 +911,19 @@ const IqPuzzle = () => {
                                         customLightSquareStyle={{ backgroundColor: '#e2dbe6' }}
                                     />
                                 </div>
+
+                                {/* Dynamic 6-Second Timer Bar */}
+                                <div className="w-full max-w-[500px] bg-slate-800 h-2 rounded-full mt-6 overflow-hidden shadow-inner">
+                                    <motion.div 
+                                        key={queensTaskKey}
+                                        initial={{ width: "100%" }}
+                                        animate={{ width: "0%" }}
+                                        transition={{ duration: 6, ease: "linear" }}
+                                        className={`h-full ${difficulty === 'hard' ? 'bg-red-500' : 'bg-pink-500'}`}
+                                    />
+                                </div>
                             </div>
-                        )})()}
+                        )}
 
                         {/* 6. KNIGHT'S TOUR MODE */}
                         {selectedMode === 'tour' && (() => {
