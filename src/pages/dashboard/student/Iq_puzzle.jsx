@@ -4,7 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { 
     Brain, Eye, Bomb, Camera, Search, Play, 
-    Trophy, X, Timer, Zap, Loader2, ArrowLeft, Target, LogOut, Info
+    Trophy, X, Timer, Zap, Loader2, ArrowLeft, Target, LogOut, Info, Crown, Route
 } from "lucide-react";
 import apiClient from "../../../lib/api.js";
 import { ENDPOINTS } from "../../../lib/endpoints.js";
@@ -17,6 +17,8 @@ const MODES = [
     { id: 'minefield', name: 'Minefield', icon: Bomb, desc: 'Navigate the Knight safely.', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/50', locked: false },
     { id: 'memory', name: 'Photo Memory', icon: Camera, desc: 'Memorize positions in seconds.', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/50', locked: false },
     { id: 'detective', name: 'Detective', icon: Search, desc: 'Calculate legal moves instantly.', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/50', locked: false },
+    { id: 'queens', name: '8 Queens', icon: Crown, desc: 'Place non-attacking Queens.', color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/50', locked: false },
+    { id: 'tour', name: "Knight's Tour", icon: Route, desc: 'Jump without revisiting squares.', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/50', locked: false },
 ];
 
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
@@ -25,7 +27,9 @@ const DIFF_MODIFIERS = {
     vision: { easy: 'Coordinates ON', medium: 'Coordinates OFF', hard: 'No Coordinates + Random Board Flips' },
     minefield: { easy: '4 Mines (Safe Paths)', medium: '8 Mines (Complex)', hard: '12 Mines (Brutal)' },
     memory: { easy: '6 Second Flash', medium: '4 Second Flash', hard: '2 Second Flash' },
-    detective: { easy: 'Open Positions', medium: 'Standard Positions', hard: 'Crowded Middle-games' }
+    detective: { easy: 'Open Positions', medium: 'Standard Positions', hard: 'Crowded Middle-games' },
+    queens: { easy: 'Target: 5 Queens', medium: 'Target: 6 Queens', hard: 'Target: 8 Queens (Full Solve)' },
+    tour: { easy: 'Target: 10 Jumps', medium: 'Target: 25 Jumps', hard: 'Target: 40 Jumps' }
 };
 
 // --- RULES CONFIG ---
@@ -49,6 +53,16 @@ const MODE_RULES = {
         "Examine the highlighted piece on the board.",
         "Calculate its TOTAL number of strictly legal moves.",
         "Select the correct number from the options."
+    ],
+    queens: [
+        "Place Queens on the board one by one.",
+        "No two Queens can share the same row, column, or diagonal.",
+        "Clicking an attacked square will result in an immediate strike."
+    ],
+    tour: [
+        "Move the Knight using standard 'L' shaped jumps.",
+        "You cannot land on a square you have already visited.",
+        "Survive until you hit the target number of consecutive jumps."
     ]
 };
 
@@ -92,15 +106,25 @@ const IqPuzzle = () => {
     // Mode Specific States
     const [boardOrientation, setBoardOrientation] = useState('white');
     const [targetSquare, setTargetSquare] = useState('');
+    
     const [minefieldPos, setMinefieldPos] = useState({});
     const [knightPos, setKnightPos] = useState('a1');
     const [goalPos, setGoalPos] = useState('h8');
     const [mines, setMines] = useState([]);
+    
     const [memoryPhase, setMemoryPhase] = useState('view');
     const [memoryFen, setMemoryFen] = useState('');
     const [memoryQuestion, setMemoryQuestion] = useState(null);
+    
     const [detectiveFen, setDetectiveFen] = useState('');
     const [detectiveQuestion, setDetectiveQuestion] = useState(null);
+
+    const [queensPos, setQueensPos] = useState({});
+    const [queensPlaced, setQueensPlaced] = useState([]);
+
+    const [tourPos, setTourPos] = useState({});
+    const [tourCurrent, setTourCurrent] = useState('');
+    const [tourVisited, setTourVisited] = useState([]);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -128,6 +152,8 @@ const IqPuzzle = () => {
         if (selectedMode === 'minefield') generateMinefieldTask();
         if (selectedMode === 'memory') generateMemoryTask();
         if (selectedMode === 'detective') generateDetectiveTask();
+        if (selectedMode === 'queens') generateQueensTask();
+        if (selectedMode === 'tour') generateTourTask();
         
         setView('playing');
     };
@@ -158,6 +184,8 @@ const IqPuzzle = () => {
         if (selectedMode === 'minefield') generateMinefieldTask();
         if (selectedMode === 'memory') generateMemoryTask();
         if (selectedMode === 'detective') generateDetectiveTask();
+        if (selectedMode === 'queens') generateQueensTask();
+        if (selectedMode === 'tour') generateTourTask();
     };
 
     useEffect(() => {
@@ -233,9 +261,7 @@ const IqPuzzle = () => {
         for (let pawnSq of pawnSquares) {
             const pFile = pawnSq.charCodeAt(0);
             const pRank = parseInt(pawnSq[1]);
-            if (targetRank === pRank - 1 && Math.abs(targetFile - pFile) === 1) {
-                return true;
-            }
+            if (targetRank === pRank - 1 && Math.abs(targetFile - pFile) === 1) return true;
         }
         return false;
     };
@@ -427,6 +453,80 @@ const IqPuzzle = () => {
         else handleStrike();
     };
 
+    // ==========================================
+    // 5. N-QUEENS
+    // ==========================================
+    const generateQueensTask = useCallback(() => {
+        setQueensPos({});
+        setQueensPlaced([]);
+    }, []);
+
+    const isAttackedByQueen = (sq, placedQueens) => {
+        const f1 = sq.charCodeAt(0);
+        const r1 = parseInt(sq[1]);
+        for (let q of placedQueens) {
+            const f2 = q.charCodeAt(0);
+            const r2 = parseInt(q[1]);
+            // Check Row, Column, or Diagonals
+            if (f1 === f2 || r1 === r2 || Math.abs(f1 - f2) === Math.abs(r1 - r2)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const handleQueensClick = (square) => {
+        if (queensPlaced.includes(square)) return; 
+
+        if (isAttackedByQueen(square, queensPlaced)) {
+            handleStrike();
+        } else {
+            const newPlaced = [...queensPlaced, square];
+            setQueensPlaced(newPlaced);
+            setQueensPos({ ...queensPos, [square]: 'wQ' });
+
+            const target = difficulty === 'hard' ? 8 : difficulty === 'medium' ? 6 : 5;
+            if (newPlaced.length === target) {
+                setTimeout(() => handleSuccess(), 300);
+            }
+        }
+    };
+
+    // ==========================================
+    // 6. KNIGHT'S TOUR
+    // ==========================================
+    const generateTourTask = useCallback(() => {
+        const files = 'abcdefgh';
+        const ranks = '12345678';
+        const startSq = `${files[Math.floor(Math.random() * 8)]}${ranks[Math.floor(Math.random() * 8)]}`;
+        setTourCurrent(startSq);
+        setTourVisited([startSq]);
+        setTourPos({ [startSq]: 'wN' });
+    }, []);
+
+    const handleTourClick = (square) => {
+        const fileDiff = Math.abs(square.charCodeAt(0) - tourCurrent.charCodeAt(0));
+        const rankDiff = Math.abs(square.charCodeAt(1) - tourCurrent.charCodeAt(1));
+        const isKnightMove = (fileDiff === 2 && rankDiff === 1) || (fileDiff === 1 && rankDiff === 2);
+
+        if (!isKnightMove) return;
+
+        if (tourVisited.includes(square)) {
+            handleStrike();
+        } else {
+            const newVisited = [...tourVisited, square];
+            setTourVisited(newVisited);
+            setTourCurrent(square);
+            setTourPos({ [square]: 'wN' });
+
+            const targetJumps = difficulty === 'hard' ? 40 : difficulty === 'medium' ? 25 : 10;
+            const jumpsMade = newVisited.length - 1;
+
+            if (jumpsMade === targetJumps) {
+                setTimeout(() => handleSuccess(), 300);
+            }
+        }
+    };
 
     if (loading) {
         return (
@@ -455,7 +555,7 @@ const IqPuzzle = () => {
                     <motion.div 
                         key="menu"
                         initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                        className="max-w-6xl mx-auto px-4 md:px-8 pt-12 pb-24 relative z-10"
+                        className="max-w-7xl mx-auto px-4 md:px-8 pt-12 pb-24 relative z-10"
                     >
                         <header className="mb-12">
                             <div className="flex items-center gap-5 mb-2">
@@ -471,13 +571,13 @@ const IqPuzzle = () => {
                             </div>
                         </header>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Left: Mode Selection */}
-                            <div className="lg:col-span-2 space-y-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                            {/* Left: Mode Selection (Takes up 3/4 columns now for a 3x2 grid) */}
+                            <div className="lg:col-span-3 space-y-4">
                                 <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <Target className="w-4 h-4"/> Select Protocol
                                 </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                     {MODES.map(mode => {
                                         const isSelected = selectedMode === mode.id;
                                         return (
@@ -756,6 +856,66 @@ const IqPuzzle = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* 5. N-QUEENS MODE */}
+                        {selectedMode === 'queens' && (() => {
+                            const target = difficulty === 'hard' ? 8 : difficulty === 'medium' ? 6 : 5;
+                            return (
+                            <div className="flex flex-col items-center w-full">
+                                <div className="mb-6 text-center">
+                                    <h2 className="text-pink-400 font-bold uppercase tracking-widest text-sm mb-1 flex items-center justify-center gap-2">
+                                        <Crown className="w-4 h-4"/> Queen Placement
+                                    </h2>
+                                    <p className="text-white font-bold text-xl">
+                                        Safe Queens: <span className="text-pink-400">{queensPlaced.length} / {target}</span>
+                                    </p>
+                                </div>
+                                <div className={`w-full max-w-[500px] aspect-square rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-4 transition-colors duration-300 relative cursor-pointer ${feedbackState === 'error' ? 'border-red-500' : feedbackState === 'success' ? 'border-green-500' : 'border-pink-900/50'}`}>
+                                    <Chessboard 
+                                        position={queensPos} 
+                                        onSquareClick={handleQueensClick}
+                                        arePiecesDraggable={false}
+                                        showBoardNotation={false}
+                                        customDarkSquareStyle={{ backgroundColor: '#5c4b69' }} 
+                                        customLightSquareStyle={{ backgroundColor: '#e2dbe6' }}
+                                    />
+                                </div>
+                            </div>
+                        )})()}
+
+                        {/* 6. KNIGHT'S TOUR MODE */}
+                        {selectedMode === 'tour' && (() => {
+                            const targetJumps = difficulty === 'hard' ? 40 : difficulty === 'medium' ? 25 : 10;
+                            return (
+                            <div className="flex flex-col items-center w-full">
+                                <div className="mb-6 text-center">
+                                    <h2 className="text-emerald-400 font-bold uppercase tracking-widest text-sm mb-1 flex items-center justify-center gap-2">
+                                        <Route className="w-4 h-4"/> Memory Map
+                                    </h2>
+                                    <p className="text-white font-bold text-xl">
+                                        Consecutive Jumps: <span className="text-emerald-400">{Math.max(0, tourVisited.length - 1)} / {targetJumps}</span>
+                                    </p>
+                                </div>
+                                <div className={`w-full max-w-[500px] aspect-square rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-4 transition-colors duration-300 relative cursor-pointer ${feedbackState === 'error' ? 'border-red-500' : feedbackState === 'success' ? 'border-green-500' : 'border-emerald-900/50'}`}>
+                                    <Chessboard 
+                                        position={tourPos} 
+                                        onSquareClick={handleTourClick}
+                                        arePiecesDraggable={false}
+                                        showBoardNotation={false}
+                                        customDarkSquareStyle={{ backgroundColor: '#3f5752' }} 
+                                        customLightSquareStyle={{ backgroundColor: '#d5e0de' }}
+                                        customSquareStyles={tourVisited.reduce((acc, sq) => {
+                                            acc[sq] = { 
+                                                backgroundColor: sq === tourCurrent 
+                                                    ? 'rgba(52, 211, 153, 0.9)' // Bright Emerald for current position
+                                                    : 'rgba(52, 211, 153, 0.4)' // Dim Emerald for trailing path
+                                            };
+                                            return acc;
+                                        }, {})}
+                                    />
+                                </div>
+                            </div>
+                        )})()}
 
                     </motion.div>
                 )}
