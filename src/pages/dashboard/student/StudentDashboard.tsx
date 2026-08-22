@@ -201,18 +201,18 @@ export default function StudentDashboard() {
           <div className="relative w-full h-[550px] flex items-center justify-center pointer-events-auto">
             
             {/* Scroll Capture Overlay (z-40) */}
-            <div 
-              className="absolute inset-0 z-40 touch-none cursor-ns-resize"
-              onPointerDown={(e) => e.target.setPointerCapture(e.pointerId)}
-              onPointerUp={(e) => e.target.releasePointerCapture(e.pointerId)}
-              onPointerMove={(e) => {
-                if (e.buttons === 1) {
-                  if (e.movementY > 8) handlePrev();
-                  if (e.movementY < -8) handleNext();
-                }
-              }}
-            />
-
+{/* Scroll Capture Overlay (z-40) */}
+<div 
+  className="absolute inset-0 z-40 touch-none cursor-ns-resize"
+  onPointerDown={(e) => e.currentTarget.setPointerCapture(e.pointerId)}
+  onPointerUp={(e) => e.currentTarget.releasePointerCapture(e.pointerId)}
+  onPointerMove={(e) => {
+    if (e.buttons === 1) {
+      if (e.movementY > 8) handlePrev();
+      if (e.movementY < -8) handleNext();
+    }
+  }}
+/>
             <div className="relative w-full max-w-sm h-full flex flex-col justify-center items-center pointer-events-none">
               {menuItems.map((item, index) => {
                 const offset = getOffset(index);
