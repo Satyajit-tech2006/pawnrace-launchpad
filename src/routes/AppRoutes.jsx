@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import ScrollToTop from "../components/ScrollToTop";
+
 // Import Page Components
 import Home from "../pages/Home.jsx";
 import CoursesPage from "../pages/CoursesPage.jsx";
@@ -20,6 +21,7 @@ import { Layout } from "../components/Layout";
 import AboutUs from "../components/AboutUs.jsx";
 import GameLobby from '../pages/GameLobby';
 import OfferDetails from "../pages/OfferDetails.jsx";
+
 // Coach Dashboard Pages
 import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
 import CoachSchedule from "../pages/dashboard/coach/CoachSchedule.tsx";
@@ -34,6 +36,8 @@ import CoachClassesNew from "../pages/dashboard/coach/CoachClassesNew.jsx";
 import VideoClassroom from "../pages/dashboard/coach/VideoClassroom.jsx";
 import CoachDatabase from "../pages/dashboard/coach/CoachDatabase.jsx"; 
 
+// THE NEW SHARED DATA PROVIDER
+import CoachDataProvider from "../components/CoachDataProvider.jsx";
 
 // Student Dashboard Pages
 import StudentDashboard from "../pages/dashboard/student/StudentDashboard.tsx";
@@ -50,80 +54,78 @@ import StudentDatabase from "../pages/dashboard/student/StudentDatabase.jsx";
 import StudentAssignmentSolver from "../pages/dashboard/student/StudentAssignmentSolver.jsx";
 import Leaderboard from "../pages/dashboard/student/Leaderboard.jsx";
 import IqPuzzle from "../pages/dashboard/student/Iq_puzzle.jsx";
+
 // --- GAME & CLASSROOM PAGES ---
 import LiveGamePage from "../pages/LiveGamePage.jsx"; 
 
 const AppRoutes = () => {
   return (
     <>
-    <ScrollToTop />
-    <Routes>
-     
-      {/* --- Public Routes --- */}
-      <Route path="/" element={<Layout><Home /></Layout>} />
-      <Route path="/courses" element={<Layout><CoursesPage /></Layout>} />
-      <Route path="/mentors" element={<Layout><MentorsPage /></Layout>} />
-      <Route path="/pricing" element={<Layout><PricingPage /></Layout>} />
-      <Route path="/tournaments" element={<Layout><TournamentsPage /></Layout>} />
-      <Route path="/ourvission" element={<Layout><OurVission /></Layout>} />
-      <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
-      <Route path="/why-us" element={<Layout><WhyUsPage /></Layout>} />
-      <Route path="/faq" element={<Layout><FAQPage /></Layout>} />
-      <Route path="/contact" element={<Layout><Contacts /></Layout>} />
-      <Route path="/coaches" element={<Layout><Coaches /></Layout>} />
-      <Route path="/aboutus" element={<Layout><AboutUs /></Layout>} />
-      <Route path="/curriculum" element={<Layout><Curriculum /></Layout>} />
-      <Route path="/" element={<Layout><Home /></Layout>} />
-      <Route path="/special-offer" element={<Layout><OfferDetails /></Layout>} />
-      {/* --- Dashboard Routes --- */}
-      
-      {/* Student Dashboard */}
-      <Route path="/student-dashboard">
-        <Route index element={<StudentDashboard />} />
-        <Route path="schedule" element={<StudentSchedule />} />
-        <Route path="assignments" element={<StudentAssignment />} />
-        <Route path="assignment/:assignmentId" element={<StudentAssignmentSolver />} />
-        <Route path="training-sessions" element={<Classes />} />
-        <Route path="tournaments" element={<StudentTournament />} />
-        <Route path="test" element={<StudentTest />} />
-        <Route path="test/:testId" element={<StudentTestSolver />} />
-        <Route path="chats" element={<StudentChat />} />
-        <Route path="iqpuzzles" element={<IqPuzzle/>} />
-        <Route path="classes" element={<StudentClassesNew />} />
-        <Route path="database" element={<StudentDatabase />} />
-        <Route path="settings" element={<ComingSoon />} />
-        <Route path="leaderboard" element={<Leaderboard />} />
-      </Route>
+      <ScrollToTop />
+      <Routes>
+        {/* --- Public Routes --- */}
+        <Route path="/" element={<Layout><Home /></Layout>} />
+        <Route path="/courses" element={<Layout><CoursesPage /></Layout>} />
+        <Route path="/mentors" element={<Layout><MentorsPage /></Layout>} />
+        <Route path="/pricing" element={<Layout><PricingPage /></Layout>} />
+        <Route path="/tournaments" element={<Layout><TournamentsPage /></Layout>} />
+        <Route path="/ourvission" element={<Layout><OurVission /></Layout>} />
+        <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
+        <Route path="/why-us" element={<Layout><WhyUsPage /></Layout>} />
+        <Route path="/faq" element={<Layout><FAQPage /></Layout>} />
+        <Route path="/contact" element={<Layout><Contacts /></Layout>} />
+        <Route path="/coaches" element={<Layout><Coaches /></Layout>} />
+        <Route path="/aboutus" element={<Layout><AboutUs /></Layout>} />
+        <Route path="/curriculum" element={<Layout><Curriculum /></Layout>} />
+        <Route path="/special-offer" element={<Layout><OfferDetails /></Layout>} />
 
-      {/* Coach Dashboard */}
-      <Route path="/coach-dashboard">
-        <Route index element={<CoachDashboard />} />
-        <Route path="schedule" element={<CoachSchedule />} />
-        <Route path="students" element={<CoachStudents />} />
-        <Route path="training-sessions" element={<CoachClasses />} />
-        <Route path="classes" element={<CoachClassesNew />} />
-        <Route path="assignments" element={<CoachAssignment />} />
-        <Route path="tournaments" element={<CoachTournament />} />
-        <Route path="test" element={<CoachTest />} />
-        <Route path="chats" element={<CoachChat />} />
-        <Route path="my-students" element={<MyStudents />} />
+        {/* --- Dashboard Routes --- */}
         
-        {/* --- FIXED THIS LINE BELOW --- */}
-        <Route path="database" element={<CoachDatabase />} />
-        
-        <Route path="settings" element={<ComingSoon />} />
-      </Route>
+        {/* Student Dashboard */}
+        <Route path="/student-dashboard">
+          <Route index element={<StudentDashboard />} />
+          <Route path="schedule" element={<StudentSchedule />} />
+          <Route path="assignments" element={<StudentAssignment />} />
+          <Route path="assignment/:assignmentId" element={<StudentAssignmentSolver />} />
+          <Route path="training-sessions" element={<Classes />} />
+          <Route path="tournaments" element={<StudentTournament />} />
+          <Route path="test" element={<StudentTest />} />
+          <Route path="test/:testId" element={<StudentTestSolver />} />
+          <Route path="chats" element={<StudentChat />} />
+          <Route path="iqpuzzles" element={<IqPuzzle/>} />
+          <Route path="classes" element={<StudentClassesNew />} />
+          <Route path="database" element={<StudentDatabase />} />
+          <Route path="settings" element={<ComingSoon />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+        </Route>
 
-      {/* --- GAME & CLASSROOM ROUTES --- */}
-      <Route path="/play" element={<GameLobby />} />
-      <Route path="/play/:roomId" element={<LiveGamePage />} />
+        {/* Coach Dashboard - NOW WRAPPED WITH THE DATA PROVIDER */}
+        <Route path="/coach-dashboard" element={<CoachDataProvider />}>
+          <Route index element={<CoachDashboard />} />
+          <Route path="schedule" element={<CoachSchedule />} />
+          <Route path="students" element={<CoachStudents />} />
+          <Route path="training-sessions" element={<CoachClasses />} />
+          <Route path="classes" element={<CoachClassesNew />} />
+          <Route path="assignments" element={<CoachAssignment />} />
+          <Route path="tournaments" element={<CoachTournament />} />
+          <Route path="test" element={<CoachTest />} />
+          <Route path="chats" element={<CoachChat />} />
+          <Route path="my-students" element={<MyStudents />} />
+          <Route path="database" element={<CoachDatabase />} />
+          <Route path="settings" element={<ComingSoon />} />
+        </Route>
 
-      <Route path="/classroom/:roomId" element={<VideoClassroom />} />
-      <Route path="/student/classroom/:roomId" element={<StudentVideoClassroom />} />
+        {/* --- GAME & CLASSROOM ROUTES --- */}
+        <Route path="/play" element={<GameLobby />} />
+        <Route path="/play/:roomId" element={<LiveGamePage />} />
 
-      {/* Not Found */}
-      <Route path="*" element={<NotFound />} />
-    </Routes></>
+        <Route path="/classroom/:roomId" element={<VideoClassroom />} />
+        <Route path="/student/classroom/:roomId" element={<StudentVideoClassroom />} />
+
+        {/* Not Found */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 };
 
