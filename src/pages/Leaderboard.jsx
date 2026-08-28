@@ -1,157 +1,241 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import apiClient from "../lib/api.js";
 import { ENDPOINTS } from "../lib/endpoints.js";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { Trophy, User, Loader2, Sparkles, TrendingUp, Crown, Flame, Star } from "lucide-react";
+import {
+  Trophy, Loader2, TrendingUp, Crown, Zap,
+  ChevronLeft, ChevronRight, RefreshCw, Medal
+} from "lucide-react";
+
+/*
+  Same visual family as the Student Dashboard — warm-dark background, gold
+  for prestige, violet for the "energy" accent — so the Hall of Fame feels
+  like part of the same game rather than a different app.
+*/
+
+const INK = "#100E1A";
+const PANEL = "#181530";
+const PANEL_RAISED = "#201C3D";
+const LINE = "#2E2A54";
+const TEXT = "#F3F0FF";
+const TEXT_DIM = "#9691C4";
+const GOLD = "#FFC53D";
+const XP_BAR = "#7C5CFF";
+
+const RANK_STYLE = {
+  1: { tone: "#FFC53D", label: "Gold" },
+  2: { tone: "#CBD5E1", label: "Silver" },
+  3: { tone: "#D97757", label: "Bronze" },
+};
+
+const Avatar = ({ student, size = 48, ring }) => {
+  const initial = (student?.username || student?.fullname || "?").charAt(0).toUpperCase();
+  return (
+    <div
+      className="rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 font-black"
+      style={{
+        width: size, height: size,
+        background: `linear-gradient(135deg, ${XP_BAR}, #FF6BD6)`,
+        border: ring ? `3px solid ${ring}` : `2px solid ${LINE}`,
+        fontSize: size * 0.4,
+        color: "#fff",
+      }}
+    >
+      {student?.profilePicture
+        ? <img src={student.profilePicture} alt="" className="w-full h-full object-cover" />
+        : initial}
+    </div>
+  );
+};
+
+const RowSkeleton = () => (
+  <div className="flex items-center justify-between p-4 rounded-xl animate-pulse" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
+    <div className="flex items-center gap-4">
+      <div className="w-8 h-5 rounded" style={{ background: LINE }} />
+      <div className="w-11 h-11 rounded-full" style={{ background: LINE }} />
+      <div className="w-32 h-4 rounded" style={{ background: LINE }} />
+    </div>
+    <div className="w-16 h-5 rounded" style={{ background: LINE }} />
+  </div>
+);
 
 const Leaderboard = () => {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
   const [myStats, setMyStats] = useState(null);
+  const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [metric, setMetric] = useState("rating");
+
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      setLoadError(false);
+      const res = await apiClient.get(`${ENDPOINTS.USERS.GET_LEADERBOARD}?sortBy=${metric}&page=${pagination.currentPage}&limit=10`);
+      setLeaderboard(res.data?.data?.leaderboard || []);
+      setMyStats(res.data?.data?.myStats || null);
+      setPagination(res.data?.data?.pagination || { currentPage: 1, totalPages: 1 });
+    } catch (error) {
+      console.error("Failed to load leaderboard:", error);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        setLoading(true);
-        const res = await apiClient.get(ENDPOINTS.USERS.GET_LEADERBOARD);
-        setLeaderboard(res.data.data.leaderboard);
-        setMyStats(res.data.data.myStats);
-      } catch (error) {
-        console.error("Failed to load leaderboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLeaderboard();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metric, pagination.currentPage]);
 
-  if (loading) {
+  const handleMetricChange = (newMetric) => {
+    if (newMetric === metric) return;
+    setMetric(newMetric);
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+  };
+
+  const getDisplayScore = (student) => {
+    if (!student) return 0;
+    if (metric === "rating") return student.stats?.rating || 1200;
+    return student.stats?.shopPoints || student.totalPoints || 0;
+  };
+
+  const isRatingMode = metric === "rating";
+  const isPageOne = pagination.currentPage === 1;
+  const accent = isRatingMode ? XP_BAR : GOLD;
+  const unit = isRatingMode ? "ELO" : "PTS";
+
+  const topThree = isPageOne ? leaderboard.slice(0, 3) : [];
+  const restOfBoard = isPageOne ? leaderboard.slice(3) : leaderboard;
+
+  const podiumOrder = [
+    topThree[1] ? { ...topThree[1], displayRank: 2 } : null,
+    topThree[0] ? { ...topThree[0], displayRank: 1 } : null,
+    topThree[2] ? { ...topThree[2], displayRank: 3 } : null,
+  ];
+
+  if (loading && leaderboard.length === 0 && !loadError) {
     return (
-      <div className="min-h-screen bg-[#05070C] flex items-center justify-center text-white">
-        <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse"></div>
-            <Loader2 className="w-14 h-14 animate-spin text-blue-500 relative z-10" />
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: INK }}>
+        <Loader2 className="w-12 h-12 animate-spin" style={{ color: XP_BAR }} />
       </div>
     );
   }
 
-  // Separate Top 3 for the Podium
-  const topThree = leaderboard.slice(0, 3);
-  const restOfBoard = leaderboard.slice(3);
-
-  // Podium positioning logic (2nd, 1st, 3rd)
-  const podiumOrder = [
-    topThree[1] ? { ...topThree[1], rank: 2 } : null, // Silver
-    topThree[0] ? { ...topThree[0], rank: 1 } : null, // Gold
-    topThree[2] ? { ...topThree[2], rank: 3 } : null  // Bronze
-  ];
-
   return (
-    <div className="min-h-screen bg-[#05070C] text-white font-sans selection:bg-blue-500/30 relative overflow-hidden flex flex-col">
-      
-      {/* --- AMBIENT BACKGROUND FX (Optimized) --- */}
-      <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-violet-900/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="fixed bottom-[10%] right-[-10%] w-[500px] h-[500px] bg-blue-900/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="fixed top-[20%] left-[50%] -translate-x-1/2 w-[800px] h-[300px] bg-yellow-900/10 rounded-full blur-3xl pointer-events-none"></div>
-      
-      {/* Subtle Grid Texture (Optimized: Removed mix-blend-overlay) */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 pointer-events-none"></div>
+    <div className="min-h-screen font-sans relative overflow-hidden flex flex-col" style={{ background: INK, color: TEXT }}>
+
+      {/* Ambient glow, tuned to the active metric */}
+      <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full blur-[140px] pointer-events-none transition-colors duration-700" style={{ background: `${accent}22` }} />
+      <div className="fixed bottom-[10%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[140px] pointer-events-none transition-colors duration-700" style={{ background: `${accent}12` }} />
+
+      {/* faint checkerboard wash across the whole page */}
+      <div
+        className="fixed inset-0 opacity-[0.03] pointer-events-none"
+        style={{ backgroundImage: `repeating-conic-gradient(${TEXT} 0% 25%, transparent 0% 50%)`, backgroundSize: "40px 40px" }}
+      />
 
       <div className="max-w-5xl mx-auto px-4 md:px-8 pt-16 pb-40 relative z-10 w-full flex-1">
-        
-        {/* --- HEADER --- */}
-        <header className="text-center space-y-5 mb-16">
-          <motion.div 
-            initial={{ scale: 0, rotate: -180 }} 
-            animate={{ scale: 1, rotate: 0 }} 
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="w-24 h-24 bg-gradient-to-br from-yellow-400/20 to-yellow-600/5 border border-yellow-500/30 rounded-3xl flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(234,179,8,0.2)] shadow-yellow-500/20 rotate-3"
+
+        {/* HEADER */}
+        <header className="text-center space-y-5 mb-10">
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 3 }}
+            transition={{ type: "spring", stiffness: 120 }}
+            className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto shadow-2xl"
+            style={{ background: `${accent}22`, border: `1px solid ${accent}55` }}
           >
-            <Trophy className="w-12 h-12 text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
+            {isRatingMode ? <TrendingUp className="w-12 h-12" style={{ color: accent }} /> : <Trophy className="w-12 h-12" style={{ color: accent }} />}
           </motion.div>
-          <div className="space-y-2">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-blue-500 drop-shadow-sm">
-              Hall of Fame
-            </h1>
-            <p className="text-gray-400 text-base md:text-lg max-w-xl mx-auto font-medium leading-relaxed">
-              The most tactical minds in the academy. Solve assignments and pass exams to etch your name in history.
-            </p>
-          </div>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight" style={{ color: TEXT }}>
+            Hall of Fame
+          </h1>
+          <p className="text-sm" style={{ color: TEXT_DIM }}>Where every rating point earns its place.</p>
         </header>
 
-        {/* --- THE PODIUM --- */}
-        {topThree.length > 0 && (
-          // Fixed Overlap: Removed fixed height, added mt-24 to push it cleanly below the header text
-          <div className="flex justify-center items-end gap-3 md:gap-6 lg:gap-8 mt-24 mb-32 px-2">
-            {podiumOrder.map((student, index) => {
-              if (!student) return <div key={index} className="flex-1 max-w-[160px]" />; // Spacer
+        {/* METRIC TOGGLE */}
+        <div className="flex justify-center mb-16 relative z-20">
+          <div className="p-1.5 rounded-full flex items-center gap-1 shadow-xl" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
+            {[
+              { key: "rating", label: "Pawn Rating", icon: TrendingUp },
+              { key: "shopPoints", label: "Shop Points", icon: Zap },
+            ].map(tab => {
+              const active = metric === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => handleMetricChange(tab.key)}
+                  className="relative flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-colors"
+                  style={{ color: active ? INK : TEXT_DIM }}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId="metric-pill"
+                      className="absolute inset-0 rounded-full"
+                      style={{ background: tab.key === "rating" ? XP_BAR : GOLD }}
+                      transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                    />
+                  )}
+                  <span className="relative flex items-center gap-2">
+                    <tab.icon size={16} /> {tab.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-              const isGold = student.rank === 1;
-              const isSilver = student.rank === 2;
-              const isBronze = student.rank === 3;
-              const isMe = student._id === user?._id;
-              
-              const heights = isGold ? 'h-48 md:h-56' : isSilver ? 'h-36 md:h-44' : 'h-28 md:h-36';
-              const avatarSize = isGold ? 'w-24 h-24 md:w-28 md:h-28' : 'w-16 h-16 md:w-20 md:h-20';
-              const gradients = isGold 
-                ? 'from-yellow-900/90 via-yellow-600/40 to-yellow-400/10 border-yellow-400/50' 
-                : isSilver 
-                ? 'from-slate-700/90 via-slate-500/30 to-slate-300/10 border-slate-300/40' 
-                : 'from-amber-900/90 via-amber-700/40 to-amber-500/10 border-amber-500/40';
-              
-              const glowColor = isGold ? 'shadow-[0_0_40px_rgba(234,179,8,0.2)]' : isSilver ? 'shadow-[0_0_30px_rgba(148,163,184,0.1)]' : 'shadow-[0_0_30px_rgba(217,119,6,0.1)]';
-              const textColor = isGold ? 'text-yellow-400' : isSilver ? 'text-slate-300' : 'text-amber-500';
+        {loadError && (
+          <div className="mb-10 flex items-center justify-between gap-4 rounded-xl px-5 py-3.5 max-w-2xl mx-auto" style={{ background: "#A2463214", border: "1px solid #A2463240" }}>
+            <span className="text-sm" style={{ color: "#F0B4A8" }}>Couldn't load the leaderboard right now.</span>
+            <button onClick={fetchLeaderboard} className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-md" style={{ background: "#A2463225", color: "#F0B4A8" }}>
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        )}
+
+        {/* PODIUM */}
+        {isPageOne && !loadError && topThree.length > 0 && (
+          <div className="flex justify-center items-end gap-3 md:gap-6 lg:gap-8 mt-12 mb-32 px-2 relative z-10">
+            {podiumOrder.map((student, index) => {
+              if (!student) return <div key={index} className="flex-1 max-w-[160px]" />;
+              const style = RANK_STYLE[student.displayRank];
+              const isGold = student.displayRank === 1;
+              const heights = isGold ? "h-48 md:h-56" : student.displayRank === 2 ? "h-36 md:h-44" : "h-28 md:h-36";
 
               return (
-                <motion.div 
+                <motion.div
                   key={student._id}
                   initial={{ opacity: 0, y: 120 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: "spring", stiffness: 90, damping: 18, delay: isGold ? 0.3 : isSilver ? 0.1 : 0.5 }}
-                  className={`flex-1 flex flex-col items-center max-w-[180px] relative ${isGold ? 'z-20' : 'z-10'}`}
+                  transition={{ type: "spring", stiffness: 90, damping: 14 }}
+                  className={`flex-1 flex flex-col items-center max-w-[180px] relative ${isGold ? "z-20" : "z-10"}`}
                 >
-                  {/* Floating Crown for 1st Place */}
                   {isGold && (
-                    <motion.div 
-                        animate={{ y: [-6, 6, -6] }} 
-                        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                        className="absolute -top-16 z-30"
+                    <motion.div
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="absolute -top-16 z-30"
                     >
-                        <Crown className="w-12 h-12 text-yellow-400 fill-yellow-500/60 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
+                      <Crown className="w-12 h-12 drop-shadow-md" style={{ color: GOLD, fill: GOLD }} />
                     </motion.div>
                   )}
-
-                  {/* Avatar & Info */}
                   <div className="flex flex-col items-center mb-6 text-center w-full">
-                    <div className="relative mb-4">
-                      <div className={`${avatarSize} rounded-full bg-[#0a0e17] border-[4px] ${isGold ? 'border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.3)]' : isSilver ? 'border-slate-300' : 'border-amber-600'} flex items-center justify-center overflow-hidden z-10 relative transition-transform hover:scale-105 duration-300`}>
-                        {student.profilePicture ? (
-                          <img src={student.profilePicture} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                          <User className="w-1/2 h-1/2 text-gray-500" />
-                        )}
-                      </div>
-                      {isGold && <Sparkles className="absolute -bottom-1 -right-3 w-8 h-8 text-yellow-300 animate-pulse z-20" />}
-                    </div>
-                    
-                    <span className={`font-black text-base md:text-lg tracking-wide line-clamp-1 truncate w-full px-2 ${isMe ? 'text-white' : 'text-gray-100'}`}>
-                        {student.username}
-                    </span>
-                    <div className={`text-sm md:text-base font-black tracking-widest mt-1.5 flex items-center justify-center gap-1.5 bg-black/40 px-3 py-1 rounded-full border border-white/5 ${textColor}`}>
-                        {student.totalPoints} <span className="text-[10px] opacity-70 mt-0.5">PTS</span>
+                    <Avatar student={student} size={isGold ? 96 : 72} ring={style.tone} />
+                    <span className="font-black mt-4 truncate w-full">{student.username || student.fullname}</span>
+                    <div className="text-sm font-black mt-1.5" style={{ color: style.tone }}>
+                      {getDisplayScore(student)} {unit}
                     </div>
                   </div>
-
-                  {/* 3D Glass Pedestal */}
-                  <div className={`w-full ${heights} bg-gradient-to-t ${gradients} rounded-t-3xl ${glowColor} border-t-2 border-l border-r border-white/10 flex justify-center pt-6 md:pt-8 relative overflow-hidden group`}>
-                    {/* Optimized Glass Shine using Transform */}
-                    <div className="absolute top-0 inset-0 -translate-x-full w-[60%] bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[20deg] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out pointer-events-none"></div>
-                    <span className={`text-6xl md:text-8xl font-black opacity-20 mix-blend-overlay drop-shadow-md`}>
-                      {student.rank}
-                    </span>
+                  <div
+                    className={`w-full ${heights} rounded-t-3xl border-t-2 border-x flex flex-col items-center justify-start pt-4 gap-1`}
+                    style={{ background: `linear-gradient(180deg, ${style.tone}30, ${PANEL})`, borderColor: `${style.tone}55` }}
+                  >
+                    <Medal size={20} style={{ color: style.tone }} />
+                    <span className="text-6xl font-black opacity-15">{student.displayRank}</span>
                   </div>
                 </motion.div>
               );
@@ -159,110 +243,97 @@ const Leaderboard = () => {
           </div>
         )}
 
-        {/* --- THE LIST (4th to 10th) --- */}
-        <div className="space-y-4 max-w-3xl mx-auto relative z-10">
-          {restOfBoard.map((student, index) => {
-            const actualRank = index + 4;
-            const isMe = student._id === user?._id;
-
-            return (
-              <motion.div
-                key={student._id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + (index * 0.05), type: "spring", stiffness: 100 }}
-                whileHover={{ scale: 1.01, x: 8 }}
-                // Optimized: Removed heavy backdrop-blur-md from repeating list items
-                className={`group flex items-center justify-between p-4 md:p-6 rounded-2xl border shadow-md ${
-                  isMe 
-                    ? 'bg-blue-900/30 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)]' 
-                    : 'bg-[#111726] border-white/5 hover:bg-[#151c2e] hover:border-white/10 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)]'
-                } transition-all duration-300 ease-out`}
-              >
-                <div className="flex items-center gap-5 md:gap-8">
-                  {/* Rank Number */}
-                  <div className="w-10 font-black text-xl md:text-2xl text-gray-600 group-hover:text-gray-400 transition-colors text-right">
-                      #{actualRank}
-                  </div>
-                  
-                  {/* Avatar */}
-                  <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center overflow-hidden border-2 ${isMe ? 'border-blue-400/50' : 'border-white/10 group-hover:border-white/30'} transition-colors bg-black/50`}>
-                    {student.profilePicture ? (
-                       <img src={student.profilePicture} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                       <User className="w-6 h-6 text-gray-500" />
-                    )}
-                  </div>
-                  
-                  {/* Name & Badge */}
-                  <div className="flex flex-col">
-                    <h3 className={`font-bold text-base md:text-lg tracking-wide flex items-center gap-3 ${isMe ? 'text-blue-300' : 'text-gray-200 group-hover:text-white transition-colors'}`}>
-                      {student.username} 
-                      {isMe && (
-                          <span className="text-[10px] uppercase bg-gradient-to-r from-blue-600 to-blue-400 text-white px-2.5 py-1 rounded-md font-black tracking-widest shadow-lg shadow-blue-500/30">
-                              You
+        {/* LIST */}
+        {!loadError && (
+          <div className="space-y-3 max-w-3xl mx-auto relative z-10">
+            {loading
+              ? Array.from({ length: 6 }).map((_, i) => <RowSkeleton key={i} />)
+              : restOfBoard.map((student) => {
+                  const isMe = student._id === user?._id;
+                  return (
+                    <motion.div
+                      key={student._id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ x: 2 }}
+                      className="flex items-center justify-between p-4 md:p-5 rounded-xl transition-colors"
+                      style={{
+                        background: isMe ? `${accent}14` : PANEL,
+                        border: `1px solid ${isMe ? `${accent}55` : LINE}`,
+                      }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-9 font-black text-lg text-right" style={{ color: TEXT_DIM }}>#{student.rank}</div>
+                        <Avatar student={student} size={44} />
+                        <h3 className="font-bold">{student.username || student.fullname}</h3>
+                        {isMe && (
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full" style={{ background: `${accent}25`, color: accent }}>
+                            You
                           </span>
-                      )}
-                    </h3>
-                  </div>
-                </div>
+                        )}
+                      </div>
+                      <div className="font-black text-lg flex items-center gap-1.5">
+                        {getDisplayScore(student)} <span className="text-xs font-semibold" style={{ color: TEXT_DIM }}>{unit}</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
 
-                {/* Score */}
-                <div className="flex items-center gap-2.5 bg-black/40 px-4 py-2 rounded-xl border border-white/5 group-hover:border-yellow-500/20 transition-colors">
-                    <Star className={`w-4 h-4 md:w-5 md:h-5 ${isMe ? 'text-blue-400 fill-blue-500/20' : 'text-yellow-600/50 group-hover:text-yellow-500 group-hover:fill-yellow-500/20'} transition-all`} />
-                    <div className={`font-black text-xl md:text-2xl font-mono ${isMe ? 'text-white' : 'text-yellow-500'}`}>
-                        {student.totalPoints} <span className="text-xs md:text-sm text-gray-500 font-sans font-bold ml-1">Pts</span>
-                    </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Empty State */}
-        {leaderboard.length === 0 && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-center py-32 border border-dashed border-white/10 rounded-3xl bg-[#0f1423]/50 max-w-2xl mx-auto shadow-xl"
-          >
-            <TrendingUp className="w-20 h-20 text-gray-700 mx-auto mb-6" />
-            <h3 className="text-2xl font-black text-gray-300 mb-3 tracking-tight">No Rankings Yet</h3>
-            <p className="text-gray-500 max-w-md mx-auto text-lg">The leaderboard is currently empty. Complete assignments and pass exams to become the first champion!</p>
-          </motion.div>
+            {!loading && restOfBoard.length === 0 && topThree.length === 0 && (
+              <div className="text-center py-16" style={{ color: TEXT_DIM }}>
+                No players on the board yet — be the first to set a score.
+              </div>
+            )}
+          </div>
         )}
 
+        {/* PAGINATION */}
+        {pagination.totalPages > 1 && !loadError && (
+          <div className="flex justify-center items-center gap-6 mt-12 relative z-10">
+            <button
+              disabled={pagination.currentPage === 1}
+              onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+              className="p-2 rounded-full transition-colors disabled:opacity-30"
+              style={{ background: PANEL, border: `1px solid ${LINE}` }}
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <span className="font-bold text-sm" style={{ color: TEXT_DIM }}>
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <button
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+              className="p-2 rounded-full transition-colors disabled:opacity-30"
+              style={{ background: PANEL, border: `1px solid ${LINE}` }}
+            >
+              <ChevronRight size={22} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* --- STICKY BOTTOM BAR (My Stats) --- */}
+      {/* STICKY MY STATS BAR */}
       {myStats && (
-        <motion.div 
-          initial={{ y: 120 }} animate={{ y: 0 }} transition={{ type: "spring", damping: 20, delay: 1 }}
-          className="fixed bottom-0 left-0 right-0 bg-[#06080F]/90 backdrop-blur-xl border-t border-white/10 p-5 md:p-6 z-50 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]"
-        >
+        <div className="fixed bottom-0 left-0 right-0 backdrop-blur-xl p-5 z-50" style={{ background: "#100E1AE6", borderTop: `1px solid ${LINE}` }}>
           <div className="max-w-5xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-5">
-              <div className="relative">
-                <div className="absolute inset-0 bg-blue-500/20 blur-md rounded-full"></div>
-                <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#131825] to-[#0a0e17] border-2 border-blue-500/50 rounded-full flex items-center justify-center relative z-10 shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
-                    <span className="font-black text-blue-400 text-xl md:text-2xl">#{myStats.rank}</span>
-                </div>
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center font-black text-lg"
+                style={{ border: `2px solid ${accent}66`, color: accent }}
+              >
+                #{myStats.rank}
               </div>
               <div>
-                <div className="text-[10px] md:text-xs text-blue-400/90 font-black uppercase tracking-widest mb-1 drop-shadow-md">Your Global Rank</div>
-                <div className="font-bold text-white text-sm md:text-lg tracking-wide">{myStats.rank === 1 ? 'You are the undisputed champion!' : 'Keep pushing to climb higher!'}</div>
+                <div className="text-xs uppercase font-black mb-1" style={{ color: TEXT_DIM }}>Your Global Rank</div>
+                <div className="font-bold text-sm">{myStats.rank === 1 ? "You're the champion!" : "Keep climbing!"}</div>
               </div>
             </div>
-            
-            <div className="text-right flex items-center gap-4 bg-gradient-to-r from-white/5 to-transparent border border-white/10 px-6 py-3 rounded-2xl shadow-inner">
-              <div>
-                <div className="text-[10px] md:text-xs text-gray-400 uppercase tracking-widest font-black mb-1">Total Score</div>
-                <div className="text-2xl md:text-3xl font-black text-yellow-400 leading-none drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">{myStats.totalPoints}</div>
-              </div>
-              <div className="h-10 w-px bg-white/10 mx-2"></div>
-              <Flame className="w-8 h-8 text-yellow-500/70" />
+            <div className="text-2xl font-black" style={{ color: accent }}>
+              {getDisplayScore(myStats)} <span className="text-sm" style={{ color: TEXT_DIM }}>{unit}</span>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
