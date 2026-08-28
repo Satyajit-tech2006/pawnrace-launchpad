@@ -1,240 +1,452 @@
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../../contexts/AuthContext.jsx";
 import DashboardNavbar from "../../../components/Dashbordnavbar";
-import { 
-  Trophy, Brain, Target, Star, Shield, Zap, 
-  Medal, Flame, Crown, BookOpen, CheckCircle 
+import {
+  Trophy, Brain, Target, Shield, Zap, Castle, Crown,
+  BookOpen, CheckCircle, Lock, RefreshCw, ChevronRight, Flame
 } from "lucide-react";
-import { Card, CardContent } from "../../../components/ui/card"; 
+import { Card, CardContent } from "../../../components/ui/card";
 import { ENDPOINTS } from "../../../lib/endpoints.js";
 import apiClient from "../../../lib/api.js";
 
-// --- PAWNRACE RANKS ---
-const getRankDetails = (rating) => {
-  if (rating < 1200) return { title: "Novice", min: 0, max: 1200, color: "text-gray-400", from: "from-gray-500", to: "to-gray-700", bg: "bg-gray-400/10", icon: Shield };
-  if (rating < 1400) return { title: "Knight", min: 1200, max: 1400, color: "text-green-400", from: "from-green-400", to: "to-emerald-600", bg: "bg-green-400/10", icon: Target };
-  if (rating < 1600) return { title: "Bishop", min: 1400, max: 1600, color: "text-blue-400", from: "from-blue-400", to: "to-cyan-600", bg: "bg-blue-400/10", icon: Zap };
-  if (rating < 1800) return { title: "Rook", min: 1600, max: 1800, color: "text-purple-400", from: "from-purple-400", to: "to-indigo-600", bg: "bg-purple-400/10", icon: Star };
-  if (rating < 2000) return { title: "Queen", min: 1800, max: 2000, color: "text-pink-400", from: "from-pink-400", to: "to-rose-600", bg: "bg-pink-400/10", icon: Crown };
-  return { title: "Grandmaster", min: 2000, max: 3000, color: "text-yellow-400", from: "from-yellow-300", to: "to-amber-600", bg: "bg-yellow-400/10", icon: Trophy };
+/*
+  Design language
+  ----------------
+  Grounded in the subject rather than a generic dashboard: tones read as an
+  engraved chess-club rating certificate rather than a neon game-UI.
+
+  Ink       #15130F  — page background, warm near-black (not blue-black)
+  Panel     #1C1912  — card surface
+  Line      #34301F  — hairline borders / ticks
+  Parchment #EDE6D6  — primary text
+  Parch-dim #9C917B  — secondary / muted text
+  Pine      #4C7A6B  — in-progress accent
+  Rust      #A24632  — error accent
+
+  Rank tiers move through a muted heritage palette (stone -> bronze -> pewter
+  -> pine -> wine -> brass) instead of a rainbow gradient cycle, and numbers
+  are set in a monospace face, the way ratings and PGN notation are
+  traditionally typeset.
+*/
+
+const INK = "#15130F";
+const PANEL = "#1C1912";
+const PANEL_RAISED = "#231F16";
+const LINE = "#34301F";
+const PARCHMENT = "#EDE6D6";
+const PARCH_DIM = "#9C917B";
+const PINE = "#4C7A6B";
+const RUST = "#A24632";
+
+const RANK_LADDER = [
+  { title: "Novice",      min: 0,    max: 1200, tone: "#8C8370", icon: Shield },
+  { title: "Knight",      min: 1200, max: 1400, tone: "#B5722E", icon: Target },
+  { title: "Bishop",      min: 1400, max: 1600, tone: "#6E8CA0", icon: Zap },
+  { title: "Rook",        min: 1600, max: 1800, tone: "#3F6E63", icon: Castle },
+  { title: "Queen",       min: 1800, max: 2000, tone: "#8B3A4B", icon: Crown },
+  { title: "Grandmaster", min: 2000, max: 3000, tone: "#C9A227", icon: Trophy },
+];
+
+const getRankIndex = (rating) => {
+  const idx = RANK_LADDER.findIndex(r => rating < r.max);
+  return idx === -1 ? RANK_LADDER.length - 1 : idx;
 };
+
+const SkeletonLine = ({ className = "" }) => (
+  <div className={`animate-pulse rounded ${className}`} style={{ background: LINE }} />
+);
 
 const Achievements = () => {
   const { user } = useAuth();
-  
+
   const [iqStats, setIqStats] = useState({ easy: 0, medium: 0, hard: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [filter, setFilter] = useState("all"); // 'all' | 'unlocked' | 'locked'
 
-  // Safely extract stats, retaining the fallback to totalPoints for legacy data
   const stats = {
     rating: user?.stats?.rating || 1200,
     shopPoints: user?.stats?.shopPoints || user?.totalPoints || 0
   };
   const completions = user?.completions || {};
-  
+
   const assignmentsCount = completions.assignments?.length || 0;
   const testsCount = completions.tests?.length || 0;
   const totalIqPuzzles = iqStats.easy + iqStats.medium + iqStats.hard;
 
-  const rank = getRankDetails(stats.rating);
+  const rankIndex = getRankIndex(stats.rating);
+  const rank = RANK_LADDER[rankIndex];
   const RankIcon = rank.icon;
+  const isMaxRank = rankIndex === RANK_LADDER.length - 1 && stats.rating >= rank.max;
 
-  // Calculate progress to next rank
   const rankProgress = Math.min(100, Math.max(0, ((stats.rating - rank.min) / (rank.max - rank.min)) * 100));
+  const pointsToNextRank = Math.max(0, rank.max - stats.rating);
+
+  const fetchLiveStats = async () => {
+    setIsLoading(true);
+    setLoadError(false);
+    try {
+      const response = await apiClient.get(ENDPOINTS.IQ.GET_STATS);
+      const statsData = response.data?.data || [];
+
+      let easy = 0, medium = 0, hard = 0;
+      statsData.forEach(stat => {
+        if (stat.difficulty === "easy") easy += stat.totalGamesPlayed;
+        if (stat.difficulty === "medium") medium += stat.totalGamesPlayed;
+        if (stat.difficulty === "hard") hard += stat.totalGamesPlayed;
+      });
+      setIqStats({ easy, medium, hard });
+    } catch (error) {
+      console.error("Failed to load achievement stats:", error);
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLiveStats = async () => {
-      try {
-        const response = await apiClient.get(ENDPOINTS.IQ.GET_STATS);
-        const statsData = response.data?.data || [];
-        
-        let easy = 0, medium = 0, hard = 0;
-        statsData.forEach(stat => {
-            if (stat.difficulty === 'easy') easy += stat.totalGamesPlayed;
-            if (stat.difficulty === 'medium') medium += stat.totalGamesPlayed;
-            if (stat.difficulty === 'hard') hard += stat.totalGamesPlayed;
-        });
-        setIqStats({ easy, medium, hard });
-      } catch (error) {
-        console.error("Failed to load achievement stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchLiveStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const badges = [
-    { title: "First Blood", description: "Complete your first assignment.", icon: BookOpen, unlocked: assignmentsCount > 0, color: "from-blue-400 to-cyan-500" },
-    { title: "Test Veteran", description: "Conquer 5 timed tests.", icon: Flame, unlocked: testsCount >= 5, color: "from-orange-400 to-red-600" },
-    { title: "Brainiac", description: "Solve 10 Easy IQ Puzzles.", icon: Brain, unlocked: iqStats.easy >= 10, color: "from-green-400 to-emerald-600" },
-    { title: "Tactician", description: "Solve 5 Medium IQ Puzzles.", icon: Target, unlocked: iqStats.medium >= 5, color: "from-purple-400 to-indigo-600" },
-    { title: "Tactical Genius", description: "Solve a Hard IQ Puzzle.", icon: Zap, unlocked: iqStats.hard >= 1, color: "from-pink-400 to-rose-600" },
-    { title: "Rising Star", description: "Reach a Pawn Rating of 1400+.", icon: Crown, unlocked: stats.rating >= 1400, color: "from-yellow-300 to-amber-600" }
-  ];
+  const badges = useMemo(() => ([
+    { title: "First Blood", description: "Complete your first assignment.", icon: BookOpen, current: assignmentsCount, target: 1 },
+    { title: "Test Veteran", description: "Conquer 5 timed tests.", icon: Flame, current: testsCount, target: 5 },
+    { title: "Brainiac", description: "Solve 10 Easy IQ Puzzles.", icon: Brain, current: iqStats.easy, target: 10 },
+    { title: "Tactician", description: "Solve 5 Medium IQ Puzzles.", icon: Target, current: iqStats.medium, target: 5 },
+    { title: "Tactical Genius", description: "Solve a Hard IQ Puzzle.", icon: Zap, current: iqStats.hard, target: 1 },
+    { title: "Rising Star", description: "Reach a Pawn Rating of 1400+.", icon: Crown, current: Math.min(stats.rating, 1400), target: 1400 },
+  ].map(b => ({ ...b, unlocked: b.current >= b.target }))), [assignmentsCount, testsCount, iqStats, stats.rating]);
 
-  // Animation variants
-  const containerVars = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
-  const itemVars = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
+  const unlockedCount = badges.filter(b => b.unlocked).length;
+
+  const visibleBadges = badges.filter(b => {
+    if (filter === "unlocked") return b.unlocked;
+    if (filter === "locked") return !b.unlocked;
+    return true;
+  });
+
+  const containerVars = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
+  const itemVars = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white selection:bg-indigo-500/30 font-sans">
+    <div className="min-h-screen font-sans" style={{ background: INK, color: PARCHMENT }}>
       <DashboardNavbar />
-      
-      <div className="max-w-7xl mx-auto pt-32 px-6 pb-16">
-        
-        {/* HERO RANKING CARD */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }} 
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 mb-12 shadow-2xl overflow-hidden"
+
+      <div className="max-w-6xl mx-auto pt-32 px-6 pb-20">
+
+        {/* Eyebrow */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-px flex-1" style={{ background: LINE }} />
+          <span className="text-[11px] uppercase tracking-[0.25em]" style={{ color: PARCH_DIM }}>
+            Player Record
+          </span>
+          <div className="h-px flex-1" style={{ background: LINE }} />
+        </div>
+
+        {/* HERO — RATING CERTIFICATE */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="relative rounded-lg p-8 mb-4"
+          style={{ background: PANEL, border: `1px solid ${LINE}` }}
         >
-          {/* Ambient Glow */}
-          <div className={`absolute -right-32 -top-32 w-96 h-96 bg-gradient-to-br ${rank.from} ${rank.to} rounded-full blur-[100px] opacity-10 pointer-events-none`}></div>
-          <div className="absolute -left-32 -bottom-32 w-96 h-96 bg-indigo-500 rounded-full blur-[120px] opacity-10 pointer-events-none"></div>
-          
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-10 z-10 relative">
-            
-            {/* Rank Identity */}
-            <div className="flex items-center gap-6 w-full lg:w-1/2">
-              <div className={`p-6 rounded-2xl ${rank.bg} ${rank.color} shadow-lg ring-1 ring-white/5`}>
-                <RankIcon size={56} strokeWidth={1.5} />
+          {/* corner brackets — certificate motif, replaces glow orbs */}
+          <div className="absolute top-3 left-3 w-4 h-4 border-t border-l pointer-events-none" style={{ borderColor: rank.tone }} />
+          <div className="absolute bottom-3 right-3 w-4 h-4 border-b border-r pointer-events-none" style={{ borderColor: rank.tone }} />
+
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10">
+            <div className="flex items-center gap-6 w-full lg:w-2/3">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ border: `1px solid ${rank.tone}66`, background: `${rank.tone}14`, color: rank.tone }}
+              >
+                <RankIcon size={30} strokeWidth={1.5} />
               </div>
-              <div className="flex-1">
-                <p className="text-gray-400 font-semibold uppercase tracking-widest text-xs mb-1.5">Current Standing</p>
-                <h1 className={`text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r ${rank.from} ${rank.to} drop-shadow-sm mb-2`}>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] uppercase tracking-[0.2em] mb-1" style={{ color: PARCH_DIM }}>Current Rank</p>
+                <h1 className="text-3xl md:text-4xl font-serif tracking-tight mb-3" style={{ color: PARCHMENT }}>
                   {rank.title}
                 </h1>
-                
-                {/* Progress Bar */}
-                <div className="mt-4">
-                  <div className="flex justify-between text-sm font-medium mb-1.5">
-                    <span className="text-gray-300 flex items-center gap-1.5">
-                      <Trophy size={16} className={rank.color}/> {stats.rating} <span className="text-gray-500 hidden sm:inline">Pawn Rating</span>
-                    </span>
-                    <span className="text-gray-500">{rank.title === "Grandmaster" ? "MAX" : `Next: ${rank.max}`}</span>
-                  </div>
-                  <div className="h-2.5 w-full bg-gray-900/80 rounded-full overflow-hidden ring-1 ring-white/5">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${rankProgress}%` }}
-                      transition={{ duration: 1, delay: 0.3 }}
-                      className={`h-full bg-gradient-to-r ${rank.from} ${rank.to} shadow-[0_0_10px_rgba(255,255,255,0.2)]`}
-                    />
-                  </div>
+
+                <div className="flex items-center gap-3 font-mono text-sm mb-2">
+                  <span style={{ color: rank.tone }}>{stats.rating}</span>
+                  <span style={{ color: PARCH_DIM }}>rating</span>
+                  <span style={{ color: LINE }}>/</span>
+                  <span style={{ color: PARCH_DIM }}>
+                    {isMaxRank ? "top of ladder" : `${pointsToNextRank} to ${RANK_LADDER[rankIndex + 1]?.title}`}
+                  </span>
+                </div>
+
+                <div
+                  className="h-1 w-full rounded-full overflow-hidden"
+                  style={{ background: LINE }}
+                  role="progressbar"
+                  aria-valuenow={Math.round(rankProgress)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Progress toward next rank"
+                >
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${rankProgress}%` }}
+                    transition={{ duration: 0.9, delay: 0.15 }}
+                    className="h-full rounded-full"
+                    style={{ background: rank.tone }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Shop Wallet */}
-            <div className="bg-gray-900/60 backdrop-blur-md border border-gray-700/50 rounded-2xl p-6 min-w-[240px] text-center lg:text-right shadow-inner w-full lg:w-auto">
-              <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">Available Points</p>
-              <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500">
-                {stats.shopPoints} <span className="text-lg text-amber-500/70 font-medium">pts</span>
-              </h2>
+            {/* Points */}
+            <div
+              className="rounded-lg px-6 py-5 min-w-[200px] w-full lg:w-auto"
+              style={{ background: PANEL_RAISED, border: `1px solid ${LINE}` }}
+            >
+              <p className="text-[11px] uppercase tracking-[0.2em] mb-2" style={{ color: PARCH_DIM }}>Wallet</p>
+              <p className="text-3xl font-mono" style={{ color: "#C9A227" }}>
+                {stats.shopPoints} <span className="text-sm" style={{ color: PARCH_DIM }}>pts</span>
+              </p>
             </div>
+          </div>
 
+          {/* RATING LADDER — a ruler with tick marks, like a published rating-floor table */}
+          <div className="mt-10 pt-6" style={{ borderTop: `1px solid ${LINE}` }}>
+            <div className="flex items-start justify-between relative">
+              {RANK_LADDER.map((r, i) => {
+                const StepIcon = r.icon;
+                const achieved = i <= rankIndex;
+                const isCurrent = i === rankIndex;
+                return (
+                  <div key={r.title} className="flex flex-col items-center flex-1 relative">
+                    {i > 0 && (
+                      <div
+                        className="absolute top-[15px] right-1/2 w-full h-px"
+                        style={{ background: i <= rankIndex ? rank.tone : LINE, opacity: i <= rankIndex ? 0.6 : 1 }}
+                      />
+                    )}
+                    <div
+                      className="w-[30px] h-[30px] rounded-full flex items-center justify-center relative z-10 transition-all duration-300"
+                      style={{
+                        background: isCurrent ? r.tone : achieved ? `${r.tone}20` : PANEL,
+                        border: `1px solid ${achieved ? r.tone : LINE}`,
+                        color: isCurrent ? INK : achieved ? r.tone : PARCH_DIM,
+                      }}
+                    >
+                      <StepIcon size={13} strokeWidth={2} />
+                    </div>
+                    <span
+                      className="text-[10px] font-mono mt-2 hidden sm:block"
+                      style={{ color: isCurrent ? PARCHMENT : PARCH_DIM }}
+                    >
+                      {r.min}
+                    </span>
+                    <span
+                      className="text-[10px] uppercase tracking-wide mt-0.5 hidden md:block"
+                      style={{ color: isCurrent ? r.tone : PARCH_DIM }}
+                    >
+                      {r.title}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </motion.div>
 
-        {/* OVERVIEW STATS */}
-        <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-white/90">
-          <Target className="text-indigo-400" size={24}/> Training Overview
-        </h3>
-        
-        <motion.div 
-          variants={containerVars} initial="hidden" animate="show"
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
-        >
-            <motion.div variants={itemVars}>
-              <Card className="bg-gray-800/30 backdrop-blur-sm border-gray-700/50 h-full hover:bg-gray-800/50 transition-colors duration-300">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="p-3 bg-blue-500/10 rounded-xl ring-1 ring-blue-500/20"><BookOpen className="text-blue-400" /></div>
-                    <span className="text-4xl font-black text-white/90">{assignmentsCount}</span>
-                  </div>
-                  <p className="text-gray-400 font-medium tracking-wide">Assignments Done</p>
-                </CardContent>
-              </Card>
-            </motion.div>
+        {loadError && (
+          <div
+            className="mb-8 flex items-center justify-between gap-4 rounded-lg px-5 py-3.5"
+            style={{ background: `${RUST}14`, border: `1px solid ${RUST}40`, color: "#D89184" }}
+          >
+            <span className="text-sm">Couldn't load your latest puzzle stats. Numbers below may be out of date.</span>
+            <button
+              onClick={fetchLiveStats}
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-md flex-shrink-0 transition-colors"
+              style={{ background: `${RUST}25`, color: "#F0B4A8" }}
+            >
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        )}
 
-            <motion.div variants={itemVars}>
-              <Card className="bg-gray-800/30 backdrop-blur-sm border-gray-700/50 h-full hover:bg-gray-800/50 transition-colors duration-300">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="p-3 bg-red-500/10 rounded-xl ring-1 ring-red-500/20"><Flame className="text-red-400" /></div>
-                    <span className="text-4xl font-black text-white/90">{testsCount}</span>
-                  </div>
-                  <p className="text-gray-400 font-medium tracking-wide">Tests Passed</p>
-                </CardContent>
-              </Card>
-            </motion.div>
+        {/* OVERVIEW */}
+        <div className="flex items-center gap-3 mt-12 mb-6">
+          <h3 className="text-sm uppercase tracking-[0.2em]" style={{ color: PARCH_DIM }}>Training Record</h3>
+          <div className="h-px flex-1" style={{ background: LINE }} />
+        </div>
 
-            <motion.div variants={itemVars}>
-              <Card className="bg-gray-800/30 backdrop-blur-sm border-gray-700/50 h-full hover:bg-gray-800/50 transition-colors duration-300">
+        <motion.div variants={containerVars} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
+          {[
+            { icon: BookOpen, label: "Assignments Done", value: assignmentsCount },
+            { icon: Flame, label: "Tests Passed", value: testsCount },
+          ].map((s) => (
+            <motion.div variants={itemVars} key={s.label}>
+              <Card style={{ background: PANEL, border: `1px solid ${LINE}` }} className="h-full rounded-lg">
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-purple-500/10 rounded-xl ring-1 ring-purple-500/20"><Brain className="text-purple-400" /></div>
-                    <span className="text-4xl font-black text-white/90">{isLoading ? "..." : totalIqPuzzles}</span>
+                  <div className="flex justify-between items-start mb-8">
+                    <s.icon size={20} style={{ color: PARCH_DIM }} />
+                    <span className="text-3xl font-mono" style={{ color: PARCHMENT }}>{s.value}</span>
                   </div>
-                  <p className="text-gray-400 font-medium tracking-wide mb-4 border-b border-gray-700/50 pb-3">IQ Puzzles Solved</p>
-                  <div className="space-y-2.5 text-sm font-medium">
-                    <div className="flex justify-between items-center"><span className="text-emerald-400/80">Easy</span><span className="text-gray-300 bg-gray-900/50 px-2 py-0.5 rounded">{iqStats.easy}</span></div>
-                    <div className="flex justify-between items-center"><span className="text-indigo-400/80">Medium</span><span className="text-gray-300 bg-gray-900/50 px-2 py-0.5 rounded">{iqStats.medium}</span></div>
-                    <div className="flex justify-between items-center"><span className="text-rose-400/80">Hard</span><span className="text-gray-300 bg-gray-900/50 px-2 py-0.5 rounded">{iqStats.hard}</span></div>
-                  </div>
+                  <p className="text-sm" style={{ color: PARCH_DIM }}>{s.label}</p>
                 </CardContent>
               </Card>
             </motion.div>
+          ))}
+
+          <motion.div variants={itemVars}>
+            <Card style={{ background: PANEL, border: `1px solid ${LINE}` }} className="h-full rounded-lg">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <Brain size={20} style={{ color: PARCH_DIM }} />
+                  {isLoading ? <SkeletonLine className="w-10 h-8" /> : (
+                    <span className="text-3xl font-mono" style={{ color: PARCHMENT }}>{totalIqPuzzles}</span>
+                  )}
+                </div>
+                <p className="text-sm mb-4 pb-3" style={{ color: PARCH_DIM, borderBottom: `1px solid ${LINE}` }}>IQ Puzzles Solved</p>
+                <div className="space-y-2 text-sm font-mono">
+                  {[
+                    { label: "Easy", value: iqStats.easy },
+                    { label: "Medium", value: iqStats.medium },
+                    { label: "Hard", value: iqStats.hard },
+                  ].map(row => (
+                    <div key={row.label} className="flex justify-between items-center">
+                      <span style={{ color: PARCH_DIM }}>{row.label}</span>
+                      {isLoading ? <SkeletonLine className="w-8 h-4" /> : <span style={{ color: PARCHMENT }}>{row.value}</span>}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
 
-        {/* BADGES GRID */}
-        <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-white/90">
-          <Medal className="text-amber-400" size={24}/> Unlocked Badges
-        </h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {badges.map((badge, index) => {
-            const BadgeIcon = badge.icon;
-            return (
-              <motion.div 
-                key={index}
-                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 * index }}
-                className={`relative overflow-hidden rounded-2xl border p-6 flex flex-col items-center text-center transition-all duration-300 group ${
-                  badge.unlocked 
-                    ? "bg-gray-800/40 border-gray-600/50 hover:bg-gray-800/60 hover:border-gray-500 hover:-translate-y-1 shadow-lg" 
-                    : "bg-gray-900/30 border-gray-800/50 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
-                }`}
+        {/* BADGES */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm uppercase tracking-[0.2em]" style={{ color: PARCH_DIM }}>Badges</h3>
+            <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: PANEL_RAISED, color: PARCH_DIM, border: `1px solid ${LINE}` }}>
+              {unlockedCount} / {badges.length}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 rounded-md p-1 self-start" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
+            {[
+              { key: "all", label: "All" },
+              { key: "unlocked", label: "Unlocked" },
+              { key: "locked", label: "Locked" },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className="px-3 py-1 text-xs font-medium rounded transition-colors"
+                style={filter === tab.key
+                  ? { background: "#C9A227", color: INK }
+                  : { color: PARCH_DIM }}
               >
-                {/* Internal Glow for Unlocked */}
-                {badge.unlocked && (
-                  <div className={`absolute top-0 inset-x-0 h-24 bg-gradient-to-b ${badge.color} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
-                )}
-                
-                <div className={`p-4 rounded-full mb-5 z-10 ring-4 ${badge.unlocked ? `bg-gradient-to-br ${badge.color} text-white shadow-xl ring-white/5` : 'bg-gray-800 text-gray-500 ring-gray-800'}`}>
-                  <BadgeIcon size={28} strokeWidth={2}/>
-                </div>
-                
-                <h4 className={`text-lg font-bold mb-2 ${badge.unlocked ? 'text-white' : 'text-gray-400'}`}>
-                  {badge.title}
-                </h4>
-                <p className="text-sm text-gray-400 leading-relaxed mb-6">{badge.description}</p>
-                
-                {badge.unlocked ? (
-                  <div className="mt-auto inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-400/10 px-3.5 py-1.5 rounded-full border border-emerald-400/20">
-                    <CheckCircle size={14} strokeWidth={2.5}/> Unlocked
-                  </div>
-                ) : (
-                  <div className="mt-auto inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-900/80 px-3.5 py-1.5 rounded-full border border-gray-700/50">
-                    Locked
-                  </div>
-                )}
-              </motion.div>
-            )
-          })}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AnimatePresence mode="popLayout">
+            {visibleBadges.map((badge) => {
+              const BadgeIcon = badge.icon;
+              const progressPct = Math.min(100, Math.round((badge.current / badge.target) * 100));
+              return (
+                <motion.div
+                  layout
+                  key={badge.title}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="rounded-lg p-6 flex flex-col items-center text-center transition-colors duration-300"
+                  style={{
+                    background: badge.unlocked ? PANEL_RAISED : PANEL,
+                    border: `1px solid ${badge.unlocked ? "#C9A22755" : LINE}`,
+                  }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
+                    style={badge.unlocked
+                      ? { border: "1px solid #C9A22766", background: "#C9A22714", color: "#C9A227" }
+                      : { border: `1px solid ${LINE}`, color: PARCH_DIM }}
+                  >
+                    {badge.unlocked ? <BadgeIcon size={20} strokeWidth={1.75} /> : <Lock size={17} strokeWidth={1.75} />}
+                  </div>
+
+                  <h4 className="font-serif text-base mb-1.5" style={{ color: badge.unlocked ? PARCHMENT : PARCH_DIM }}>
+                    {badge.title}
+                  </h4>
+                  <p className="text-xs leading-relaxed mb-5" style={{ color: PARCH_DIM }}>{badge.description}</p>
+
+                  {badge.unlocked ? (
+                    <div
+                      className="mt-auto inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded"
+                      style={{ color: "#C9A227", background: "#C9A22714", border: "1px solid #C9A22740" }}
+                    >
+                      <CheckCircle size={12} strokeWidth={2} /> Unlocked
+                    </div>
+                  ) : (
+                    <div className="w-full mt-auto">
+                      <div className="flex justify-between text-[11px] font-mono mb-1.5" style={{ color: PARCH_DIM }}>
+                        <span>{Math.min(badge.current, badge.target)}/{badge.target}</span>
+                        <span>{progressPct}%</span>
+                      </div>
+                      <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: LINE }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progressPct}%` }}
+                          transition={{ duration: 0.6 }}
+                          className="h-full"
+                          style={{ background: PINE }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
+
+        {visibleBadges.length === 0 && (
+          <div className="text-center py-16" style={{ color: PARCH_DIM }}>
+            <p className="text-sm">Nothing here yet — keep training and check back.</p>
+          </div>
+        )}
+
+        {/* Closest badge nudge */}
+        {(() => {
+          const nextUp = badges
+            .filter(b => !b.unlocked)
+            .sort((a, b) => (b.current / b.target) - (a.current / a.target))[0];
+          if (!nextUp) return null;
+          return (
+            <div
+              className="mt-8 flex items-center justify-between gap-4 rounded-lg px-6 py-4"
+              style={{ background: `${PINE}12`, border: `1px solid ${PINE}40` }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${PINE}20`, color: PINE }}>
+                  <nextUp.icon size={16} />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide" style={{ color: PARCH_DIM }}>Closest badge</p>
+                  <p className="font-serif text-sm" style={{ color: PARCHMENT }}>
+                    {nextUp.title} — <span className="font-mono">{Math.min(nextUp.current, nextUp.target)}/{nextUp.target}</span>
+                  </p>
+                </div>
+              </div>
+              <ChevronRight size={18} style={{ color: PARCH_DIM }} className="hidden sm:block" />
+            </div>
+          );
+        })()}
 
       </div>
     </div>

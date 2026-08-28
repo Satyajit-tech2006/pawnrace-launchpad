@@ -21,6 +21,8 @@ import { Layout } from "../components/Layout";
 import AboutUs from "../components/AboutUs.jsx";
 import GameLobby from '../pages/GameLobby';
 import OfferDetails from "../pages/OfferDetails.jsx";
+import Leaderboard from "../pages/Leaderboard.jsx";
+
 
 // Coach Dashboard Pages
 import CoachDashboard from "../pages/dashboard/coach/CoachDashboard.tsx";
@@ -52,7 +54,6 @@ import StudentClassesNew from "../pages/dashboard/student/StudentClassesNew.jsx"
 import StudentVideoClassroom from "../pages/dashboard/student/StudentVideoClassroom.jsx"; 
 import StudentDatabase from "../pages/dashboard/student/StudentDatabase.jsx";
 import StudentAssignmentSolver from "../pages/dashboard/student/StudentAssignmentSolver.jsx";
-import Leaderboard from "../pages/dashboard/student/Leaderboard.jsx";
 import IqPuzzle from "../pages/dashboard/student/Iq_puzzle.jsx";
 import Achievements from "../pages/dashboard/student/Achievements.jsx";
 
@@ -112,6 +113,7 @@ const AppRoutes = () => {
           <Route path="tournaments" element={<CoachTournament />} />
           <Route path="test" element={<CoachTest />} />
           <Route path="chats" element={<CoachChat />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="my-students" element={<MyStudents />} />
           <Route path="database" element={<CoachDatabase />} />
           <Route path="settings" element={<ComingSoon />} />

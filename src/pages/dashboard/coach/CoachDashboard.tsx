@@ -5,7 +5,7 @@ import DashboardNavbar from "../../../components/Dashbordnavbar";
 import {
   Users, Calendar, ClipboardCheck, FileBarChart, Trophy,
   MessageSquare, Settings, Database, Gamepad, Gamepad2, Brain,
-  ChevronUp, ChevronDown, Play, User, Zap
+  ChevronUp, ChevronDown, Play, User, Zap, Medal
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
 import apiClient from "../../../lib/api"; 
@@ -26,6 +26,7 @@ const coachMenuItems = [
   { name: "Settings", path: "settings", icon: Settings, accent: "#6B7280", gradient: "from-gray-500 to-gray-700", desc: "Manage your coaching profile, availability, and system preferences." },
   { name: "Play Game", path: "play", icon: Gamepad, accent: "#F97316", gradient: "from-orange-500 to-red-600", desc: "Enter the global matchmaking arena. Show the students how it's done." },
   { name: "Training Sessions", path: "training-sessions", icon: Gamepad2, accent: "#F43F5E", gradient: "from-rose-500 to-pink-600", desc: "Host interactive engine analysis and game review sessions." },
+  { name: "Leaderboard", path: "leaderboard", icon: Medal, accent: "#F59E0B", gradient: "from-amber-400 to-orange-500", desc: "View global academy rankings and track top-performing students." },
 ];
 
 /* ========================================================================== */

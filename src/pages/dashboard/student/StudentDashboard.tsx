@@ -1,290 +1,387 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import DashboardNavbar from "../../../components/Dashbordnavbar";
 import {
   GraduationCap, Trophy, ClipboardList, Award, FileBarChart,
-  Settings, MessageSquare, Brain, Medal, Gamepad, Gamepad2,
-  ChevronUp, ChevronDown, Play, User, Zap
+  Brain, Medal, Castle, Zap, ChevronRight, Flame, Star, 
+  TrendingUp, Lock, CheckCircle, Crown, Target, BookOpen,
+  Gamepad, Gamepad2, MessageSquare, Settings, Swords
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
-import apiClient from "../../../lib/api"; 
-import { ENDPOINTS } from "../../../lib/endpoints.js"; // Pulling in your exact API routes
+import apiClient from "../../../lib/api";
+import { ENDPOINTS } from "../../../lib/endpoints.js";
 
-/* ========================================================================== */
-/* 1. MENU CONFIGURATION                                                      */
-/* ========================================================================== */
+/* ---------------------------------- THEME --------------------------------- */
+const INK = "#100E1A";
+const PANEL = "#181530";
+const PANEL_RAISED = "#201C3D";
+const LINE = "#2E2A54";
+const TEXT = "#F3F0FF";
+const TEXT_DIM = "#9691C4";
+const GOLD = "#FFC53D";
+const BRAND_ACCENT = "#7C5CFF";
 
-const menuItems = [
-  { name: "Play Game", path: "play", icon: Gamepad, accent: "#F97316", gradient: "from-orange-500 to-red-600", desc: "Global matchmaking arena. Put your Elo on the line in brutal combat." },
-  { name: "Classes", path: "student-dashboard/classes", icon: GraduationCap, accent: "#3B82F6", gradient: "from-blue-500 to-indigo-600", desc: "Connect to the live neural-link with your assigned Grandmaster." },
-  { name: "IQ Gym", path: "student-dashboard/iqpuzzles", icon: Brain, accent: "#D946EF", gradient: "from-fuchsia-500 to-purple-600", desc: "Push your calculation hardware to the limit. Rapid-fire tactical recognition." },
-  { name: "Tournaments", path: "student-dashboard/tournaments", icon: Trophy, accent: "#FACC15", gradient: "from-yellow-400 to-amber-600", desc: "Official FIDE-rated battlegrounds. Survive the bracket and claim the prize." },
-  { name: "Training", path: "student-dashboard/training-sessions", icon: Gamepad2, accent: "#34D399", gradient: "from-emerald-400 to-green-600", desc: "Review past battles with Stockfish 16. Identify blunders and missed brilliancies." },
-  { name: "Leaderboard", path: "student-dashboard/leaderboard", icon: Medal, accent: "#F43F5E", gradient: "from-rose-500 to-pink-600", desc: "See where you rank among global academy students." },
-  { name: "Assignments", path: "student-dashboard/assignments", icon: ClipboardList, accent: "#22D3EE", gradient: "from-cyan-400 to-blue-500", desc: "Complete your required tactical quota. Consistency unlocks true power." },
-  { name: "Achievements", path: "student-dashboard/achievements", icon: Award, accent: "#8B5CF6", gradient: "from-violet-500 to-purple-700", desc: "View your earned badges, ranks, and rating milestones." },
-  { name: "Testing", path: "student-dashboard/test", icon: FileBarChart, accent: "#2DD4BF", gradient: "from-teal-400 to-emerald-500", desc: "Take standardized exams to evaluate your current Elo level." },
-  { name: "Chats", path: "student-dashboard/chats", icon: MessageSquare, accent: "#94A3B8", gradient: "from-slate-400 to-slate-600", desc: "Communicate directly with your coaches and academy mentors." },
-  { name: "Settings", path: "student-dashboard/settings", icon: Settings, accent: "#6B7280", gradient: "from-gray-500 to-gray-700", desc: "Manage your profile, preferences, and system settings." },
+/* ----------------------------- RANK ENGINE ----------------------------- */
+const RANK_LADDER = [
+  { title: "Novice",      min: 0,    max: 1200 },
+  { title: "Knight",      min: 1200, max: 1400 },
+  { title: "Bishop",      min: 1400, max: 1600 },
+  { title: "Rook",        min: 1600, max: 1800 },
+  { title: "Queen",       min: 1800, max: 2000 },
+  { title: "Grandmaster", min: 2000, max: 3000 },
 ];
 
-/* ========================================================================== */
-/* 2. MAIN DASHBOARD                                                          */
-/* ========================================================================== */
+const getRankDetails = (rating) => RANK_LADDER.find(r => rating < r.max) || RANK_LADDER[RANK_LADDER.length - 1];
+const getRankIndex = (rating) => {
+  const idx = RANK_LADDER.findIndex(r => rating < r.max);
+  return idx === -1 ? RANK_LADDER.length - 1 : idx;
+};
+
+/* ------------------------------- MODULE DATA ------------------------------ */
+const MODULES = [
+  { name: "Play Game", path: "play", icon: Gamepad, accent: "#F97316", desc: "Global matchmaking arena. Put your Elo on the line in brutal combat." },
+  { name: "Classes", path: "student-dashboard/classes", icon: GraduationCap, accent: "#3B82F6", desc: "Connect to the live neural-link with your assigned Grandmaster." },
+  { name: "IQ Gym", path: "student-dashboard/iqpuzzles", icon: Brain, accent: "#D946EF", desc: "Push your calculation hardware to the limit. Rapid-fire tactical recognition." },
+  { name: "Tournaments", path: "student-dashboard/tournaments", icon: Trophy, accent: "#FACC15", desc: "Official FIDE-rated battlegrounds. Survive the bracket and claim the prize." },
+  { name: "Training", path: "student-dashboard/training-sessions", icon: Gamepad2, accent: "#34D399", desc: "Review past battles with Stockfish 16. Identify blunders and missed brilliancies." },
+  { name: "Leaderboard", path: "student-dashboard/leaderboard", icon: Medal, accent: "#F43F5E", desc: "See where you rank among global academy students." },
+  { name: "Assignments", path: "student-dashboard/assignments", icon: ClipboardList, accent: "#22D3EE", desc: "Complete your required tactical quota. Consistency unlocks true power." },
+  { name: "Achievements", path: "student-dashboard/achievements", icon: Award, accent: "#8B5CF6", desc: "View your earned badges, ranks, and rating milestones." },
+  { name: "Testing", path: "student-dashboard/test", icon: FileBarChart, accent: "#2DD4BF", desc: "Take standardized exams to evaluate your current Elo level." },
+  { name: "Chats", path: "student-dashboard/chats", icon: MessageSquare, accent: "#94A3B8", desc: "Communicate directly with your coaches and academy mentors." },
+  { name: "Settings", path: "student-dashboard/settings", icon: Settings, accent: "#6B7280", desc: "Manage your profile, preferences, and system settings." },
+];
+
+/* ------------------------------ MINI BACKGROUND ---------------------------- */
+const FLOATERS = ["♞", "♟", "♜", "♝", "♛"];
+const FloatingPieces = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
+    {FLOATERS.map((glyph, i) => (
+      <motion.span
+        key={i}
+        className="absolute text-6xl"
+        style={{ left: `${12 + i * 20}%`, color: TEXT_DIM, opacity: 0.06 }}
+        initial={{ y: "110%", rotate: -8 }}
+        animate={{ y: "-20%", rotate: 8 }}
+        transition={{ duration: 26 + i * 4, repeat: Infinity, ease: "linear", delay: i * 3 }}
+      >
+        {glyph}
+      </motion.span>
+    ))}
+  </div>
+);
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [userName, setUserName] = useState("PLAYER ONE");
-  const [userPoints, setUserPoints] = useState(0);
 
-  const total = menuItems.length;
+  const [iqStats, setIqStats] = useState({ easy: 0, medium: 0, hard: 0 });
+  const [globalRank, setGlobalRank] = useState(null);
 
-  // --- AGGRESSIVE BACKEND DATA SYNC ---
+  // Real Data Extraction
+  const userName = user?.username || user?.fullname || "Player One";
+  const stats = {
+    rating: user?.stats?.rating || 1200,
+    shopPoints: user?.stats?.shopPoints || user?.totalPoints || 0
+  };
+  const completions = user?.completions || {};
+  const assignmentsCount = completions.assignments?.length || 0;
+  const testsCount = completions.tests?.length || 0;
+  const totalIqPuzzles = iqStats.easy + iqStats.medium + iqStats.hard;
+
+  // Rank Math
+  const rank = getRankDetails(stats.rating);
+  const rankIndex = getRankIndex(stats.rating);
+  const isMaxRank = rank.title === "Grandmaster" && stats.rating >= rank.max;
+  const rankProgress = Math.min(100, Math.max(0, ((stats.rating - rank.min) / (rank.max - rank.min)) * 100));
+  const pointsToNextRank = Math.max(0, rank.max - stats.rating);
+
+  // Fetch Live IQ Stats & Leaderboard Rank
   useEffect(() => {
-    if (user) {
-      // 1. Safely extract name (Prioritizing username, then name, then first/last)
-      const fullName = user.username || user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || "Player One";
-      setUserName(fullName);
+    let isMounted = true;
+    
+    const fetchLiveStats = async () => {
+      try {
+        const [iqRes, leaderRes] = await Promise.all([
+          apiClient.get(ENDPOINTS.IQ.GET_STATS),
+          apiClient.get('/users/leaderboard')
+        ]);
+        
+        if (!isMounted) return;
 
-      // 2. Fetch fresh points from your Leaderboard API
-      const fetchLivePoints = async () => {
-        try {
-          // Check if points are already on the user context object to prevent 0 flashing
-          const contextPoints = user.globalScore || user.points || user.totalPoints || user.score || user.elo;
-          if (contextPoints) {
-            setUserPoints(contextPoints);
-          }
+        // Parse IQ Data
+        let easy = 0, medium = 0, hard = 0;
+        (iqRes.data?.data || []).forEach(stat => {
+          if (stat.difficulty === "easy") easy += stat.totalGamesPlayed;
+          if (stat.difficulty === "medium") medium += stat.totalGamesPlayed;
+          if (stat.difficulty === "hard") hard += stat.totalGamesPlayed;
+        });
+        setIqStats({ easy, medium, hard });
 
-          // Fetch from Leaderboard Endpoint (Safely checking your ENDPOINTS file)
-          const endpoint = ENDPOINTS?.LEADERBOARD?.GET || ENDPOINTS?.USER?.LEADERBOARD || '/api/leaderboard';
-          const res = await apiClient.get(endpoint); 
-          
-          // Drill down into the response to find the array of players
-          const players = res.data?.data || res.data?.leaderboard || res.data || [];
-          
-          // Find the logged-in user in the leaderboard
-          const myStats = players.find(p => p._id === user._id || p.userId === user._id || p.username === user.username);
-          
-          if (myStats) {
-            // Extract whatever key your backend actually uses for the global leaderboard
-            const livePoints = myStats.globalScore || myStats.points || myStats.totalPoints || myStats.score || myStats.elo || 0;
-            setUserPoints(livePoints);
-          }
-        } catch (error) {
-          console.error("Leaderboard point sync failed. Falling back to context data:", error);
-        }
-      };
+        // Parse Global Rank
+        const players = leaderRes.data?.data || [];
+        const myIndex = players.findIndex(p => p._id === user?._id);
+        if (myIndex !== -1) setGlobalRank(myIndex + 1);
 
-      fetchLivePoints();
-    }
+      } catch (error) {
+        console.error("Dashboard sync failed.", error);
+      }
+    };
+
+    fetchLiveStats();
+    return () => { isMounted = false; };
   }, [user]);
 
-  // --- SCROLL CONTROLS ---
-  const handleNext = () => setActiveIndex((prev) => (prev + 1) % total);
-  const handlePrev = () => setActiveIndex((prev) => (prev - 1 + total) % total);
+  // Activity Feed built from truth
+  const activityRows = useMemo(() => {
+    const rows = [];
+    if (assignmentsCount > 0) rows.push({ icon: ClipboardList, color: "#22D3EE", text: `${assignmentsCount} assignments completed` });
+    if (testsCount > 0) rows.push({ icon: FileBarChart, color: "#2DD4BF", text: `${testsCount} tests passed` });
+    if (totalIqPuzzles > 0) rows.push({ icon: Brain, color: "#E879F9", text: `${totalIqPuzzles} IQ puzzles solved` });
+    rows.push({ icon: TrendingUp, color: "#60A5FA", text: `Current Pawn Rating: ${stats.rating}` });
+    return rows;
+  }, [assignmentsCount, testsCount, totalIqPuzzles, stats.rating]);
 
-  const handleWheel = (e) => {
-    if (e.deltaY > 30) handleNext();
-    else if (e.deltaY < -30) handlePrev();
-  };
+  // Achievement Teasers
+  const badgeTeasers = useMemo(() => ([
+    { title: "First Blood", icon: BookOpen, unlocked: assignmentsCount > 0 },
+    { title: "Test Veteran", icon: Flame, unlocked: testsCount >= 5 },
+    { title: "Rising Star", icon: Crown, unlocked: stats.rating >= 1400 },
+    { title: "Grandmaster", icon: Trophy, unlocked: stats.rating >= 2000 },
+  ]), [assignmentsCount, testsCount, stats.rating]);
 
-  const handleLaunch = () => {
-    const activeItem = menuItems[activeIndex];
-    const path = activeItem.path.startsWith('/') ? activeItem.path : `/${activeItem.path}`;
-    navigate(path);
-  };
+  // Handle paths that already include the prefix
+  const goTo = (path) => navigate(path.startsWith("/") ? path : `/${path}`);
 
-  // Calculates smooth vertical distance from center
-  const getOffset = (index) => {
-    let diff = (index - activeIndex + total) % total;
-    if (diff > total / 2) diff -= total;
-    return diff;
-  };
-
-  const activeData = menuItems[activeIndex];
+  // Animations
+  const containerVars = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
+  const itemVars = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } };
 
   return (
-    <div 
-      className="min-h-screen w-full bg-[#070B14] text-white font-sans flex flex-col relative overflow-hidden"
-      onWheel={handleWheel}
-      style={{ backgroundColor: "#070B14" }}
-    >
-      
-      {/* Dynamic Ambient Background */}
-      <div className="absolute inset-0 pointer-events-none z-0 transition-colors duration-700 opacity-30">
-        <div 
-          className="absolute top-[10%] left-[5%] w-[600px] h-[600px] rounded-full blur-[200px] transition-all duration-700"
-          style={{ backgroundColor: activeData.accent, opacity: 0.25 }}
-        />
-        <div 
-          className="absolute bottom-[5%] right-[5%] w-[500px] h-[500px] rounded-full blur-[150px] transition-all duration-700"
-          style={{ backgroundColor: activeData.accent, opacity: 0.15 }}
-        />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5" />
-      </div>
+    <div className="min-h-screen w-full font-sans relative overflow-hidden" style={{ background: INK, color: TEXT }}>
+      <FloatingPieces />
+      <DashboardNavbar />
 
-      <div className="relative z-10 flex flex-col min-h-screen">
-        <DashboardNavbar />
+      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-32 pb-24">
 
-        {/* BULLETPROOF GRID LAYOUT */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          {/* ================================================================= */}
-          {/* LEFT COLUMN: HUD & INFO (Strictly constrained bounds)             */}
-          {/* ================================================================= */}
-          <div className="flex flex-col justify-center space-y-10 w-full max-w-lg mx-auto lg:mx-0">
-            
-            {/* User Profile Card */}
-            <div className="bg-[#111726]/80 backdrop-blur-md border border-white/10 rounded-2xl p-5 flex items-center gap-5 shadow-lg">
-              <div className="w-14 h-14 bg-slate-800 rounded-full border border-slate-600 flex items-center justify-center shrink-0">
-                <User className="w-7 h-7 text-slate-400" />
-              </div>
-              <div className="overflow-hidden">
-                <h2 className="text-xl font-black text-white uppercase tracking-tight truncate">
-                  {userName}
-                </h2>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-widest rounded border border-blue-500/20">
-                    Active Student
-                  </span>
-                  <span className="text-sm font-bold text-slate-400 flex items-center gap-1">
-                    <Zap className="w-3.5 h-3.5 text-yellow-400" /> {userPoints} PTS
-                  </span>
+        {/* ============================ HEADER / RANK PROGRESS CARD ============================ */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+          className="relative rounded-2xl p-6 mb-6 overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${PANEL_RAISED}, ${PANEL})`, border: `1px solid ${LINE}` }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black"
+                  style={{ background: `linear-gradient(135deg, ${BRAND_ACCENT}, #FF6BD6)`, color: "#fff" }}
+                >
+                  {userName.charAt(0).toUpperCase()}
                 </div>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em]" style={{ color: TEXT_DIM }}>{rank.title}</p>
+                <h1 className="text-2xl font-black tracking-tight">{userName}</h1>
               </div>
             </div>
 
-            {/* Target Display Panel */}
-            <AnimatePresence mode="wait">
+            {/* Wallet Quick View */}
+            <div className="flex items-center gap-2 rounded-xl px-4 py-2.5 self-start bg-black/20 border border-[#2E2A54]">
+              <Zap size={18} color={GOLD} fill={GOLD} />
+              <span className="font-black text-lg text-[#FFC53D]">{stats.shopPoints}</span>
+              <span className="text-xs text-[#9691C4]">pts</span>
+            </div>
+          </div>
+
+          {/* Real Rank Progress Bar */}
+          <div className="mt-6">
+            <div className="flex justify-between text-xs mb-1.5 font-medium" style={{ color: TEXT_DIM }}>
+              <span className="text-white">{stats.rating} Rating</span>
+              <span>{isMaxRank ? "MAX RANK" : `${pointsToNextRank} pts to ${RANK_LADDER[rankIndex + 1]?.title}`}</span>
+            </div>
+            <div className="h-3 w-full rounded-full overflow-hidden" style={{ background: LINE }}>
               <motion.div
-                key={activeIndex}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="w-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${rankProgress}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="h-full rounded-full relative"
+                style={{ background: `linear-gradient(90deg, ${BRAND_ACCENT}, #FF6BD6)` }}
               >
-                <div className="text-slate-500 font-mono text-xs tracking-widest uppercase mb-4 flex items-center gap-3">
-                  <div className="h-[2px] w-8 bg-slate-700"></div>
-                  Module // {String(activeIndex + 1).padStart(2, '0')}
-                </div>
-                
-                <h1 className="text-5xl lg:text-6xl font-black uppercase tracking-tighter text-white mb-5 leading-none">
-                  {activeData.name}
-                </h1>
-                
-                <p className="text-slate-400 text-base md:text-lg font-medium leading-relaxed max-w-md">
-                  {activeData.desc}
-                </p>
+                <div className="absolute inset-0 opacity-40" style={{ background: "linear-gradient(90deg, transparent, #fff, transparent)" }} />
               </motion.div>
-            </AnimatePresence>
+            </div>
+          </div>
+        </motion.div>
 
-            {/* Launch Button */}
-            <motion.button
-              onClick={handleLaunch}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-lg flex items-center justify-center gap-3 bg-gradient-to-r ${activeData.gradient} text-white shadow-xl transition-all border border-white/20`}
-              style={{ boxShadow: `0 10px 40px -10px ${activeData.accent}` }}
+        {/* ============================ QUICK STATS ============================ */}
+        <motion.div variants={containerVars} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+          {[
+            { label: "Pawn Rating", value: stats.rating, icon: TrendingUp, color: "#60A5FA" },
+            { label: "Shop Wallet", value: stats.shopPoints, icon: Zap, color: GOLD },
+            { label: "Assignments", value: assignmentsCount, icon: ClipboardList, color: "#22D3EE" },
+            { label: "Global Rank", value: globalRank ? `#${globalRank}` : "—", icon: Medal, color: "#FB7185" },
+          ].map((s) => (
+            <motion.div
+              key={s.label}
+              variants={itemVars}
+              className="rounded-xl p-4 flex flex-col gap-2"
+              style={{ background: PANEL, border: `1px solid ${LINE}` }}
             >
-              <Play className="w-6 h-6 fill-white" /> Launch Protocol
+              <s.icon size={16} color={s.color} />
+              <span className="text-xl font-black">{s.value}</span>
+              <span className="text-[11px] uppercase tracking-wide" style={{ color: TEXT_DIM }}>{s.label}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* ============================ FEATURED ACTION: IQ GYM ============================ */}
+        <motion.button
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          onClick={() => goTo("student-dashboard/iqpuzzles")}
+          className="relative w-full overflow-hidden rounded-2xl p-7 mb-10 text-left bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500"
+          style={{ boxShadow: `0 20px 60px -20px #d946ef88` }}
+        >
+          <div
+            className="absolute inset-y-0 right-0 w-56 opacity-20 pointer-events-none"
+            style={{ backgroundImage: "repeating-conic-gradient(#fff 0% 25%, transparent 0% 50%)", backgroundSize: "26px 26px" }}
+          />
+          <div className="relative flex items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <motion.div
+                animate={{ rotate: [0, -8, 8, 0] }}
+                transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 1.5 }}
+                className="w-16 h-16 rounded-2xl flex items-center justify-center bg-white/15 backdrop-blur-sm border border-white/30"
+              >
+                <Brain size={30} className="text-white" strokeWidth={1.75} />
+              </motion.div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-white/70 mb-1">Daily Grind</p>
+                <h2 className="text-3xl font-black text-white mb-1">Enter IQ Gym</h2>
+                <p className="text-sm text-white/80 max-w-sm">Solve tactical puzzles to increase your Pawn Rating.</p>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 px-5 py-3 rounded-xl font-black text-sm flex-shrink-0 bg-white text-black">
+              Train Now <ChevronRight size={18} />
+            </div>
+          </div>
+        </motion.button>
+
+        {/* ============================ MODULE GRID ============================ */}
+        <div className="flex items-center gap-3 mb-5">
+          <h3 className="text-sm uppercase tracking-[0.2em]" style={{ color: TEXT_DIM }}>Explore</h3>
+          <div className="h-px flex-1" style={{ background: LINE }} />
+        </div>
+
+        <motion.div variants={containerVars} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+          {MODULES.map((item) => (
+            <motion.button
+              key={item.name}
+              variants={itemVars}
+              whileHover={{ y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => goTo(item.path)}
+              className="relative text-left rounded-xl p-5 flex items-start gap-4 overflow-hidden group"
+              style={{ background: PANEL, border: `1px solid ${LINE}` }}
+            >
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ background: `radial-gradient(circle at 20% 20%, ${item.accent}22, transparent 70%)` }}
+              />
+              <div
+                className="relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                style={{ background: `${item.accent}22`, border: `1px solid ${item.accent}55`, color: item.accent }}
+              >
+                <item.icon size={20} strokeWidth={1.75} />
+              </div>
+              <div className="relative min-w-0">
+                <h4 className="font-bold text-base mb-1 flex items-center gap-1.5">
+                  {item.name}
+                  <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" style={{ color: item.accent }} />
+                </h4>
+                <p className="text-xs leading-relaxed" style={{ color: TEXT_DIM }}>{item.desc}</p>
+              </div>
             </motion.button>
+          ))}
+        </motion.div>
+
+        {/* ============================ ACTIVITY & TEASERS ============================ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-12">
+          
+          {/* Progress So Far */}
+          <div className="rounded-xl p-6" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${GOLD}22`, color: GOLD }}>
+                <Target size={16} />
+              </div>
+              <h3 className="font-bold text-sm">Your Progress So Far</h3>
+            </div>
+            <div className="space-y-4">
+              {activityRows.length > 0 ? activityRows.map((row, i) => (
+                <div key={i} className="flex items-center gap-3 text-sm">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${row.color}20`, color: row.color }}>
+                    <row.icon size={13} />
+                  </div>
+                  <span className="font-medium" style={{ color: TEXT_DIM }}>{row.text}</span>
+                </div>
+              )) : (
+                <p className="text-sm text-[#9691C4]">No data yet. Hit the IQ Gym to get started!</p>
+              )}
+            </div>
           </div>
 
-          {/* ================================================================= */}
-          {/* RIGHT COLUMN: VERTICAL ROTARY MENU (Fixed Box constraints)        */}
-          {/* ================================================================= */}
-          <div className="relative w-full h-[550px] flex items-center justify-center pointer-events-auto">
+          {/* Achievement Shelf */}
+          <div className="rounded-xl p-6" style={{ background: PANEL, border: `1px solid ${LINE}` }}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-purple-500/20 text-purple-400">
+                  <Award size={16} />
+                </div>
+                <h3 className="font-bold text-sm">Badges</h3>
+              </div>
+              <button
+                onClick={() => goTo("student-dashboard/achievements")}
+                className="text-xs font-bold flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors bg-[#7C5CFF]/20 text-[#C4B5FD]"
+              >
+                View all <ChevronRight size={13} />
+              </button>
+            </div>
             
-            {/* Scroll Capture Overlay (z-40) */}
-{/* Scroll Capture Overlay (z-40) */}
-<div 
-  className="absolute inset-0 z-40 touch-none cursor-ns-resize"
-  onPointerDown={(e) => e.currentTarget.setPointerCapture(e.pointerId)}
-  onPointerUp={(e) => e.currentTarget.releasePointerCapture(e.pointerId)}
-  onPointerMove={(e) => {
-    if (e.buttons === 1) {
-      if (e.movementY > 8) handlePrev();
-      if (e.movementY < -8) handleNext();
-    }
-  }}
-/>
-            <div className="relative w-full max-w-sm h-full flex flex-col justify-center items-center pointer-events-none">
-              {menuItems.map((item, index) => {
-                const offset = getOffset(index);
-                
-                // Pure vertical translation for a clean, stable stack
-                const y = offset * 110; 
-                const scale = offset === 0 ? 1 : 1 - Math.abs(offset) * 0.15;
-                const opacity = offset === 0 ? 1 : 1 - Math.abs(offset) * 0.35;
-                const zIndex = 50 - Math.abs(offset);
-
-                // Cull items too far away to keep DOM clean
-                if (Math.abs(offset) > 3) return null;
-
-                return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <AnimatePresence>
+                {badgeTeasers.map((badge, i) => (
                   <motion.div
-                    key={item.name}
-                    animate={{ y, scale, opacity, zIndex }}
-                    transition={{ type: "spring", stiffness: 250, damping: 25, mass: 1 }}
-                    className="absolute w-full"
+                    key={badge.title}
+                    initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 * i }}
+                    className="rounded-xl py-3 px-1 flex flex-col items-center text-center gap-2"
+                    style={{ background: badge.unlocked ? `${GOLD}14` : "transparent", border: `1px solid ${badge.unlocked ? `${GOLD}55` : LINE}` }}
                   >
-                    <div 
-                      className={`flex items-center gap-5 p-4 rounded-2xl transition-all duration-300 w-full ${
-                        offset === 0 
-                          ? `bg-[#121929] border border-white/20 shadow-2xl scale-105` 
-                          : 'bg-[#121929]/40 border border-transparent backdrop-blur-sm'
-                      }`}
-                      style={offset === 0 ? { borderColor: item.accent, boxShadow: `0 10px 30px -10px ${item.accent}` } : {}}
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={badge.unlocked ? { background: `${GOLD}25`, color: GOLD } : { background: LINE, color: TEXT_DIM }}
                     >
-                      <div className={`p-4 rounded-xl shrink-0 transition-all duration-300 ${offset === 0 ? `bg-gradient-to-br ${item.gradient}` : 'bg-slate-800'}`}>
-                        <item.icon className={`w-7 h-7 ${offset === 0 ? 'text-white' : 'text-slate-500'}`} />
-                      </div>
-                      
-                      <div className="flex flex-col overflow-hidden">
-                        <h3 className={`font-black uppercase tracking-wider text-xl transition-colors duration-300 truncate ${offset === 0 ? 'text-white' : 'text-slate-500'}`}>
-                          {item.name}
-                        </h3>
-                        {offset === 0 && (
-                          <motion.span 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="text-xs font-bold uppercase tracking-widest mt-0.5"
-                            style={{ color: item.accent }}
-                          >
-                            Selected Module
-                          </motion.span>
-                        )}
-                      </div>
+                      {badge.unlocked ? <badge.icon size={16} /> : <Lock size={14} />}
                     </div>
+                    <span className="text-[10px] font-bold" style={{ color: badge.unlocked ? TEXT : TEXT_DIM }}>{badge.title}</span>
                   </motion.div>
-                );
-              })}
+                ))}
+              </AnimatePresence>
             </div>
-
-            {/* Scroll Navigators - Z-50 Overlay */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-50 opacity-40 hover:opacity-100 transition-opacity">
-               <button 
-                 onClick={handlePrev} 
-                 className="p-3 bg-black/40 hover:bg-black/80 border border-white/10 hover:border-white/30 rounded-full cursor-pointer transition-all backdrop-blur-md"
-               >
-                 <ChevronUp className="w-8 h-8 text-white" />
-               </button>
-               <button 
-                 onClick={handleNext} 
-                 className="p-3 bg-black/40 hover:bg-black/80 border border-white/10 hover:border-white/30 rounded-full cursor-pointer transition-all backdrop-blur-md"
-               >
-                 <ChevronDown className="w-8 h-8 text-white" />
-               </button>
-            </div>
-
           </div>
-        </main>
-      </div>
+
+        </div>
+
+        {/* ============================ FOOTER NOTE ============================ */}
+        <div className="mt-14 flex items-center justify-center gap-2 text-xs" style={{ color: TEXT_DIM }}>
+          <Star size={12} />
+          <span>Every game, every puzzle — one more step up the FIDE ladder.</span>
+        </div>
+
+      </main>
     </div>
   );
 }

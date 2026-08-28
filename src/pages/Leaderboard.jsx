@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import apiClient from "../../../lib/api.js";
-import { ENDPOINTS } from "../../../lib/endpoints.js";
-import { useAuth } from "../../../contexts/AuthContext.jsx";
+import apiClient from "../lib/api.js";
+import { ENDPOINTS } from "../lib/endpoints.js";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import { Trophy, User, Loader2, Sparkles, TrendingUp, Crown, Flame, Star } from "lucide-react";
 
 const Leaderboard = () => {
