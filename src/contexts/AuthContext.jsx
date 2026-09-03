@@ -19,23 +19,19 @@ export function AuthProvider({ children }) {
 
   const checkAuthStatus = useCallback(async () => {
     try {
-      // 1. ADDED: Pass empty object {} to ensure Content-Type header is sent
       const response = await apiClient.post(ENDPOINTS.USERS.REFRESH_TOKEN, {});
       
       const { user: refreshedUser, accessToken } = response.data.data;
       
-      // 2. ADDED: Safety Check - Only update if we actually got user data
       if (refreshedUser && accessToken) {
           setUser(refreshedUser);
           setToken(accessToken);
           setApiAccessToken(accessToken);
 
-          // 3. SAFE STORAGE: Only save valid objects
           localStorage.setItem("user", JSON.stringify(refreshedUser)); 
           
           console.log("Session restored successfully for:", refreshedUser.username);
       } else {
-          // If we got a token but no user data (Backend issue), don't crash the app
           console.warn("Token refreshed but User data missing from response.");
       }
 
@@ -44,7 +40,7 @@ export function AuthProvider({ children }) {
       setUser(null);
       setToken(null);
       setApiAccessToken('');
-      localStorage.removeItem("user"); // Clean up if session is invalid
+      localStorage.removeItem("user");
     } finally {
       setLoading(false);
     }
@@ -64,7 +60,6 @@ export function AuthProvider({ children }) {
       setToken(accessToken);
       setApiAccessToken(accessToken);
       
-      // SAVE TO LOCAL STORAGE ON LOGIN
       if (loggedInUser) {
         localStorage.setItem("user", JSON.stringify(loggedInUser));
       }
@@ -82,13 +77,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const response = await apiClient.post(ENDPOINTS.USERS.REGISTER, { 
-        username, 
-        fullname, 
-        email, 
-        password, 
-        role, 
-        countryCode, 
-        number
+        username, fullname, email, password, role, countryCode, number
       });
       return response.data;
     } catch (error) {
@@ -101,7 +90,6 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      // ADDED: Pass empty object {} here too for consistency
       await apiClient.post(ENDPOINTS.USERS.LOGOUT, {});
     } catch (error) {
       console.error("Server logout failed, clearing client session anyway:", error);
@@ -109,14 +97,13 @@ export function AuthProvider({ children }) {
       setUser(null);
       setToken(null);
       setApiAccessToken('');
-
-      // REMOVE FROM LOCAL STORAGE ON LOGOUT
       localStorage.removeItem("user");
     }
   };
 
   const value = {
     user,
+    setUser, // <-- Now Shop.jsx can access and update the global user state!
     token,
     isAuthenticated: !!user,
     loading,

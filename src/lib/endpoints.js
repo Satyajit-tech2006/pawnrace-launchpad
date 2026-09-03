@@ -26,7 +26,10 @@ export const ENDPOINTS = {
     SUBMIT_SCORE: '/iq-puzzles/submit',
     GET_STATS: '/iq-puzzles/stats'
   },
-  
+  SHOP: {
+    BUY: "/shop/buy",
+    EQUIP: "/shop/equip",
+  },
   ASSIGNMENTS: {
     CREATE: (courseId) => `/assignments/course/${courseId}`,
     GET_BY_COURSE: (courseId) => `/assignments/course/${courseId}`,

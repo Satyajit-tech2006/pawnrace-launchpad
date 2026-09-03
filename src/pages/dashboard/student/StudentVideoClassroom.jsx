@@ -7,6 +7,7 @@ import { PhoneOff, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from "../../../contexts/AuthContext";
 import { useBoardDrawing } from '../../../hooks/useBoardDrawing'; 
+import { BOARD_SKINS } from '../../../lib/boardSkins.js';
 
 import ClassroomSidebar from '../coach/Classroom_features/ClassroomSidebar';
 import CoordinateOverlay from '../coach/Classroom_features/CoordinateOverlay';
@@ -34,7 +35,7 @@ const StudentVideoClassroom = () => {
     const [history, setHistory] = useState([]);
     const [isConnected, setIsConnected] = useState(false);
     const [viewIndex, setViewIndex] = useState(-1);
-    const [boardWidth, setBoardWidth] = useState(600);
+    const [boardWidth, setBoardWidth] = useState(560);
     
     const drawing = useBoardDrawing(orientation);
 
@@ -44,9 +45,13 @@ const StudentVideoClassroom = () => {
     const [cameraOn, setCameraOn] = useState(true);
     const [chatMessages, setChatMessages] = useState([]);
 
+    // --- DETERMINE ACTIVE SKIN ---
+    const equippedSkinId = user?.equippedBoardSkin || "basic";
+    const activeSkinColors = BOARD_SKINS[equippedSkinId] || BOARD_SKINS.basic;
+
     // --- 1. RESIZE HANDLER ---
     useEffect(() => {
-        function handleResize() { setBoardWidth(Math.min(window.innerHeight * 0.70, 600)); }
+        function handleResize() { setBoardWidth(Math.min(window.innerHeight * 0.65, 560)); }
         window.addEventListener('resize', handleResize);
         handleResize(); 
         return () => window.removeEventListener('resize', handleResize);
@@ -209,31 +214,53 @@ const StudentVideoClassroom = () => {
             <div className="flex-1 flex overflow-hidden">
                 <div className="flex-1 bg-[#0a0a0a] relative flex flex-col justify-center items-center">
                     
+                    {/* --- ENHANCED FROSTED BOARD WRAPPER --- */}
                     <div 
                         ref={drawing.boardWrapperRef}
                         onMouseDown={drawing.handleMouseDown}
                         onMouseUp={handleMouseUpWrapper} 
                         onContextMenu={(e) => e.preventDefault()}
-                        className="relative shadow-2xl shadow-black/50" 
-                        style={{ width: boardWidth, height: boardWidth }}
+                        className="relative rounded-xl overflow-hidden p-3 border border-white/10 bg-[#141210]/80 backdrop-blur-md" 
+                        style={{ 
+                            width: boardWidth + 24, 
+                            height: boardWidth + 24,
+                            boxShadow: activeSkinColors.wrapperShadow || "0 25px 50px -12px rgba(0, 0, 0, 0.7)",
+                        }}
                     >
-                        <Chessboard 
-                            id="StudentBoard" 
-                            key={boardKey} // [FIX] Force re-render on new game
-                            position={getBoardPosition()} 
-                            onPieceDrop={onDrop} 
-                            boardOrientation={orientation}
-                            customDarkSquareStyle={{ backgroundColor: '#779954' }} 
-                            customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
-                            animationDuration={200} 
-                            showBoardNotation={false}
-                            areArrowsAllowed={false} 
-                            customArrows={drawing.arrows}
-                            customSquareStyles={drawing.squares}
-                        />
-                        <CoordinateOverlay orientation={orientation} showCoordinates={true} boardWidth={boardWidth} />
+                        <div className="relative w-full h-full rounded-lg overflow-hidden" style={{ width: boardWidth, height: boardWidth }}>
+                            {/* GAMIFIED DECAL OVERLAY */}
+                            {activeSkinColors.decalUrl && (
+                                <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                                    <img 
+                                        src={activeSkinColors.decalUrl} 
+                                        alt="Board Decal" 
+                                        className={`w-[85%] h-[85%] object-contain pointer-events-none ${activeSkinColors.animationClass || ''}`}
+                                    />
+                                </div>
+                            )}
+
+                            {/* ACTUAL CHESSBOARD */}
+                            <div className="relative z-10 w-full h-full">
+                                <Chessboard 
+                                    id="StudentBoard" 
+                                    key={boardKey} 
+                                    position={getBoardPosition()} 
+                                    onPieceDrop={onDrop} 
+                                    boardOrientation={orientation}
+                                    customDarkSquareStyle={{ backgroundColor: activeSkinColors.dark }} 
+                                    customLightSquareStyle={{ backgroundColor: activeSkinColors.light }}
+                                    animationDuration={200} 
+                                    showBoardNotation={false}
+                                    areArrowsAllowed={false} 
+                                    customArrows={drawing.arrows}
+                                    customSquareStyles={drawing.squares}
+                                />
+                                <CoordinateOverlay orientation={orientation} showCoordinates={true} boardWidth={boardWidth} />
+                            </div>
+                        </div>
                     </div>
-                    
+                    {/* --- END ENHANCED WRAPPER --- */}
+
                     <div className="mt-6 flex justify-center">
                         <button onClick={() => setOrientation(o => o === 'white' ? 'black' : 'white')} className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#252525] border border-white/5 rounded-full text-xs font-bold uppercase tracking-wider transition-all">
                             <Repeat className="w-4 h-4 text-gray-400"/> Flip Board
@@ -243,10 +270,7 @@ const StudentVideoClassroom = () => {
 
                 <ClassroomSidebar 
                     activeTab={activeTab} setActiveTab={setActiveTab}
-                    
-                    // [FIX] Correct History Logic
                     history={viewIndex === -1 ? history : history.slice(0, viewIndex + 1)}
-                    
                     viewIndex={viewIndex} goToMove={setViewIndex}
                     onLoadPGN={() => toast.error("Only Coach can load PGNs")} 
                     onDownloadPGN={handleDownloadPGN}

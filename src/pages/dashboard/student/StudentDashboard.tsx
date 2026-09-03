@@ -6,7 +6,8 @@ import {
   GraduationCap, Trophy, ClipboardList, Award, FileBarChart,
   Brain, Medal, Zap, ChevronRight, Flame, Star,
   TrendingUp, Lock, Crown, Target, BookOpen,
-  Gamepad2, MessageSquare, Settings, Swords
+  Gamepad2, MessageSquare, Settings, Swords,
+  ShoppingCart
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -116,6 +117,7 @@ const MODULES: ModuleConfig[] = [
   { name: "Testing",      coord: "c6", path: "student-dashboard/test",          icon: FileBarChart,   accent: EMERALD,   desc: "Sit a standardized assessment to confirm your rating." },
   { name: "Chats",        coord: "f2", path: "student-dashboard/chats",         icon: MessageSquare,  accent: "#8B806B", desc: "Message your coach and academy mentors directly." },
   { name: "Settings",     coord: "a1", path: "student-dashboard/settings",      icon: Settings,       accent: "#7A6E59", desc: "Manage your profile and account preferences." },
+  { name: "Shop",      coord: "h1", path: "student-dashboard/shop",       icon: ShoppingCart,       accent: "#7A6E59", desc: "Contact the academy for help with your account or rating." },
 ];
 
 /* ------------------------------ BOARD TEXTURE ------------------------------ */
